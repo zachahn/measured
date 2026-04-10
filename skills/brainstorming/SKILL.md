@@ -14,35 +14,16 @@ creating the final plan:
 2. **Propose 2-3 approaches** — with trade-offs and your recommendation
 3. **Present design** — in sections scaled to their complexity, get user approval after each section
 4. **Plan self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
+5. **Write plan document** — write the full implementation plan into the Claude Code plan file (see Writing the Plan Document below)
+6. **Dispatch plan reviewer** — spin up a subagent to review the plan document (see Plan Document Reviewer below)
+
+Be sure to use a Task List and add every Task above.
 
 
 ## Anti-Pattern: "This is too simple to need a design"
 
 Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
 
-
-## Process Flow
-
-```dot
-digraph brainstorming {
-    "Visual questions ahead?" [shape=diamond];
-    "Offer Visual Companion\n(own message, no other content)" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
-    "Present design sections" [shape=box];
-    "User approves design?" [shape=diamond];
-    "Plan self-review\n(fix inline)" [shape=box];
-    "ExitPlanMode" [shape=doublecircle];
-
-    "Visual questions ahead?" -> "Offer Visual Companion\n(own message, no other content)" [label="yes"];
-    "Visual questions ahead?" -> "Propose 2-3 approaches" [label="no"];
-    "Offer Visual Companion\n(own message, no other content)" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Present design sections";
-    "Present design sections" -> "User approves design?";
-    "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Plan self-review\n(fix inline)" [label="yes"];
-    "Plan self-review\n(fix inline)" -> "ExitPlanMode";
-}
-```
 
 ## The Process
 
@@ -80,7 +61,7 @@ digraph brainstorming {
 
 ## Plan Self-Review
 
-Before calling ExitPlanMode, look at the plan with fresh eyes:
+Before writing the plan document, look at the design with fresh eyes:
 
 1. **Placeholder scan:** Any "TBD", "TODO", incomplete sections, or vague requirements? Fix them.
 2. **Internal consistency:** Do any sections contradict each other? Does the architecture match the feature descriptions?
@@ -88,6 +69,126 @@ Before calling ExitPlanMode, look at the plan with fresh eyes:
 4. **Ambiguity check:** Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 
 Fix any issues inline. No need to re-review — just fix and move on.
+
+## Writing the Plan Document
+
+Write a comprehensive implementation plan assuming the engineer has zero context for the codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs to check, how to test it. Give the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits. Assume a skilled developer who knows almost nothing about the toolset or problem domain and doesn't know good test design.
+
+**Where to write:** Into the Claude Code plan file managed by the harness. Do NOT create a separate file in `docs/superpowers/plans/`. The plan content goes directly into the plan file.
+
+### Scope Check
+
+If the design covers multiple independent subsystems, it should have been broken into sub-projects during the design phase. If it wasn't, stop and suggest decomposition — one plan per subsystem. Each plan should produce working, testable software on its own.
+
+### File Structure
+
+Before defining tasks, map out which files will be created or modified and what each one is responsible for. This is where decomposition decisions get locked in.
+
+- Design units with clear boundaries and well-defined interfaces. Each file should have one clear responsibility.
+- Prefer smaller, focused files over large ones that do too much.
+- Files that change together should live together. Split by responsibility, not by technical layer.
+- In existing codebases, follow established patterns. If a file you're modifying has grown unwieldy, including a split in the plan is reasonable.
+
+This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
+
+### Bite-Sized Task Granularity
+
+**Each step is one action (2-5 minutes):**
+- "Write the failing test" - step
+- "Run it to make sure it fails" - step
+- "Implement the minimal code to make the test pass" - step
+- "Run the tests and make sure they pass" - step
+- "Commit" - step
+
+### Plan Document Header
+
+**Every plan MUST start with this header:**
+
+```markdown
+# [Feature Name] Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** [One sentence describing what this builds]
+
+**Architecture:** [2-3 sentences about approach]
+
+**Tech Stack:** [Key technologies/libraries]
+
+---
+```
+
+### Task Structure
+
+````markdown
+### Task N: [Component Name]
+
+**Files:**
+- Create: `exact/path/to/file.py`
+- Modify: `exact/path/to/existing.py:123-145`
+- Test: `tests/exact/path/to/test.py`
+
+- [ ] **Step 1: Write the failing test**
+
+```python
+def test_specific_behavior():
+    result = function(input)
+    assert result == expected
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: FAIL with "function not defined"
+
+- [ ] **Step 3: Write minimal implementation**
+
+```python
+def function(input):
+    return expected
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add tests/path/test.py src/path/file.py
+git commit -m "feat: add specific feature"
+```
+````
+
+### No Placeholders
+
+Every step must contain the actual content an engineer needs. These are **plan failures** — never write them:
+- "TBD", "TODO", "implement later", "fill in details"
+- "Add appropriate error handling" / "add validation" / "handle edge cases"
+- "Write tests for the above" (without actual test code)
+- "Similar to Task N" (repeat the code — the engineer may be reading tasks out of order)
+- Steps that describe what to do without showing how (code blocks required for code steps)
+- References to types, functions, or methods not defined in any task
+
+### Remember
+- Exact file paths always
+- Complete code in every step — if a step changes code, show the code
+- Exact commands with expected output
+- DRY, YAGNI, TDD, frequent commits
+
+## Plan Document Reviewer
+
+After writing the plan document, dispatch a subagent to review it:
+
+Use the Agent tool (general-purpose) with the prompt template in:
+`skills/brainstorming/plan-document-reviewer-prompt.md`
+
+Replace `[PLAN_FILE_PATH]` with the path to the Claude Code plan file.
+
+Wait for the reviewer's response:
+- **Issues Found:** Fix them inline in the plan file, then call ExitPlanMode.
+- **Approved:** Call ExitPlanMode immediately.
 
 ## Key Principles
 
