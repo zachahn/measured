@@ -8,4 +8,4 @@ session_id = input["session_id"]
 
 cache_home = ENV["XDG_CACHE_HOME"] || File.join(Dir.home, ".cache")
 session_dir = File.join(cache_home, "claude-measured", "session-#{session_id}")
-FileUtils.mkdir_p(session_dir)
+# FileUtils.mkdir_p(session_dir)
