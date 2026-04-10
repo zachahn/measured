@@ -13,9 +13,7 @@ creating the final plan:
 1. **Offer visual companion** (if topic will involve visual questions) — this is its own message, not combined with a clarifying question. See the Visual Companion section below.
 2. **Propose 2-3 approaches** — with trade-offs and your recommendation
 3. **Present design** — in sections scaled to their complexity, get user approval after each section
-4. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-5. **User reviews written spec** — ask user to review the spec file before proceeding
-6. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+4. **Plan self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 
 
 ## Anti-Pattern: "This is too simple to need a design"
@@ -29,31 +27,22 @@ Every project goes through this process. A todo list, a single-function utility,
 digraph brainstorming {
     "Visual questions ahead?" [shape=diamond];
     "Offer Visual Companion\n(own message, no other content)" [shape=box];
-    "Ask clarifying questions" [shape=box];
     "Propose 2-3 approaches" [shape=box];
     "Present design sections" [shape=box];
     "User approves design?" [shape=diamond];
-    "Write design doc" [shape=box];
-    "Spec self-review\n(fix inline)" [shape=box];
-    "User reviews spec?" [shape=diamond];
-    "Invoke writing-plans skill" [shape=doublecircle];
+    "Plan self-review\n(fix inline)" [shape=box];
+    "ExitPlanMode" [shape=doublecircle];
 
     "Visual questions ahead?" -> "Offer Visual Companion\n(own message, no other content)" [label="yes"];
-    "Visual questions ahead?" -> "Ask clarifying questions" [label="no"];
-    "Offer Visual Companion\n(own message, no other content)" -> "Ask clarifying questions";
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
+    "Visual questions ahead?" -> "Propose 2-3 approaches" [label="no"];
+    "Offer Visual Companion\n(own message, no other content)" -> "Propose 2-3 approaches";
     "Propose 2-3 approaches" -> "Present design sections";
     "Present design sections" -> "User approves design?";
     "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Spec self-review\n(fix inline)";
-    "Spec self-review\n(fix inline)" -> "User reviews spec?";
-    "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Invoke writing-plans skill" [label="approved"];
+    "User approves design?" -> "Plan self-review\n(fix inline)" [label="yes"];
+    "Plan self-review\n(fix inline)" -> "ExitPlanMode";
 }
 ```
-
-**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
 
 ## The Process
 
@@ -89,17 +78,9 @@ digraph brainstorming {
 - Where existing code has problems that affect the work (e.g., a file that's grown too large, unclear boundaries, tangled responsibilities), include targeted improvements as part of the design - the way a good developer improves code they're working in.
 - Don't propose unrelated refactoring. Stay focused on what serves the current goal.
 
-## After the Design
+## Plan Self-Review
 
-**Documentation:**
-
-- Write the validated design (spec) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
-  - (User preferences for spec location override this default)
-- Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
-
-**Spec Self-Review:**
-After writing the spec document, look at it with fresh eyes:
+Before calling ExitPlanMode, look at the plan with fresh eyes:
 
 1. **Placeholder scan:** Any "TBD", "TODO", incomplete sections, or vague requirements? Fix them.
 2. **Internal consistency:** Do any sections contradict each other? Does the architecture match the feature descriptions?
@@ -107,18 +88,6 @@ After writing the spec document, look at it with fresh eyes:
 4. **Ambiguity check:** Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 
 Fix any issues inline. No need to re-review — just fix and move on.
-
-**User Review Gate:**
-After the spec review loop passes, ask the user to review the written spec before proceeding:
-
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
-
-Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
-
-**Implementation:**
-
-- Invoke the writing-plans skill to create a detailed implementation plan
-- Do NOT invoke any other skill. writing-plans is the next step.
 
 ## Key Principles
 
