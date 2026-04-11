@@ -14,8 +14,9 @@ creating the final plan:
 2. **Propose 2-3 approaches** — with trade-offs and your recommendation
 3. **Present design** — in sections scaled to their complexity, get user approval after each section
 4. **Plan self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-5. **Write plan document** — write the full implementation plan into the Claude Code plan file (see Writing the Plan Document below)
-6. **Dispatch plan reviewer** — spin up a subagent to review the plan document (see Plan Document Reviewer below)
+5. **Write spec section** — after design approval, write the User Specification section into the plan file (see Writing the Plan Document below)
+6. **Write implementation plan section** — after self-review, write the Implementation Plan section into the plan file
+7. **Dispatch plan reviewer** — spin up a subagent to review both sections (see Plan Document Reviewer below)
 
 Be sure to use a Task List and add every Task above.
 
@@ -72,15 +73,56 @@ Fix any issues inline. No need to re-review — just fix and move on.
 
 ## Writing the Plan Document
 
-Write a comprehensive implementation plan assuming the engineer has zero context for the codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs to check, how to test it. Give the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits. Assume a skilled developer who knows almost nothing about the toolset or problem domain and doesn't know good test design.
+The Claude Code plan file has two sections, written in sequence:
 
-**Where to write:** Into the Claude Code plan file managed by the harness. Do NOT create a separate file in `docs/superpowers/plans/`. The plan content goes directly into the plan file.
+1. **User Specification** — written after the design is approved
+2. **Implementation Plan** — written after the self-review
 
-### Scope Check
+**Where to write:** Into the Claude Code plan file managed by the harness. Do NOT create separate files on disk.
+
+---
+
+### Part 1: User Specification
+
+Write this section immediately after the design is approved by the user.
+
+```markdown
+# User Specification: [Feature Name]
+
+**Goal:** [One sentence describing what this builds]
+
+**Architecture:** [2-3 sentences about approach]
+
+**Tech Stack:** [Key technologies/libraries]
+
+**Key Decisions:**
+- [Decision 1 and rationale]
+- [Decision 2 and rationale]
+
+**Requirements:**
+- [Requirement 1]
+- [Requirement 2]
+```
+
+---
+
+### Part 2: Implementation Plan
+
+Write this section after the Plan Self-Review. Assume the engineer has zero context for the codebase and questionable taste. Document everything they need to know: which files to touch, code, testing, docs to check, how to test it. Give the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits. Assume a skilled developer who knows almost nothing about the toolset or problem domain and doesn't know good test design.
+
+**Header:**
+
+```markdown
+# Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+```
+
+#### Scope Check
 
 If the design covers multiple independent subsystems, it should have been broken into sub-projects during the design phase. If it wasn't, stop and suggest decomposition — one plan per subsystem. Each plan should produce working, testable software on its own.
 
-### File Structure
+#### File Structure
 
 Before defining tasks, map out which files will be created or modified and what each one is responsible for. This is where decomposition decisions get locked in.
 
@@ -91,7 +133,7 @@ Before defining tasks, map out which files will be created or modified and what 
 
 This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
 
-### Bite-Sized Task Granularity
+#### Bite-Sized Task Granularity
 
 **Each step is one action (2-5 minutes):**
 - "Write the failing test" - step
@@ -100,25 +142,7 @@ This structure informs the task decomposition. Each task should produce self-con
 - "Run the tests and make sure they pass" - step
 - "Commit" - step
 
-### Plan Document Header
-
-**Every plan MUST start with this header:**
-
-```markdown
-# [Feature Name] Implementation Plan
-
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
-**Goal:** [One sentence describing what this builds]
-
-**Architecture:** [2-3 sentences about approach]
-
-**Tech Stack:** [Key technologies/libraries]
-
----
-```
-
-### Task Structure
+#### Task Structure
 
 ````markdown
 ### Task N: [Component Name]
@@ -161,7 +185,7 @@ git commit -m "feat: add specific feature"
 ```
 ````
 
-### No Placeholders
+#### No Placeholders
 
 Every step must contain the actual content an engineer needs. These are **plan failures** — never write them:
 - "TBD", "TODO", "implement later", "fill in details"
@@ -171,7 +195,7 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - Steps that describe what to do without showing how (code blocks required for code steps)
 - References to types, functions, or methods not defined in any task
 
-### Remember
+#### Remember
 - Exact file paths always
 - Complete code in every step — if a step changes code, show the code
 - Exact commands with expected output
