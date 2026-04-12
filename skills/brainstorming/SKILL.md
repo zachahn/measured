@@ -182,12 +182,15 @@ Every step must contain the actual content an engineer needs. These are **plan f
 
 ## Plan Document Reviewer
 
-After writing both sections of the plan document, dispatch a subagent to review it:
+After writing both sections of the plan document, dispatch the `review-implementation-plan` subagent to review it:
 
-Use the Agent tool (general-purpose) with the prompt template in:
-`skills/brainstorming/plan-document-reviewer-prompt.md`
-
-Replace `[PLAN_FILE_PATH]` with the path to the Claude Code plan file.
+```
+Agent tool (review-implementation-plan):
+  description: "Review implementation plan"
+  prompt: |
+    **Plan to review:** [PLAN_FILE_PATH]
+    **Spec for reference:** [SPEC_FILE_PATH]
+```
 
 Wait for the reviewer's response:
 - **Issues Found:** Fix them inline in the plan file, then call ExitPlanMode.
