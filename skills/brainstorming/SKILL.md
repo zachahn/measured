@@ -7,7 +7,7 @@ description: "Only use this skill if explicitly asked. Two-phase design process:
 
 **Phase 1 — Understand the Request**:
 
-Delegate to "brainstorm-request" Subagent.
+Delegate to "brainstorm-specification" Subagent.
 
 Wait for the subagent to complete before starting Phase 2. Use its Phase 1 Summary as the input to Phase 2.
 
@@ -26,7 +26,7 @@ Every project goes through this process. A todo list, a single-function utility,
 Phase 1 is handled by a subagent.
 
 ```
-Agent tool (brainstorm-request):
+Agent tool (brainstorm-specification):
   description: "Understand user's request"
   prompt: |
     **User's original request:** [USER_REQUEST]
