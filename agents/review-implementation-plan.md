@@ -1,7 +1,7 @@
 ---
 name: review-implementation-plan
 description: |
-  Reviews a completed implementation plan for completeness, spec alignment, and task decomposition readiness. Checks for TODOs, placeholder content, scope creep, and unbuildable steps. Returns Approved or Issues Found. Examples: <example>Context: brainstorming skill has written the implementation plan. assistant: "Let me dispatch the review-implementation-plan agent to verify the plan is ready for implementation." <commentary></commentary></example>
+  Reviews a completed implementation plan for completeness, spec alignment, and task decomposition readiness. Checks for TODOs, placeholder content, scope creep, and unbuildable steps. Returns Approved or Issues Found. Examples: <example>Context: brainstorming skill has written the implementation plan. assistant: "Let me dispatch the review-implementation-plan agent to verify the plan is ready for implementation."</example>
 tools: Glob, Grep, Read, WebFetch, WebSearch
 model: inherit
 ---
