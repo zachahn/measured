@@ -127,6 +127,8 @@ Return a structured summary to the main agent:
 
 **Goal:** [One sentence — what this builds and why]
 
+**Plan file path:** [PLAN_FILE_PATH]
+
 **Approach chosen:** [Name of the chosen approach]
 
 **Requirements:**
