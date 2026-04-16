@@ -9,30 +9,20 @@ First, EnterPlanMode to enter Plan mode.
 
 Use `TaskCreate` to create a task for each step below:
 
-1. Explore project context
-2. Ask clarifying questions
-3. Propose 2-3 approaches
-4. Expand chosen approach
-5. Self-review the output
+1. Ask clarifying questions
+2. Propose 2-3 approaches
+3. Expand chosen approach
+4. Self-review the output
 
-
-## Step 1: Explore project context
 
 Before continuing, ensure you are in Plan mode.
 
-Read the plan file at the provided path to get the User Specification. Then read relevant files with an implementation focus. Look for:
-- Existing patterns and conventions to follow
-- Functions and utilities that can be reused — avoid proposing new code when suitable implementations exist
-- Files that will need to change
-- Test patterns and coverage approach
-
-
-## Step 2: Ask clarifying questions
+## Step 1: Ask clarifying questions
 
 Use AskUserQuestion for anything the User Specification left unresolved, or new questions that emerged from the implementation-focused exploration. Don't re-ask what Phase 1 already answered.
 
 
-## Step 3: Propose 2-3 implementation approaches
+## Step 2: Propose 2-3 implementation approaches
 
 Present 2-3 technical approaches with trade-offs.
 
@@ -45,7 +35,7 @@ Present 2-3 technical approaches with trade-offs.
 - Before going deep on one approach, assess scope: if the request covers multiple independent subsystems, flag this. Help the user decompose into sub-projects. Each sub-project gets its own plan.
 
 
-## Step 4: Expand chosen approach
+## Step 3: Expand chosen approach
 
 Once the user picks (or confirms yours), present the full design in sections scaled to their complexity. Cover:
 
@@ -150,7 +140,7 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - DRY, YAGNI, TDD, frequent commits
 
 
-## Step 5: Self-review the output
+## Step 4: Self-review the output
 
 Ensure that the Plan file was written to. Look at the design with fresh eyes:
 
