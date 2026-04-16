@@ -1,6 +1,6 @@
 ---
 name: build-implementation-plan
-tools: EnterPlanMode, ExitPlanMode, TaskCreate, TaskGet, TaskList, Read
+tools: AskUserQuestion, EnterPlanMode, ExitPlanMode, TaskCreate, TaskGet, TaskList, Read
 disallowedTools: Write, Edit
 model: inherit
 ---
