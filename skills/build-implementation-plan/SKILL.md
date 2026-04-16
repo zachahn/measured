@@ -2,6 +2,7 @@
 name: build-implementation-plan
 tools: AskUserQuestion, EnterPlanMode, ExitPlanMode, TaskCreate, TaskGet, TaskList, Read
 disallowedTools: Write, Edit
+context: fork
 model: inherit
 ---
 
