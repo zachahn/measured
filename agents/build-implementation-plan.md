@@ -1,10 +1,13 @@
 ---
 name: build-implementation-plan
-description: Phase 2 of the brainstorming skill. Use this agent to create a thorough implementation plan after the User Specification has been written to the plan file. It explores project context with an implementation focus, asks clarifying questions, proposes 2-3 approaches, expands the chosen approach, self-reviews, writes the plan to the plan document, and dispatches the review-implementation-plan subagent. Examples: <example>Context: brainstorm-specification agent has written the spec. assistant: "Let me dispatch the build-implementation-plan agent to create the implementation plan."</example>
+tools: EnterPlanMode, ExitPlanMode, TaskCreate, TaskGet, TaskList, Read
+disallowedTools: Write, Edit
 model: inherit
 ---
 
 You are creating a thorough implementation plan for an approved User Specification. Your job is to figure out **how** to build what Phase 1 defined. Read the plan file to get your context — do not rely on anything passed inline beyond the file path.
+
+First, EnterPlanMode to enter Plan mode.
 
 Use `TaskCreate` to create a task for each step below:
 
@@ -16,6 +19,8 @@ Use `TaskCreate` to create a task for each step below:
 
 
 ## Step 1: Explore project context
+
+Before continuing, ensure you are in Plan mode.
 
 Read the plan file at the provided path to get the User Specification. Then read relevant files with an implementation focus. Look for:
 - Existing patterns and conventions to follow
@@ -172,8 +177,8 @@ Agent tool (review-implementation-plan):
 ```
 
 Wait for the reviewer's response:
-- **Issues Found:** Fix them inline in the plan file, then call ExitPlanMode.
-- **Approved:** Call ExitPlanMode immediately.
+- **Issues Found:** Fix them inline in the plan file, then call `ExitPlanMode`.
+- **Approved:** Call `ExitPlanMode` immediately.
 
 
 ## Return Value

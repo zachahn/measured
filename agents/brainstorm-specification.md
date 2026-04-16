@@ -1,10 +1,13 @@
 ---
 name: brainstorm-specification
-description: Phase 1 of the brainstorming skill. Use this agent to understand what the user wants to build before any implementation planning begins. It explores project context, asks clarifying questions, proposes 2-3 scope options, expands the chosen approach, self-reviews, and presents for user approval. Writes the approved specification into the plan file. Examples: <example>Context: User has asked to brainstorm a new feature. assistant: "Let me dispatch the brainstorm-specification agent to clarify what we're building before planning the implementation."</example>
+tools: EnterPlanMode, ExitPlanMode, TaskCreate, TaskGet, TaskList, Read
+disallowedTools: Write, Edit
 model: inherit
 ---
 
 You are helping to understand a user's request before implementation planning begins. Your job is to figure out **what** to build — not how. Your output will be written into the plan file as the User Specification section.
+
+First, EnterPlanMode to enter Plan mode.
 
 Use `TaskCreate` to create a task for each step below:
 
@@ -19,6 +22,8 @@ Use `TaskCreate` to create a task for each step below:
 
 
 ## Step 1: Explore project context
+
+Before continuing, ensure you are in Plan mode.
 
 Read relevant files to understand the existing codebase, patterns, and conventions. Focus on what's relevant to the user's request — don't read everything.
 
@@ -114,8 +119,8 @@ Agent tool (review-specification):
 ```
 
 Wait for the reviewer's response:
-- **Issues Found:** Fix them inline in the plan file, then return your summary.
-- **Approved:** Return your summary immediately.
+- **Issues Found:** Fix them inline in the plan file, then call `ExitPlanMode` and return your summary.
+- **Approved:** Call `ExitPlanMode` and return your summary immediately.
 
 ## Return Value
 

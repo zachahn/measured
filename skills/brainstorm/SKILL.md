@@ -6,12 +6,10 @@ disable-model-invocation: true
 
 ## Overview
 
-Two-phase design process:
+Call these two subagents in sequence.
 
-- **Phase 1 — Understand the User Request:** Delegates to the `brainstorm-specification` subagent. Returns a Phase 1 Summary including the plan file path.
-- **Phase 2 — Build the Implementation Plan:** Delegates to the `build-implementation-plan` subagent using the plan file path from Phase 1.
-
-Each phase runs in its own subagent for clean context isolation.
+- **Phase 1 — Understand the User Request:** Delegate to the `brainstorm-specification` subagent. Returns a Phase 1 Summary including the plan file path.
+- **Phase 2 — Build the Implementation Plan:** Delegate to the `build-implementation-plan` subagent using the plan file path from Phase 1.
 
 
 ## Phase 1 — Understand the request
