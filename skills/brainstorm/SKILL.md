@@ -1,5 +1,5 @@
 ---
-name: brainstorming
+name: brainstorm
 description: Two-phase design process: understand what to build, then plan how to build it.
 disable-model-invocation: true
 ---
@@ -8,15 +8,10 @@ disable-model-invocation: true
 
 Two-phase design process:
 
-- **Phase 1 — Understand the Request:** Delegates to the `brainstorm-specification` subagent. Returns a Phase 1 Summary including the plan file path.
+- **Phase 1 — Understand the User Request:** Delegates to the `brainstorm-specification` subagent. Returns a Phase 1 Summary including the plan file path.
 - **Phase 2 — Build the Implementation Plan:** Delegates to the `build-implementation-plan` subagent using the plan file path from Phase 1.
 
 Each phase runs in its own subagent for clean context isolation.
-
-
-## Anti-pattern: "This is too simple to need a design"
-
-Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
 
 
 ## Phase 1 — Understand the request
