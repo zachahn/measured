@@ -15,7 +15,7 @@ Call these two subagents in sequence.
 ## Phase 1 — Understand the request
 
 ```
-Agent tool (brainstorm-specification):
+Skill (brainstorm-specification):
   description: "Understand user's request"
   prompt: |
     **User's original request:** [USER_REQUEST]
@@ -28,7 +28,7 @@ Wait for the subagent to complete. Extract the **Plan file path** from its Phase
 ## Phase 2 — Build the implementation plan
 
 ```
-Agent tool (build-implementation-plan):
+Skill tool (build-implementation-plan):
   description: "Build implementation plan"
   prompt: |
     **Plan file path:** [PLAN_FILE_PATH from Phase 1 Summary]

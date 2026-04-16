@@ -2,8 +2,6 @@
 name: build-implementation-plan
 tools: AskUserQuestion, EnterPlanMode, ExitPlanMode, TaskCreate, TaskGet, TaskList, Read
 disallowedTools: Write, Edit
-context: fork
-model: inherit
 ---
 
 You are creating a thorough implementation plan for an approved User Specification. Your job is to figure out **how** to build what Phase 1 defined. Read the plan file to get your context — do not rely on anything passed inline beyond the file path.

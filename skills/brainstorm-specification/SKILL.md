@@ -2,8 +2,6 @@
 name: brainstorm-specification
 tools: AskUserQuestion, EnterPlanMode, ExitPlanMode, TaskCreate, TaskGet, TaskList, Read
 disallowedTools: Write, Edit
-context: fork
-model: inherit
 ---
 
 You are helping to understand a user's request before implementation planning begins. Your job is to figure out **what** to build — not how. Your output will be written into the plan file as the User Specification section.
