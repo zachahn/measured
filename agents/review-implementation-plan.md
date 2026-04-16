@@ -16,9 +16,12 @@ Verify this plan is complete and ready for implementation.
 | Category | What to Look For |
 |----------|------------------|
 | Completeness | TODOs, placeholders, incomplete tasks, missing steps |
-| Spec Alignment | Plan covers spec requirements, no major scope creep |
-| Task Decomposition | Tasks have clear boundaries, steps are actionable |
+| Spec Alignment | Tasks implement what the spec declares; no unexplained scope creep |
+| Clarity | Requirements ambiguous enough to cause someone to build the wrong thing |
+| Task Decomposition | Tasks have clear boundaries, steps are actionable, each step is 2-5 minutes |
+| No Placeholders | "TBD", "TODO", "implement later", steps without code when code is needed |
 | Buildability | Could an engineer follow this plan without getting stuck? |
+| YAGNI | Unrequested features, over-engineering, speculative abstractions |
 
 ## Calibration
 
