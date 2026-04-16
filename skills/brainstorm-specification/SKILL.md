@@ -9,23 +9,18 @@ First, EnterPlanMode to enter Plan mode.
 
 Use `TaskCreate` to create a task for each step below:
 
-1. Explore project context
-2. Ask clarifying questions
-3. Propose 2-3 approaches
-4. Expand chosen approach
-5. Self-review the output
-6. Present design for user approval
-7. Write specification to plan
-8. Review specification
+1. Ask clarifying questions
+2. Propose 2-3 approaches
+3. Expand chosen approach
+4. Self-review the output
+5. Present design for user approval
+6. Write specification to plan
+7. Review specification
 
-
-## Step 1: Explore project context
 
 Before continuing, ensure you are in Plan mode.
 
-Read relevant files to understand the existing codebase, patterns, and conventions. Focus on what's relevant to the user's request — don't read everything.
-
-## Step 2: Ask clarifying questions
+## Step 1: Ask clarifying questions
 
 Use AskUserQuestion to ask 1-4 targeted questions. Only ask what you need to understand the request — don't ask for things you can infer from the code.
 
@@ -37,7 +32,7 @@ Good questions to consider:
 
 Skip this step if you already have enough to proceed with confidence.
 
-## Step 3: Propose 2-3 approaches
+## Step 2: Propose 2-3 approaches
 
 Present 2-3 different interpretations or scope options for **what** to build. Focus on problem framing and scope — not implementation details.
 
@@ -48,7 +43,7 @@ For each approach:
 
 Lead with your recommended approach and explain why.
 
-## Step 4: Expand chosen approach
+## Step 3: Expand chosen approach
 
 Once the user picks an approach (or confirms yours), expand it into a full description:
 
@@ -57,7 +52,7 @@ Once the user picks an approach (or confirms yours), expand it into a full descr
 - Scope boundaries
 - Any constraints or known risks
 
-## Step 5: Self-review the output
+## Step 4: Self-review the output
 
 Before presenting, check your work:
 
@@ -70,11 +65,11 @@ Before presenting, check your work:
 
 Fix issues inline.
 
-## Step 6: Present for user approval
+## Step 5: Present for user approval
 
 Present the expanded description clearly. Ask the user to confirm this is correct before proceeding to write the specification.
 
-## Step 7: Write specification to plan
+## Step 6: Write specification to plan
 
 Enter plan mode using the `EnterPlanMode` tool. Write the approved specification into the plan file under a **User Specification** section. The plan file is the Claude Code plan for this session.
 
@@ -105,7 +100,7 @@ Use this structure:
 - [Any notable files with vital context for implementation plan]
 ```
 
-## Step 8: Review specification
+## Step 7: Review specification
 
 Dispatch the `review-specification` subagent to verify the spec is complete and ready for planning:
 
