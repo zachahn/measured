@@ -191,6 +191,14 @@ cmd_bump() {
   echo "Done. Running audit to check for missed files..."
   echo ""
   cmd_audit
+
+  echo ""
+  echo "Staging and committing version bump..."
+  while IFS=$'\t' read -r path _field; do
+    local fullpath="$REPO_ROOT/$path"
+    [[ -f "$fullpath" ]] && git -C "$REPO_ROOT" add "$path"
+  done < <(declared_files)
+  git -C "$REPO_ROOT" commit -m "Release v${new_version}"
 }
 
 # --- main ---
