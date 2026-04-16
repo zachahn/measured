@@ -11,3 +11,4 @@ Consider _Elements of Style_:
 - Omit needless words. Cut every word that adds nothing.
 - Prefer active voice. Put the actor first.
 - Use concrete nouns. Name the thing, not the category.
+- Prefer full sentences. Reserve fragments for lists and headings.
