@@ -5,7 +5,7 @@ user-invocable: false
 
 You are creating a thorough implementation plan for an approved User Specification. Your job is to figure out **how** to build what Phase 1 defined. Read the plan file to get your context — do not rely on anything passed inline beyond the file path.
 
-First, EnterPlanMode to enter Plan mode.
+First, `EnterPlanMode` to enter Plan mode.
 
 Use `TaskCreate` to create a task for each step below:
 
@@ -13,13 +13,14 @@ Use `TaskCreate` to create a task for each step below:
 2. Propose 2-3 approaches
 3. Expand chosen approach
 4. Self-review the output
+5. Self-review the output
+6. Present plan
 
-
-Before continuing, ensure you are in Plan mode.
+By the time you `ExitPlanMode`, all tasks must be completed.
 
 ## Step 1: Ask clarifying questions
 
-Use AskUserQuestion for anything the User Specification left unresolved, or new questions that emerged from the implementation-focused exploration. Don't re-ask what Phase 1 already answered.
+Ask the user for anything the User Specification left unresolved, or new questions that emerged from the implementation-focused exploration. Don't re-ask what Phase 1 already answered.
 
 
 ## Step 2: Propose 2-3 implementation approaches
@@ -46,7 +47,7 @@ Once the user picks (or confirms yours), present the full design in sections sca
 
 Ask after each section whether it looks right so far.
 
-Enter plan mode using the `EnterPlanMode` tool. Write and update the Plan file, appending the implementation plan **below** the existing User Specification section.
+Write and update the Plan file, appending the implementation plan **below** the existing User Specification section.
 
 Assume the engineer has zero context for the codebase and questionable taste. Document everything they need to know: which files to touch, code, testing, docs to check, how to test it. Give the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits. Assume a skilled developer who knows almost nothing about the toolset or problem domain and doesn't know good test design.
 
@@ -126,6 +127,7 @@ git commit -m "feat: add specific feature"
 #### No Placeholders
 
 Every step must contain the actual content an engineer needs. These are **plan failures** — never write them:
+
 - "TBD", "TODO", "implement later", "fill in details"
 - "Add appropriate error handling" / "add validation" / "handle edge cases"
 - "Write tests for the above" (without actual test code)
@@ -134,6 +136,7 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - References to types, functions, or methods not defined in any task
 
 #### Remember
+
 - Exact file paths always
 - Complete code in every step — if a step changes code, show the code
 - Exact commands with expected output
@@ -152,7 +155,7 @@ Ensure that the Plan file was written to. Look at the design with fresh eyes:
 Fix issues inline. No need to re-review — just fix and move on.
 
 
-## Plan Document Reviewer
+## Step 5: Review specification
 
 After writing the implementation plan, dispatch the `review-implementation-plan` subagent:
 
@@ -161,27 +164,12 @@ Agent tool (review-implementation-plan):
   description: "Review implementation plan"
   prompt: |
     **Plan to review:** [PLAN_FILE_PATH]
-    **Spec for reference:** [PLAN_FILE_PATH]
 ```
 
 Wait for the reviewer's response:
 - **Issues Found:** Fix them inline in the plan file, then call `ExitPlanMode`.
 - **Approved:** Call `ExitPlanMode` immediately.
 
+## Step 6: Present finalized plan
 
-## Return Value
-
-Return a structured summary to the main agent:
-
----
-
-## Phase 2 Summary: [Feature Name]
-
-**Plan file:** [PLAN_FILE_PATH]
-
-**Approach chosen:** [Name of the chosen approach]
-
-**Files to create/modify:**
-- [file path] — [what it does]
-
----
+Call `ExitPlanMode` for the user to review.
