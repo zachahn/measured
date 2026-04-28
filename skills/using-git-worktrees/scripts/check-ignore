@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Checks whether the worktree directory is gitignored.
+# Exits 0 if ignored, 1 if not ignored, 2 on error.
+
+set -euo pipefail
+
+DIR="${1:-.claude/worktrees}"
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "error: not inside a git repository" >&2
+  exit 2
+fi
+
+if git check-ignore -q "$DIR"; then
+  echo "ignored: $DIR"
+  exit 0
+else
+  echo "not ignored: $DIR"
+  exit 1
+fi
