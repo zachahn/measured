@@ -22,7 +22,8 @@ To do this, follow these steps precisely:
    - Agent #4: Invoke the agent: `measured:reviewing-changes`. Pass the absolute path of the worktree directory as the argument.
    - Agent #5: Invoke the agent: `measured:reviewing-changes`. Pass the absolute path of the worktree directory as the argument.
    - Agent #6: Invoke the agent: `measured:reviewing-changes`. Pass the absolute path of the worktree directory as the argument.
-6. Aggregate, de-duplicate, and sort issues by priority. Include the summary of changes.
+6. For each low-confidence, high impact issue, verify the issue by invoking the agent: `measured:reviewing-detail`. Pass in the absolute path of the worktree as the argument. Pass in the details of a single
+7. Aggregate, de-duplicate, and sort issues by priority. Include the summary of changes.
 
 Examples of false positives, for step 4:
 
@@ -30,7 +31,7 @@ Examples of false positives, for step 4:
 - Something that looks like a bug but is not actually a bug
 - Pedantic nitpicks that a senior engineer wouldn't call out
 - Issues that a linter, typechecker, or compiler would catch (eg. missing or incorrect imports, type errors, broken tests, formatting issues, pedantic style issues like newlines). No need to run these build steps yourself -- it is safe to assume that they will be run separately as part of CI.
-- General code quality issues (eg. lack of test coverage, general security issues, poor documentation), unless explicitly required in CLAUDE.md
+- General code quality issues (eg. lack of test coverage, poor documentation), unless explicitly required in CLAUDE.md
 - Issues that are called out in CLAUDE.md, but explicitly silenced in the code (eg. due to a lint ignore comment)
 - Changes in functionality that are likely intentional or are directly related to the broader change
 - Real issues, but on lines that the user did not modify in their pull request

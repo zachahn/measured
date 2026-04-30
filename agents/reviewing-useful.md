@@ -3,7 +3,7 @@ name: reviewing-useful
 model: haiku
 permissionMode: default
 effort: high
-tools: Bash, Read
+tools: Read
 skills:
 - helpers-reviewing
 ---

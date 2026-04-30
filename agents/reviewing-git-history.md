@@ -3,7 +3,7 @@ name: reviewing-git-history
 model: sonnet
 permissionMode: default
 effort: high
-tools: Bash, Read
+tools: Read
 skills:
 - helpers-reviewing
 ---
