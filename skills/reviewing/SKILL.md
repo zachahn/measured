@@ -13,15 +13,16 @@ To do this, follow these steps precisely:
 
 1. Make sure we are within a worktree.
 2. Inside that worktree, fetch the branch under review (`git fetch origin <branch>`) and then `git reset --hard` the worktree to that branch so the working tree matches the change exactly. If the input is a GitHub PR, resolve it to the head branch before fetching.
-3. Use a Haiku agent to view the change (something like `git diff origin/main...HEAD` in the worktree), and ask the agent to return a summary of the change.
-4. Then, invoke these agents to independently code review the change:
+3. Sometimes, the change is simple enough where a thorough review would not useful. To determine this, invoke the agent: `measured:reviewing-useful`. Pass the absolute path of the worktree directory as the argument, and also pass in any instruction from the prompt that would affect this decision (prefer a verbatim reproduction of the prompt; avoid summarizing or rewording). If the result is to stop, stop.
+4. Invoke the agent: `measured:reviewing-summary`. Pass the absolute path of the worktree directory as the argument.
+5. Then, invoke these agents to independently code review the change:
    - Agent #1: Invoke the agent: `measured:reviewing-claude-compliance`. Pass the absolute path of the worktree directory as the argument.
    - Agent #2: Invoke the agent: `measured:reviewing-git-history`. Pass the absolute path of the worktree directory as the argument.
    - Agent #3: Invoke the agent: `measured:reviewing-file-comments`. Pass the absolute path of the worktree directory as the argument.
    - Agent #4: Invoke the agent: `measured:reviewing-changes`. Pass the absolute path of the worktree directory as the argument.
    - Agent #5: Invoke the agent: `measured:reviewing-changes`. Pass the absolute path of the worktree directory as the argument.
    - Agent #6: Invoke the agent: `measured:reviewing-changes`. Pass the absolute path of the worktree directory as the argument.
-5. Aggregate, de-duplicate, and sort issues by priority.
+6. Aggregate, de-duplicate, and sort issues by priority. Include the summary of changes.
 
 Examples of false positives, for step 4:
 
