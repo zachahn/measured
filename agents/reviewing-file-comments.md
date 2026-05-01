@@ -3,7 +3,7 @@ name: reviewing-file-comments
 model: sonnet
 permissionMode: default
 effort: high
-tools: Read
+tools: Read, Grep, Glob
 skills:
 - helpers-reviewing
 ---

@@ -3,7 +3,7 @@ name: reviewing-detail
 model: opus
 permissionMode: default
 effort: xhigh
-tools: Read
+tools: Read, Grep, Glob
 skills:
 - helpers-reviewing
 ---

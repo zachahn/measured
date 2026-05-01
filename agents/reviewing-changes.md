@@ -3,7 +3,7 @@ name: reviewing-claude-compliance
 model: opus
 permissionMode: default
 effort: xhigh
-tools: Read
+tools: Read, Grep, Glob
 skills:
 - helpers-reviewing
 ---
