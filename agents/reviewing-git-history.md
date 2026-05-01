@@ -3,7 +3,7 @@ name: reviewing-git-history
 model: sonnet
 permissionMode: default
 effort: high
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash(git diff origin/main...HEAD)
 skills:
 - helpers-reviewing
 ---

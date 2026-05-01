@@ -3,7 +3,7 @@ name: reviewing-detail
 model: opus
 permissionMode: default
 effort: xhigh
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash(git diff origin/main...HEAD)
 skills:
 - helpers-reviewing
 ---

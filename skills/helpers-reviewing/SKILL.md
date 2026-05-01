@@ -6,8 +6,9 @@ user-invocable: false
 
 ## Changeset
 
-- The path that is provided via the prompt is the worktree directory to work in. Avoid reaching outside of this worktree as the contents of the main project are unpredictable.
+- **IMPORTANT:** `cd` to the provided path. That path is the worktree directory with the changes needing review. Do not reach outside of this worktree as the contents of the main project are unpredictable.
 - Run `git diff origin/main...HEAD` to list the changes introduced by this branch
+- You have access to the tools: Read, Grep, Glob, Bash(git diff origin/main...HEAD)
 
 ## Instructions
 
