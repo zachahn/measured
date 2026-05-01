@@ -12,6 +12,7 @@ Determine if the changes need to be reviewed or not. If the prompt does not prov
 
 - Are the changes understandable from a simple skim?
 - Is there a risk of a catastrophic failure introduced by this change?
+- Generally, it is safer to review than not to review.
 
 ---
 
