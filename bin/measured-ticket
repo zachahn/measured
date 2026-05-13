@@ -11,6 +11,9 @@ Subcommands (flag-style):
   --list-steps          List step filenames in chronological order.
   --read-step NAME      Print the contents of the named step.
   --read-all-steps      Print all steps in chronological order, with headers.
+  --set-ticket [TEXT]   Write TICKET.md in the session dir; refuses overwrite
+                        unless --force is given. Reads stdin when TEXT omitted.
+  --get-ticket          Print the contents of TICKET.md.
 
 The PID start time disambiguates reused PIDs: a stale directory whose start_time
 no longer matches any live process can be safely garbage-collected later.
@@ -27,6 +30,7 @@ from datetime import datetime
 
 CLAUDE_PROCESS_NAME = "claude"
 MAX_ANCESTOR_DEPTH = 64
+TICKET_FILENAME = "TICKET.md"
 
 
 def _start_time_linux(pid: int) -> int:
@@ -246,6 +250,29 @@ def cmd_read_step(name: str) -> int:
     return 0
 
 
+def cmd_set_ticket(text: str | None, force: bool) -> int:
+    directory = session_dir()
+    if text is None:
+        text = sys.stdin.read()
+    target = directory / TICKET_FILENAME
+    mode = "w" if force else "x"
+    try:
+        with open(target, mode) as f:
+            f.write(text)
+    except FileExistsError:
+        raise SystemExit(f"{TICKET_FILENAME} already exists; pass --force to overwrite")
+    print(target)
+    return 0
+
+
+def cmd_get_ticket() -> int:
+    target = session_dir() / TICKET_FILENAME
+    if not target.is_file():
+        raise SystemExit(f"{TICKET_FILENAME} not set")
+    sys.stdout.write(target.read_text())
+    return 0
+
+
 def cmd_read_all_steps() -> int:
     files = _step_files(session_dir())
     for i, path in enumerate(files):
@@ -263,33 +290,66 @@ def main(argv: list[str]) -> int:
         prog="measured-ticket",
         description="Per-Claude-session ticket scratchpad.",
     )
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
+    parser.add_argument(
         "--cache-step",
         nargs="?",
         const="",
         metavar="TEXT",
         help="Write a step (markdown). Reads stdin if TEXT is omitted.",
     )
-    group.add_argument(
+    parser.add_argument(
         "--list-steps",
         action="store_true",
         help="List step filenames in chronological order.",
     )
-    group.add_argument(
+    parser.add_argument(
         "--read-step",
         metavar="NAME",
         help="Print the contents of the named step.",
     )
-    group.add_argument(
+    parser.add_argument(
         "--read-all-steps",
         action="store_true",
         help="Print all steps in chronological order.",
     )
+    parser.add_argument(
+        "--set-ticket",
+        nargs="?",
+        const="",
+        metavar="TEXT",
+        help="Write TICKET.md. Reads stdin if TEXT is omitted.",
+    )
+    parser.add_argument(
+        "--get-ticket",
+        action="store_true",
+        help="Print the contents of TICKET.md.",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="With --set-ticket, overwrite an existing TICKET.md.",
+    )
     args = parser.parse_args(argv)
 
+    actions = [
+        ("cache-step", args.cache_step is not None),
+        ("list-steps", args.list_steps),
+        ("read-step", args.read_step is not None),
+        ("read-all-steps", args.read_all_steps),
+        ("set-ticket", args.set_ticket is not None),
+        ("get-ticket", args.get_ticket),
+    ]
+    chosen = [name for name, on in actions if on]
+    if len(chosen) != 1:
+        parser.error(
+            "exactly one action is required: "
+            "--cache-step, --list-steps, --read-step, --read-all-steps, "
+            "--set-ticket, --get-ticket"
+        )
+    if args.force and chosen[0] != "set-ticket":
+        parser.error("--force is only valid with --set-ticket")
+
     if args.cache_step is not None:
-        # argparse gives "" when the flag is passed with no value; treat that as stdin.
         return cmd_cache_step(args.cache_step or None)
     if args.list_steps:
         return cmd_list_steps()
@@ -297,6 +357,10 @@ def main(argv: list[str]) -> int:
         return cmd_read_step(args.read_step)
     if args.read_all_steps:
         return cmd_read_all_steps()
+    if args.set_ticket is not None:
+        return cmd_set_ticket(args.set_ticket or None, args.force)
+    if args.get_ticket:
+        return cmd_get_ticket()
     parser.print_usage(sys.stderr)
     return 2
 
