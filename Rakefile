@@ -1,11 +1,10 @@
 module TestTasks
   extend Rake::DSL
 
-  def self.check_name(path, expected_name, failures)
+  def self.check_name(path, expected_name)
     content = File.read(path)
     unless content.start_with?("---\n")
-      failures << "#{path}: missing YAML frontmatter"
-      return
+      return ["#{path}: missing YAML frontmatter"]
     end
 
     _, frontmatter, _ = content.split(/^---\s*$/, 3)
@@ -13,9 +12,11 @@ module TestTasks
     actual_name = match && match[1]
 
     if actual_name.nil?
-      failures << "#{path}: missing `name` in frontmatter"
+      ["#{path}: missing `name` in frontmatter"]
     elsif actual_name != expected_name
-      failures << "#{path}: name `#{actual_name}` does not match expected `#{expected_name}`"
+      ["#{path}: name `#{actual_name}` does not match expected `#{expected_name}`"]
+    else
+      []
     end
   end
 
@@ -23,11 +24,11 @@ module TestTasks
     failures = []
 
     Dir.glob("source/skills/**/SKILL.md").each do |path|
-      check_name(path, File.basename(File.dirname(path)), failures)
+      failures += check_name(path, File.basename(File.dirname(path)))
     end
 
     Dir.glob("source/agents/*.md").each do |path|
-      check_name(path, File.basename(path, ".md"), failures)
+      failures += check_name(path, File.basename(path, ".md"))
     end
 
     if failures.empty?
