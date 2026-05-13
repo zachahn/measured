@@ -1,34 +1,23 @@
 module TestTasks
   extend Rake::DSL
 
-  def self.check_name(path, expected_name)
-    content = File.read(path)
-    unless content.start_with?("---\n")
-      return ["#{path}: missing YAML frontmatter"]
-    end
-
-    _, frontmatter, _ = content.split(/^---\s*$/, 3)
-    match = frontmatter.match(/^name:\s*(\S+)\s*$/)
-    actual_name = match && match[1]
-
-    if actual_name.nil?
-      ["#{path}: missing `name` in frontmatter"]
-    elsif actual_name != expected_name
-      ["#{path}: name `#{actual_name}` does not match expected `#{expected_name}`"]
-    else
-      []
-    end
-  end
-
   task :test do
+    require "yaml"
+
     failures = []
 
     Dir.glob("source/skills/**/SKILL.md").each do |path|
       failures += check_name(path, File.basename(File.dirname(path)))
+    rescue => e
+      failures.push("ERROR: #{path} -- #{e.message}")
+      next
     end
 
     Dir.glob("source/agents/*.md").each do |path|
       failures += check_name(path, File.basename(path, ".md"))
+    rescue => e
+      failures.push("ERROR: #{path} -- #{e.message}")
+      next
     end
 
     if failures.empty?
@@ -36,6 +25,26 @@ module TestTasks
     else
       failures.each { |f| puts "FAIL: #{f}" }
       abort "#{failures.size} file(s) failed validation"
+    end
+  end
+
+  def self.check_name(path, expected_name)
+    content = File.read(path)
+    unless content.start_with?("---\n")
+      return ["#{path}: missing YAML frontmatter"]
+    end
+
+    _, frontmatter, _ = content.split(/^---\s*$/, 3)
+    frontmatter = YAML.load(frontmatter)
+
+    actual_name = frontmatter["name"]
+
+    if actual_name.nil?
+      ["#{path}: missing `name` in frontmatter"]
+    elsif actual_name != expected_name
+      ["#{path}: name `#{actual_name}` does not match expected `#{expected_name}`"]
+    else
+      []
     end
   end
 end
