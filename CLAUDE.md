@@ -1,1 +1,2 @@
 - Never edit `skills/` or `agents/`. Edit `source/` and run `rake build`
+- Always opt to use the standard library. Never install any libraries.
