@@ -26,6 +26,8 @@ module TestTasks
       failures.each { |f| puts "FAIL: #{f}" }
       abort "#{failures.size} file(s) failed validation"
     end
+
+    sh "python3 test/test_ticket_lib.py"
   end
 
   def self.check_name(path, expected_name)
