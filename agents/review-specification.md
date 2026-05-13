@@ -1,6 +1,5 @@
 ---
 name: review-specification
-description: Reviews a User Specification written to the plan file for completeness and readiness before implementation planning begins. Checks for TODOs, contradictions, ambiguous requirements, and scope issues. Returns Approved or Issues Found. Examples: <example>Context: brainstorm-specification agent has written the spec to the plan. assistant: "Let me dispatch the review-specification agent to verify the spec is ready for planning."</example>
 tools: Glob, Grep, Read, WebFetch, WebSearch
 model: inherit
 ---
