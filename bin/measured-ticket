@@ -1,21 +1,28 @@
 #!/usr/bin/env python3
-"""Create a per-session state directory keyed by Claude's PID start time + PID.
+"""Manage a per-session ticket scratchpad keyed by Claude's PID + start time.
 
-Walks up the ancestor process chain to find the nearest `claude` process,
-looks up its start time as Unix epoch seconds, and ensures
-~/.local/state/measured-claude-plugin/<epoch>-<pid>/ exists.
+Walks up the ancestor process chain to find the nearest `claude` process and
+uses its PID + Unix-epoch start time to derive a stable session directory at
+~/.local/state/measured-claude-plugin/<epoch>-<pid>-ticket/.
 
-Prints the directory path to stdout.
+Subcommands (flag-style):
+  --cache-step [TEXT]   Write a step as <ms-timestamp>.md; print the filename.
+                        Reads stdin when TEXT is omitted.
+  --list-steps          List step filenames in chronological order.
+  --read-step NAME      Print the contents of the named step.
+  --read-all-steps      Print all steps in chronological order, with headers.
 
 The PID start time disambiguates reused PIDs: a stale directory whose start_time
 no longer matches any live process can be safely garbage-collected later.
 """
 
+import argparse
 import ctypes
 import os
 import pathlib
 import subprocess
 import sys
+import time
 from datetime import datetime
 
 CLAUDE_PROCESS_NAME = "claude"
@@ -173,19 +180,126 @@ def find_claude_pid(start_pid: int) -> int:
     )
 
 
-def main() -> int:
+def session_dir() -> pathlib.Path:
     claude_pid = find_claude_pid(os.getppid())
     start_time = parent_start_time(claude_pid)
-
     state_home = pathlib.Path(
         os.environ.get("XDG_STATE_HOME") or pathlib.Path.home() / ".local" / "state"
     )
-    session_dir = state_home / "measured-claude-plugin" / f"{start_time}-{claude_pid}"
-    session_dir.mkdir(parents=True, exist_ok=True)
+    path = state_home / "measured-claude-plugin" / f"{start_time}-{claude_pid}-ticket"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
-    print(session_dir)
+
+def _step_files(directory: pathlib.Path) -> list[pathlib.Path]:
+    # Sort by the integer stem so `2.md` doesn't sort after `10.md`. Non-numeric
+    # stems sort last, alphabetically, for predictability if anything else lands here.
+    def key(p: pathlib.Path) -> tuple[int, int | str]:
+        try:
+            return (0, int(p.stem))
+        except ValueError:
+            return (1, p.stem)
+
+    return sorted(directory.glob("*.md"), key=key)
+
+
+def _resolve_step(directory: pathlib.Path, name: str) -> pathlib.Path:
+    # Reject anything that isn't a bare filename to avoid path traversal.
+    if "/" in name or "\\" in name or name in ("", ".", ".."):
+        raise SystemExit(f"invalid step name: {name!r}")
+    if not name.endswith(".md"):
+        name = f"{name}.md"
+    target = directory / name
+    if target.parent != directory or not target.is_file():
+        raise SystemExit(f"step not found: {name}")
+    return target
+
+
+def cmd_cache_step(text: str | None) -> int:
+    directory = session_dir()
+    if text is None:
+        text = sys.stdin.read()
+    # Millisecond-precision Unix timestamp; retry on the (rare) collision so
+    # two rapid calls don't clobber each other.
+    while True:
+        ts = time.time_ns() // 1_000_000
+        target = directory / f"{ts}.md"
+        try:
+            with open(target, "x") as f:
+                f.write(text)
+            break
+        except FileExistsError:
+            time.sleep(0.001)
+    print(target.name)
     return 0
 
 
+def cmd_list_steps() -> int:
+    for path in _step_files(session_dir()):
+        print(path.name)
+    return 0
+
+
+def cmd_read_step(name: str) -> int:
+    target = _resolve_step(session_dir(), name)
+    sys.stdout.write(target.read_text())
+    return 0
+
+
+def cmd_read_all_steps() -> int:
+    files = _step_files(session_dir())
+    for i, path in enumerate(files):
+        if i:
+            sys.stdout.write("\n")
+        sys.stdout.write(f"# {path.name}\n\n")
+        sys.stdout.write(path.read_text())
+        if not path.read_text().endswith("\n"):
+            sys.stdout.write("\n")
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="measured-ticket",
+        description="Per-Claude-session ticket scratchpad.",
+    )
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "--cache-step",
+        nargs="?",
+        const="",
+        metavar="TEXT",
+        help="Write a step (markdown). Reads stdin if TEXT is omitted.",
+    )
+    group.add_argument(
+        "--list-steps",
+        action="store_true",
+        help="List step filenames in chronological order.",
+    )
+    group.add_argument(
+        "--read-step",
+        metavar="NAME",
+        help="Print the contents of the named step.",
+    )
+    group.add_argument(
+        "--read-all-steps",
+        action="store_true",
+        help="Print all steps in chronological order.",
+    )
+    args = parser.parse_args(argv)
+
+    if args.cache_step is not None:
+        # argparse gives "" when the flag is passed with no value; treat that as stdin.
+        return cmd_cache_step(args.cache_step or None)
+    if args.list_steps:
+        return cmd_list_steps()
+    if args.read_step is not None:
+        return cmd_read_step(args.read_step)
+    if args.read_all_steps:
+        return cmd_read_all_steps()
+    parser.print_usage(sys.stderr)
+    return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
