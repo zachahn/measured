@@ -1,33 +1,33 @@
 module TestTasks
   extend Rake::DSL
 
+  def self.check_name(path, expected_name, failures)
+    content = File.read(path)
+    unless content.start_with?("---\n")
+      failures << "#{path}: missing YAML frontmatter"
+      return
+    end
+
+    _, frontmatter, _ = content.split(/^---\s*$/, 3)
+    match = frontmatter.match(/^name:\s*(\S+)\s*$/)
+    actual_name = match && match[1]
+
+    if actual_name.nil?
+      failures << "#{path}: missing `name` in frontmatter"
+    elsif actual_name != expected_name
+      failures << "#{path}: name `#{actual_name}` does not match expected `#{expected_name}`"
+    end
+  end
+
   task :test do
     failures = []
 
-    check_name = ->(path, expected_name) do
-      content = File.read(path)
-      unless content.start_with?("---\n")
-        failures << "#{path}: missing YAML frontmatter"
-        return
-      end
-
-      _, frontmatter, _ = content.split(/^---\s*$/, 3)
-      match = frontmatter.match(/^name:\s*(\S+)\s*$/)
-      actual_name = match && match[1]
-
-      if actual_name.nil?
-        failures << "#{path}: missing `name` in frontmatter"
-      elsif actual_name != expected_name
-        failures << "#{path}: name `#{actual_name}` does not match expected `#{expected_name}`"
-      end
-    end
-
     Dir.glob("source/skills/**/SKILL.md").each do |path|
-      check_name.call(path, File.basename(File.dirname(path)))
+      check_name(path, File.basename(File.dirname(path)), failures)
     end
 
     Dir.glob("source/agents/*.md").each do |path|
-      check_name.call(path, File.basename(path, ".md"))
+      check_name(path, File.basename(path, ".md"), failures)
     end
 
     if failures.empty?
