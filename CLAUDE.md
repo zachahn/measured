@@ -1,0 +1,1 @@
+- Never edit `skills/`. Edit `source/` and run `rake build`
