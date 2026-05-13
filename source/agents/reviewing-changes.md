@@ -1,5 +1,5 @@
 ---
-name: reviewing-claude-compliance
+name: reviewing-changes
 model: opus
 permissionMode: default
 effort: xhigh
