@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Create a per-session state directory keyed by Claude's PID start time + PID.
 
-Looks up the parent process's (Claude's) start time as Unix epoch seconds and
-ensures ~/.local/state/measured-claude-plugin/<epoch>-<pid>/ exists.
+Walks up the ancestor process chain to find the nearest `claude` process,
+looks up its start time as Unix epoch seconds, and ensures
+~/.local/state/measured-claude-plugin/<epoch>-<pid>/ exists.
 
 Prints the directory path to stdout.
 
@@ -16,6 +17,9 @@ import pathlib
 import subprocess
 import sys
 from datetime import datetime
+
+CLAUDE_PROCESS_NAME = "claude"
+MAX_ANCESTOR_DEPTH = 64
 
 
 def _start_time_linux(pid: int) -> int:
@@ -95,8 +99,82 @@ def parent_start_time(pid: int) -> int:
     raise RuntimeError(f"unsupported platform: {sys.platform}")
 
 
+def _proc_info_linux(pid: int) -> tuple[int, str]:
+    with open(f"/proc/{pid}/stat") as f:
+        data = f.read()
+    lparen = data.index("(")
+    rparen = data.rindex(")")
+    comm = data[lparen + 1 : rparen]
+    fields = data[rparen + 2 :].split()
+    # Post-comm field index 1 == original stat field 4 (ppid).
+    ppid = int(fields[1])
+    return ppid, comm
+
+
+def _proc_info_macos(pid: int) -> tuple[int, str]:
+    result = subprocess.run(
+        ["ps", "-o", "ppid=,comm=", "-p", str(pid)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    raw = result.stdout.strip()
+    if not raw:
+        raise RuntimeError(f"ps returned no info for pid {pid}")
+    ppid_str, _, comm = raw.partition(" ")
+    return int(ppid_str), os.path.basename(comm.strip())
+
+
+def _proc_info_windows(pid: int) -> tuple[int, str]:
+    # Shell out to PowerShell rather than wrestle with toolhelp32 via ctypes.
+    result = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-Command",
+            f"(Get-CimInstance Win32_Process -Filter 'ProcessId={pid}') | "
+            "ForEach-Object { \"$($_.ParentProcessId) $($_.Name)\" }",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    raw = result.stdout.strip()
+    if not raw:
+        raise RuntimeError(f"Win32_Process returned no info for pid {pid}")
+    ppid_str, _, comm = raw.partition(" ")
+    name = comm.strip()
+    if name.lower().endswith(".exe"):
+        name = name[:-4]
+    return int(ppid_str), name
+
+
+def proc_info(pid: int) -> tuple[int, str]:
+    if sys.platform.startswith("linux"):
+        return _proc_info_linux(pid)
+    if sys.platform == "darwin":
+        return _proc_info_macos(pid)
+    if sys.platform == "win32":
+        return _proc_info_windows(pid)
+    raise RuntimeError(f"unsupported platform: {sys.platform}")
+
+
+def find_claude_pid(start_pid: int) -> int:
+    pid = start_pid
+    for _ in range(MAX_ANCESTOR_DEPTH):
+        if pid <= 1:
+            break
+        ppid, comm = proc_info(pid)
+        if comm == CLAUDE_PROCESS_NAME:
+            return pid
+        pid = ppid
+    raise RuntimeError(
+        f"no '{CLAUDE_PROCESS_NAME}' ancestor found within {MAX_ANCESTOR_DEPTH} hops"
+    )
+
+
 def main() -> int:
-    claude_pid = os.getppid()
+    claude_pid = find_claude_pid(os.getppid())
     start_time = parent_start_time(claude_pid)
 
     state_home = pathlib.Path(
