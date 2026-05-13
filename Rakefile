@@ -2,35 +2,39 @@ module TestTasks
   extend Rake::DSL
 
   task :test do
-    require "yaml"
-
     failures = []
 
-    Dir.glob("source/**/SKILL.md").each do |path|
-      expected_name = File.basename(File.dirname(path))
-
+    check_name = ->(path, expected_name) do
       content = File.read(path)
       unless content.start_with?("---\n")
         failures << "#{path}: missing YAML frontmatter"
-        next
+        return
       end
 
       _, frontmatter, _ = content.split(/^---\s*$/, 3)
-      data = YAML.safe_load(frontmatter)
-      actual_name = data && data["name"]
+      match = frontmatter.match(/^name:\s*(\S+)\s*$/)
+      actual_name = match && match[1]
 
       if actual_name.nil?
         failures << "#{path}: missing `name` in frontmatter"
       elsif actual_name != expected_name
-        failures << "#{path}: name `#{actual_name}` does not match directory `#{expected_name}`"
+        failures << "#{path}: name `#{actual_name}` does not match expected `#{expected_name}`"
       end
     end
 
+    Dir.glob("source/skills/**/SKILL.md").each do |path|
+      check_name.call(path, File.basename(File.dirname(path)))
+    end
+
+    Dir.glob("source/agents/*.md").each do |path|
+      check_name.call(path, File.basename(path, ".md"))
+    end
+
     if failures.empty?
-      puts "All skill names match their directories."
+      puts "All skill and agent names match."
     else
       failures.each { |f| puts "FAIL: #{f}" }
-      abort "#{failures.size} skill(s) failed validation"
+      abort "#{failures.size} file(s) failed validation"
     end
   end
 end
@@ -43,7 +47,7 @@ module BuildTasks
     require "fileutils"
 
     Dir.glob("source/**/*").each do |source|
-      dest = source.sub(%r{\Asource/}, "skills/")
+      dest = source.sub(%r{\Asource/}, "")
       destdir = File.dirname(dest)
       next if dest == source
       next if File.directory?(source)

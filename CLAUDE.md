@@ -1,1 +1,1 @@
-- Never edit `skills/`. Edit `source/` and run `rake build`
+- Never edit `skills/` or `agents/`. Edit `source/` and run `rake build`
