@@ -43,6 +43,11 @@ end
 module BuildTasks
   extend Rake::DSL
 
+  def self.partials(path)
+    @partials ||= {}
+    @partials[path] ||= File.read(File.join("source/_partials", path))
+  end
+
   task :build do
     require "erb"
     require "fileutils"
@@ -52,6 +57,7 @@ module BuildTasks
       destdir = File.dirname(dest)
       next if dest == source
       next if File.directory?(source)
+      next if source.start_with?("source/_")
 
       puts "== #{source}"
 

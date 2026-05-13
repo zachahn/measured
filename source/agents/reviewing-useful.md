@@ -4,8 +4,6 @@ model: haiku
 permissionMode: default
 effort: high
 tools: Read, Grep, Glob, Bash(git diff origin/main...HEAD)
-skills:
-- helpers-reviewing
 ---
 
 Determine if the changes need to be reviewed or not. If the prompt does not provide any guidance, consider:
@@ -20,3 +18,5 @@ Return either:
 
 - REVIEW
 - SKIP
+
+<%= partials("reviewing_helpers.md") %>
