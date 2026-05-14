@@ -123,6 +123,51 @@ class WriteTicketTest(unittest.TestCase):
             self.assertEqual(lib.ticket_path(d).read_text(), "second")
 
 
+class EditTicketTest(unittest.TestCase):
+    def test_replaces_single_occurrence(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            lib.write_ticket(d, "hello world", force=False)
+            target, count = lib.edit_ticket(d, "world", "there", replace_all=False)
+            self.assertEqual(target.read_text(), "hello there")
+            self.assertEqual(count, 1)
+
+    def test_rejects_multiple_matches_without_replace_all(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            lib.write_ticket(d, "a a a", force=False)
+            with self.assertRaises(ValueError):
+                lib.edit_ticket(d, "a", "b", replace_all=False)
+            self.assertEqual(lib.ticket_path(d).read_text(), "a a a")
+
+    def test_replace_all_replaces_every_occurrence(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            lib.write_ticket(d, "a a a", force=False)
+            target, count = lib.edit_ticket(d, "a", "b", replace_all=True)
+            self.assertEqual(target.read_text(), "b b b")
+            self.assertEqual(count, 3)
+
+    def test_missing_old_raises(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            lib.write_ticket(d, "hello", force=False)
+            with self.assertRaises(ValueError):
+                lib.edit_ticket(d, "absent", "x", replace_all=False)
+
+    def test_old_equals_new_raises(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            lib.write_ticket(d, "hello", force=False)
+            with self.assertRaises(ValueError):
+                lib.edit_ticket(d, "hello", "hello", replace_all=False)
+
+    def test_missing_ticket_raises(self):
+        with tempfile.TemporaryDirectory() as td:
+            with self.assertRaises(FileNotFoundError):
+                lib.edit_ticket(pathlib.Path(td), "x", "y", replace_all=False)
+
+
 class StateRootTest(unittest.TestCase):
     def test_honors_xdg_state_home(self):
         original = os.environ.get("XDG_STATE_HOME")

@@ -59,9 +59,14 @@ module BuildTasks
     @partials[path] ||= File.read(File.join("source/_partials", path))
   end
 
+  def self.root
+    Pathname.new(__dir__)
+  end
+
   task :build do
     require "erb"
     require "fileutils"
+    require "pathname"
 
     Dir.glob("source/**/*").each do |source|
       dest = source.sub(%r{\Asource/}, "")

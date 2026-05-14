@@ -7,9 +7,11 @@ Subcommands (flag-style):
   --list-steps          List step filenames in chronological order.
   --read-step NAME      Print the contents of the named step.
   --read-all-steps      Print all steps in chronological order, with headers.
-  --set-ticket [TEXT]   Write TICKET.md in the session dir; refuses overwrite
+  --draft-ticket [TEXT] Write TICKET.md in the session dir; refuses overwrite
                         unless --force is given. Reads stdin when TEXT omitted.
   --get-ticket          Print the contents of TICKET.md.
+  --edit-ticket         Replace --old with --new in TICKET.md. Fails if --old
+                        appears 0 times, or >1 times unless --replace-all.
 
 Shared logic lives in ../lib/ticket_lib.py.
 """
@@ -61,7 +63,7 @@ def cmd_read_all_steps() -> int:
     return 0
 
 
-def cmd_set_ticket(text: str | None, force: bool) -> int:
+def cmd_draft_ticket(text: str | None, force: bool) -> int:
     directory = lib.session_dir()
     if text is None:
         text = sys.stdin.read()
@@ -83,6 +85,15 @@ def cmd_get_ticket() -> int:
     return 0
 
 
+def cmd_edit_ticket(old: str, new: str, replace_all: bool) -> int:
+    try:
+        target, _ = lib.edit_ticket(lib.session_dir(), old, new, replace_all)
+    except (ValueError, FileNotFoundError) as e:
+        raise SystemExit(str(e))
+    print(target)
+    return 0
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="measured-ticket",
@@ -92,9 +103,13 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--list-steps", action="store_true")
     parser.add_argument("--read-step", metavar="NAME")
     parser.add_argument("--read-all-steps", action="store_true")
-    parser.add_argument("--set-ticket", nargs="?", const="", metavar="TEXT")
+    parser.add_argument("--draft-ticket", nargs="?", const="", metavar="TEXT")
     parser.add_argument("--get-ticket", action="store_true")
+    parser.add_argument("--edit-ticket", action="store_true")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--old", metavar="TEXT")
+    parser.add_argument("--new", metavar="TEXT")
+    parser.add_argument("--replace-all", action="store_true")
     args = parser.parse_args(argv)
 
     actions = [
@@ -102,18 +117,26 @@ def main(argv: list[str]) -> int:
         ("list-steps", args.list_steps),
         ("read-step", args.read_step is not None),
         ("read-all-steps", args.read_all_steps),
-        ("set-ticket", args.set_ticket is not None),
+        ("draft-ticket", args.draft_ticket is not None),
         ("get-ticket", args.get_ticket),
+        ("edit-ticket", args.edit_ticket),
     ]
     chosen = [name for name, on in actions if on]
     if len(chosen) != 1:
         parser.error(
             "exactly one action is required: "
             "--cache-step, --list-steps, --read-step, --read-all-steps, "
-            "--set-ticket, --get-ticket"
+            "--draft-ticket, --get-ticket, --edit-ticket"
         )
-    if args.force and chosen[0] != "set-ticket":
-        parser.error("--force is only valid with --set-ticket")
+    if args.force and chosen[0] != "draft-ticket":
+        parser.error("--force is only valid with --draft-ticket")
+    edit_only = ("--old", "--new", "--replace-all")
+    if chosen[0] != "edit-ticket":
+        if args.old is not None or args.new is not None or args.replace_all:
+            parser.error(f"{', '.join(edit_only)} are only valid with --edit-ticket")
+    else:
+        if args.old is None or args.new is None:
+            parser.error("--edit-ticket requires both --old and --new")
 
     if args.cache_step is not None:
         return cmd_cache_step(args.cache_step or None)
@@ -123,10 +146,12 @@ def main(argv: list[str]) -> int:
         return cmd_read_step(args.read_step)
     if args.read_all_steps:
         return cmd_read_all_steps()
-    if args.set_ticket is not None:
-        return cmd_set_ticket(args.set_ticket or None, args.force)
+    if args.draft_ticket is not None:
+        return cmd_draft_ticket(args.draft_ticket or None, args.force)
     if args.get_ticket:
         return cmd_get_ticket()
+    if args.edit_ticket:
+        return cmd_edit_ticket(args.old, args.new, args.replace_all)
     parser.print_usage(sys.stderr)
     return 2
 

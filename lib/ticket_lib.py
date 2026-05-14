@@ -238,3 +238,24 @@ def write_ticket(directory: pathlib.Path, text: str, force: bool) -> pathlib.Pat
     with open(target, mode) as f:
         f.write(text)
     return target
+
+
+def edit_ticket(
+    directory: pathlib.Path, old: str, new: str, replace_all: bool
+) -> tuple[pathlib.Path, int]:
+    if old == new:
+        raise ValueError("old and new must differ")
+    target = ticket_path(directory)
+    if not target.is_file():
+        raise FileNotFoundError(f"{TICKET_FILENAME} not set")
+    text = target.read_text()
+    count = text.count(old)
+    if count == 0:
+        raise ValueError("old string not found")
+    if not replace_all and count > 1:
+        raise ValueError(
+            f"old string appears {count} times; pass --replace-all or add more context"
+        )
+    updated = text.replace(old, new) if replace_all else text.replace(old, new, 1)
+    target.write_text(updated)
+    return target, (count if replace_all else 1)
