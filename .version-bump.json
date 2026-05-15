@@ -9,8 +9,7 @@
       "RELEASE-NOTES.md",
       "node_modules",
       ".git",
-      ".version-bump.json",
-      "scripts/bump-version.sh"
+      ".version-bump.json"
     ]
   }
 }
