@@ -14,17 +14,8 @@ We need to draft an excellent ticket. Claude will be given some information but 
 3. Cache findings as you go: `measured-ticket --cache-step "..."`.
 5. Draft: `measured-ticket --draft-ticket "..."`. Review steps with `--read-all-steps` first.
 6. Revise with `--edit-ticket --old ... --new ...`.
-
-The ticket must include at least a bulleted list of Acceptance Criteria.
-
-Ideally, include:
-
-- Context and background
-- Problem statement or user story
-- Steps to reproduce (if a bug)
-- Scope / out of scope
-- Edge cases
-- Design & technical references (full path to notable files)
+7. Confirm the ticket with the user.
+8. After final confirmation, Update or Create the ticket in the requested ticketing system.
 
 ## Usage: `measured-ticket`
 
