@@ -4,18 +4,28 @@ description: Draft an excellent ticket for feature development or bugfix
 disable-model-invocation: true
 ---
 
-We need to draft an excellent ticket. Claude will be given some information but will need to find or query for other information.
+We need to write an excellent ticket. Claude will be given some information but will need to find or query for other information.
+
+An excellent ticket:
+
+- Describes the outcome in full detail
+- Describes the constraints (performance targets, backward compatibility, accessibility)
+- Suggests the approach only when context may live outside this ticket — a specific API contract, a known footgun, an architectural decision already made
+- Leaves the implementation to the engineer
+
+Too much implementation detail is a smell. It means either the ticket author doesn't trust the engineers, or it was written by someone who's already mentally solved it and is just transcribing their solution. This kills ownership and often produces worse outcomes — the engineer follows a prescribed solution that was written before they understood the problem.
+
+Too little product context is the more common failure. Engineers end up making product decisions mid-sprint because no one wrote down why the feature matters or what the edge cases are. This leads to technically correct but wrong-feeling outcomes.
 
 ## Workflow
 
 1. Explore the codebase. Understand the current behavior and how this ticket might affect it.
 2. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs.
-2. Clarify unknowns with `AskUserQuestion`.
-3. Cache findings as you go: `measured-ticket --cache-step "..."`.
-5. Draft: `measured-ticket --draft-ticket "..."`. Review steps with `--read-all-steps` first.
-6. Revise with `--edit-ticket --old ... --new ...`.
-7. Confirm the ticket with the user.
-8. After final confirmation, Update or Create the ticket in the requested ticketing system.
+3. Clarify unknowns with `AskUserQuestion`.
+4. Confirm the ticket with the user.
+    - Draft: `measured-ticket --draft-ticket "..."`.
+    - Revise with `--edit-ticket --old ... --new ...`.
+5. After final confirmation, Update or Create the ticket in the requested ticketing system.
 
 ## Usage: `measured-ticket`
 
@@ -24,12 +34,11 @@ We need to draft an excellent ticket. Claude will be given some information but 
 ## Output
 
 ### Required sections
-- Acceptance Criteria (bulleted, testable)
+- Problem / Why: One or two sentences on the user or business problem being solved. This is the most skipped and most valuable field. It lets engineers make good judgment calls when implementation surprises arise.
+- Acceptance criteria: The contract between product and engineering. Bullet list of observable, testable conditions. "Given X, when Y, then Z."
+- Scope: Explicitly call out what is and isn't included. This prevents well-intentioned scope creep.
+- Edge cases & error states: What happens when things go wrong? Empty states, failed API calls, permission errors. These get forgotten until QA.
 
 ### Recommended sections
-- Context / background
-- Problem statement or user story
-- Steps to reproduce (bugs)
-- Scope / out of scope
-- Edge cases
-- Design & technical references (full file paths)
+- Technical context (light, not prescriptive): Pointers to relevant code areas, APIs, or data models. Not "implement it this way" but "this touches the auth service, here's the relevant file."
+- Design / mockups: Link if provided.
