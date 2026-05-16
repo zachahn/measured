@@ -29,28 +29,20 @@ Too little product context is the more common failure. Engineers end up making p
 
 ## Usage: `measured-note`
 
-usage: measured-note [-h] [--ticket-draft] [--ticket] [--read] [--edit]
-                     [--append [TEXT]] [--old TEXT] [--new TEXT]
-                     [--replace-all]
+usage: measured-note (--ticket-draft | --ticket)
+                     (--read | --append [TEXT] |
+                      --edit --old TEXT --new TEXT [--replace-all])
 
 Per-Claude-session note scratchpad.
 
-options:
-  -h, --help       show this help message and exit
-
-note type (exactly one required):
+note type:
   --ticket-draft
   --ticket
 
-action (exactly one required):
+action:
   --read
-  --edit
   --append [TEXT]
-
-edit arguments (only valid with --edit):
-  --old TEXT
-  --new TEXT
-  --replace-all
+  --edit          (requires --old TEXT --new TEXT, optional --replace-all)
 
 
 ## Output

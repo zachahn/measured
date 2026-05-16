@@ -54,29 +54,55 @@ def cmd_edit(note_type: str, old: str, new: str, replace_all: bool) -> int:
     return 0
 
 
-def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(
-        prog="measured-note",
-        description="Per-Claude-session note scratchpad.",
-    )
+USAGE_TEXT = """\
+usage: measured-note (--ticket-draft | --ticket)
+                     (--read | --append [TEXT] |
+                      --edit --old TEXT --new TEXT [--replace-all])
+"""
 
-    note_group = parser.add_argument_group("note type (exactly one required)")
-    note_group.add_argument(
+HELP_TEXT = (
+    USAGE_TEXT
+    + """
+Per-Claude-session note scratchpad.
+
+note type:
+  --ticket-draft
+  --ticket
+
+action:
+  --read
+  --append [TEXT]
+  --edit          (requires --old TEXT --new TEXT, optional --replace-all)
+"""
+)
+
+
+class _Parser(argparse.ArgumentParser):
+    def format_help(self) -> str:
+        return HELP_TEXT
+
+    def format_usage(self) -> str:
+        return USAGE_TEXT
+
+
+def main(argv: list[str]) -> int:
+    parser = _Parser(prog="measured-note", add_help=False)
+    parser.add_argument("-h", "--help", action="help")
+
+    parser.add_argument(
         "--ticket-draft", dest="note", action="store_const", const=lib.NOTE_DRAFT
     )
-    note_group.add_argument(
+    parser.add_argument(
         "--ticket", dest="note", action="store_const", const=lib.NOTE_TICKET
     )
 
-    action_group = parser.add_argument_group("action (exactly one required)")
-    action_group.add_argument("--read", action="store_true")
-    action_group.add_argument("--edit", action="store_true")
-    action_group.add_argument("--append", nargs="?", const="", metavar="TEXT")
+    parser.add_argument("--read", action="store_true")
+    parser.add_argument("--edit", action="store_true")
+    parser.add_argument("--append", nargs="?", const="", metavar="TEXT")
 
-    edit_group = parser.add_argument_group("edit arguments (only valid with --edit)")
-    edit_group.add_argument("--old", metavar="TEXT")
-    edit_group.add_argument("--new", metavar="TEXT")
-    edit_group.add_argument("--replace-all", action="store_true")
+    parser.add_argument("--old", metavar="TEXT")
+    parser.add_argument("--new", metavar="TEXT")
+    parser.add_argument("--replace-all", action="store_true")
 
     args = parser.parse_args(argv)
 
