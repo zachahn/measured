@@ -19,7 +19,7 @@ Too little product context is the more common failure. Engineers end up making p
 
 ## Workflow
 
-1. Explore the codebase. Understand the current behavior and how this ticket might affect it.
+1. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
 2. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs.
 3. Clarify unknowns with `AskUserQuestion`.
 4. Confirm the ticket with the user.
