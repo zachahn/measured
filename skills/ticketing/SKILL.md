@@ -35,14 +35,14 @@ usage: measured-note (--ticket-draft | --ticket)
 
 Per-Claude-session note scratchpad.
 
-note type:
+Note type:
   --ticket-draft
   --ticket
 
-action:
-  --read
-  --append [TEXT]
-  --edit          (requires --old TEXT --new TEXT, optional --replace-all)
+Action:
+  --read           Read entire note
+  --append [TEXT]  Append text
+  --edit           Related flags: --old, --new, --replace-all
 
 
 ## Output
