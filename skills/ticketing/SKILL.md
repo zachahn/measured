@@ -54,5 +54,5 @@ Action:
 - Edge cases & error states: What happens when things go wrong? Empty states, failed API calls, permission errors. These get forgotten until QA.
 
 ### Recommended sections
-- Technical context (light, not prescriptive): Pointers to relevant code areas, APIs, or data models. Not "implement it this way" but "this touches the auth service, here's the relevant file."
+- Technical context: Non-prescriptive pointers to relevant code areas, APIs, or data models. Not "implement it this way", but "this touches the auth service, here's the relevant file."
 - Design / mockups: Link if provided.
