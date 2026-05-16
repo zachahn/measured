@@ -23,29 +23,31 @@ Too little product context is the more common failure. Engineers end up making p
 2. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs.
 3. Clarify unknowns with `AskUserQuestion`.
 4. Confirm the ticket with the user.
-    - Draft: `measured-ticket --draft-ticket "..."`.
-    - Revise with `--edit-ticket --old ... --new ...`.
+    - Draft: `measured-note --ticket --append "..."`.
+    - Revise with `measured-note --ticket --edit --old ... --new ...`.
 5. After final confirmation, Update or Create the ticket in the requested ticketing system.
 
-## Usage: `measured-ticket`
+## Usage: `measured-note`
 
-usage: measured-ticket [-h] [--cache-step [TEXT]] [--list-steps]
-                       [--read-step NAME] [--read-all-steps]
-                       [--draft-ticket [TEXT]] [--get-ticket] [--edit-ticket]
-                       [--force] [--old TEXT] [--new TEXT] [--replace-all]
+usage: measured-note [-h] [--ticket-draft] [--ticket] [--read] [--edit]
+                     [--append [TEXT]] [--old TEXT] [--new TEXT]
+                     [--replace-all]
 
-Per-Claude-session ticket scratchpad.
+Per-Claude-session note scratchpad.
 
 options:
-  -h, --help            show this help message and exit
-  --cache-step [TEXT]
-  --list-steps
-  --read-step NAME
-  --read-all-steps
-  --draft-ticket [TEXT]
-  --get-ticket
-  --edit-ticket
-  --force
+  -h, --help       show this help message and exit
+
+note type (exactly one required):
+  --ticket-draft
+  --ticket
+
+action (exactly one required):
+  --read
+  --edit
+  --append [TEXT]
+
+edit arguments (only valid with --edit):
   --old TEXT
   --new TEXT
   --replace-all

@@ -1,8 +1,8 @@
-"""Shared logic for the measured-ticket CLI.
+"""Shared logic for the measured-note CLI.
 
 Walks up the ancestor process chain to find the nearest `claude` process and
 derives a per-session state directory from that PID and its start time. Also
-exposes the step/ticket file primitives used by the CLI.
+exposes the note read/edit/append primitives used by the CLI.
 
 Kept stdlib-only so the script can be invoked from a fresh checkout without
 any install step.
@@ -13,12 +13,17 @@ import os
 import pathlib
 import subprocess
 import sys
-import time
 from datetime import datetime
 
 CLAUDE_PROCESS_NAME = "claude"
 MAX_ANCESTOR_DEPTH = 64
-TICKET_FILENAME = "TICKET.md"
+
+NOTE_DRAFT = "ticket-draft"
+NOTE_TICKET = "ticket"
+NOTE_FILENAMES = {
+    NOTE_DRAFT: "TICKET-DRAFT.md",
+    NOTE_TICKET: "TICKET.md",
+}
 
 
 def _start_time_linux(pid: int) -> int:
@@ -181,73 +186,37 @@ def state_root() -> pathlib.Path:
 def session_dir() -> pathlib.Path:
     claude_pid = find_claude_pid(os.getppid())
     start_time = parent_start_time(claude_pid)
-    path = state_root() / f"{start_time}-{claude_pid}-ticket"
+    path = state_root() / f"{start_time}-{claude_pid}-note"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def step_files(directory: pathlib.Path) -> list[pathlib.Path]:
-    # Sort by the integer stem so `2.md` doesn't sort after `10.md`. Non-numeric
-    # stems sort last, alphabetically, for predictability if anything else lands here.
-    def key(p: pathlib.Path) -> tuple[int, int | str]:
-        try:
-            return (0, int(p.stem))
-        except ValueError:
-            return (1, p.stem)
-
-    return sorted(directory.glob("*.md"), key=key)
+def note_path(directory: pathlib.Path, note_type: str) -> pathlib.Path:
+    return directory / NOTE_FILENAMES[note_type]
 
 
-def resolve_step(directory: pathlib.Path, name: str) -> pathlib.Path:
-    # Reject anything that isn't a bare filename to avoid path traversal.
-    if "/" in name or "\\" in name or name in ("", ".", ".."):
-        raise ValueError(f"invalid step name: {name!r}")
-    if name == TICKET_FILENAME or name == TICKET_FILENAME.removesuffix(".md"):
-        raise ValueError(f"invalid step name: {name!r}")
-    if not name.endswith(".md"):
-        name = f"{name}.md"
-    target = directory / name
-    if target.parent != directory or not target.is_file():
-        raise FileNotFoundError(f"step not found: {name}")
-    return target
+def read_note(directory: pathlib.Path, note_type: str) -> str:
+    target = note_path(directory, note_type)
+    if not target.is_file():
+        raise FileNotFoundError(f"{target.name} not set")
+    return target.read_text()
 
 
-def write_step(directory: pathlib.Path, text: str) -> pathlib.Path:
-    # Millisecond-precision Unix timestamp; retry on the (rare) collision so
-    # two rapid calls don't clobber each other.
-    while True:
-        ts = time.time_ns() // 1_000_000
-        target = directory / f"{ts}.md"
-        if target.name == TICKET_FILENAME:
-            continue
-        try:
-            with open(target, "x") as f:
-                f.write(text)
-            return target
-        except FileExistsError:
-            time.sleep(0.001)
-
-
-def ticket_path(directory: pathlib.Path) -> pathlib.Path:
-    return directory / TICKET_FILENAME
-
-
-def write_ticket(directory: pathlib.Path, text: str, force: bool) -> pathlib.Path:
-    target = ticket_path(directory)
-    mode = "w" if force else "x"
-    with open(target, mode) as f:
+def append_note(directory: pathlib.Path, note_type: str, text: str) -> pathlib.Path:
+    target = note_path(directory, note_type)
+    with open(target, "a") as f:
         f.write(text)
     return target
 
 
-def edit_ticket(
-    directory: pathlib.Path, old: str, new: str, replace_all: bool
+def edit_note(
+    directory: pathlib.Path, note_type: str, old: str, new: str, replace_all: bool
 ) -> tuple[pathlib.Path, int]:
     if old == new:
         raise ValueError("old and new must differ")
-    target = ticket_path(directory)
+    target = note_path(directory, note_type)
     if not target.is_file():
-        raise FileNotFoundError(f"{TICKET_FILENAME} not set")
+        raise FileNotFoundError(f"{target.name} not set")
     text = target.read_text()
     count = text.count(old)
     if count == 0:

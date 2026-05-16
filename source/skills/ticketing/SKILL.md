@@ -23,13 +23,13 @@ Too little product context is the more common failure. Engineers end up making p
 2. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs.
 3. Clarify unknowns with `AskUserQuestion`.
 4. Confirm the ticket with the user.
-    - Draft: `measured-ticket --draft-ticket "..."`.
-    - Revise with `--edit-ticket --old ... --new ...`.
+    - Draft: `measured-note --ticket --append "..."`.
+    - Revise with `measured-note --ticket --edit --old ... --new ...`.
 5. After final confirmation, Update or Create the ticket in the requested ticketing system.
 
-## Usage: `measured-ticket`
+## Usage: `measured-note`
 
-<%= `/usr/bin/env python3 #{root.join("bin/measured-ticket").to_s} --help` %>
+<%= `/usr/bin/env python3 #{root.join("bin/measured-note").to_s} --help` %>
 
 ## Output
 

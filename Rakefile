@@ -54,7 +54,7 @@ module TestTasks
       abort "#{failures.size} file(s) failed validation"
     end
 
-    sh "python3 test/test_ticket_lib.py"
+    sh "python3 test/test_note_lib.py"
 
     puts "[test] done"
   end
