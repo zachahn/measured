@@ -47,12 +47,38 @@ Action:
 
 ## Output
 
-### Required sections
-- Problem / Why: One or two sentences on the user or business problem being solved. This is the most skipped and most valuable field. It lets engineers make good judgment calls when implementation surprises arise.
-- Acceptance criteria: The contract between product and engineering. Bullet list of observable, testable conditions. "Given X, when Y, then Z."
-- Scope: Explicitly call out what is and isn't included. This prevents well-intentioned scope creep.
-- Edge cases & error states: What happens when things go wrong? Empty states, failed API calls, permission errors. These get forgotten until QA.
+See example below for required fields.
 
-### Recommended sections
-- Technical context: Non-prescriptive pointers to relevant code areas, APIs, or data models. Not "implement it this way", but "this touches the auth service, here's the relevant file."
-- Design / mockups: Link if provided.
+---
+
+# Name of feature
+
+## Problem / Why
+
+One or two sentences on the user or business problem being solved. This is the most skipped and most valuable field. It lets engineers make good judgment calls when implementation surprises arise.
+
+## User Stories
+
+- Given some background context
+    - When a scenario happens
+        - Then expect a result
+        - Then expect this other result
+    - When another scenario happens
+        - Then expect this specific result.
+
+## Acceptance Criteria
+
+- Bullet list of observable, testable conditions.
+
+## Scope
+
+- List of items in and out of scope.
+
+## Edge cases and Error states
+
+- What happens when things go wrong? Empty states, failed API calls, permission errors. These get forgotten until QA.
+
+## Technical and design context
+
+- List of code areas, APIs, data models that are a good starting point.
+- Link to design / mockups if provided.
