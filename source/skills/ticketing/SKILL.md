@@ -33,11 +33,11 @@ Too little product context is the more common failure. Engineers end up making p
 
 ## Output
 
-See example below for required fields.
+See example below for required fields. Name the feature in imperative mood, as if giving a command.
 
 ---
 
-# Name of feature
+# Title of feature
 
 ## Problem / Why
 
