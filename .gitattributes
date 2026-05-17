@@ -16,3 +16,7 @@ hooks/session-start text eol=lf
 *.png binary
 *.jpg binary
 *.gif binary
+
+# Built from source/ via `rake build` — do not edit directly
+skills/** linguist-generated=true
+agents/** linguist-generated=true
