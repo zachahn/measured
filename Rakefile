@@ -1,3 +1,5 @@
+require "yaml"
+
 class RakeTaskFailure
   attr_accessor :task_name
   attr_accessor :path
@@ -28,28 +30,35 @@ end
 module TestTasks
   extend Rake::DSL
 
-  task :test do
-    require "yaml"
-
-    Dir.glob("source/skills/**/SKILL.md").each do |path|
-      check_name("test", path, File.basename(File.dirname(path)))
-    rescue => e
-      RakeTaskFailure.create("test", path, e.message)
-      next
+  namespace :test do
+    task :skills do
+      puts "[test] source/skills"
+      Dir.glob("source/skills/**/SKILL.md").each do |path|
+        check_name("test", path, File.basename(File.dirname(path)))
+      rescue => e
+        RakeTaskFailure.create("test", path, e.message)
+        next
+      end
     end
 
-    Dir.glob("source/agents/*.md").each do |path|
-      check_name("test", path, File.basename(path, ".md"))
-    rescue => e
-      RakeTaskFailure.create("test", path, e.message)
-      next
+    task :agents do
+      puts "[test] source/agents"
+      Dir.glob("source/agents/*.md").each do |path|
+        check_name("test", path, File.basename(path, ".md"))
+      rescue => e
+        RakeTaskFailure.create("test", path, e.message)
+        next
+      end
     end
 
-    sh "python3 test/test_note_lib.py"
-    sh "python3 test/test_agenda_lib.py"
-
-    puts "[test] done"
+    task :scripts do
+      sh "python3 test/test_note_lib.py"
+      sh "python3 test/test_agenda_lib.py"
+      puts "[test] done"
+    end
   end
+
+  task test: ["test:skills", "test:agents", "test:scripts"]
 
   def self.check_name(task_name, path, expected_name)
     content = File.read(path)
