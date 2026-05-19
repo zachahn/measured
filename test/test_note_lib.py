@@ -16,11 +16,6 @@ import note_lib as lib  # noqa: E402
 
 
 class NotePathTest(unittest.TestCase):
-    def test_draft_filename(self):
-        with tempfile.TemporaryDirectory() as td:
-            d = pathlib.Path(td)
-            self.assertEqual(lib.note_path(d, lib.NOTE_DRAFT).name, "TICKET-DRAFT.md")
-
     def test_ticket_filename(self):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
@@ -44,24 +39,16 @@ class AppendNoteTest(unittest.TestCase):
     def test_creates_note_when_missing(self):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
-            target = lib.append_note(d, lib.NOTE_DRAFT, "first")
-            self.assertEqual(target.name, "TICKET-DRAFT.md")
+            target = lib.append_note(d, lib.NOTE_TICKET, "first")
+            self.assertEqual(target.name, "TICKET.md")
             self.assertEqual(target.read_text(), "first")
 
     def test_appends_to_existing_note(self):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
-            lib.append_note(d, lib.NOTE_DRAFT, "a")
-            lib.append_note(d, lib.NOTE_DRAFT, "b")
-            self.assertEqual(lib.note_path(d, lib.NOTE_DRAFT).read_text(), "ab")
-
-    def test_draft_and_ticket_are_separate(self):
-        with tempfile.TemporaryDirectory() as td:
-            d = pathlib.Path(td)
-            lib.append_note(d, lib.NOTE_DRAFT, "draft")
-            lib.append_note(d, lib.NOTE_TICKET, "ticket")
-            self.assertEqual(lib.note_path(d, lib.NOTE_DRAFT).read_text(), "draft")
-            self.assertEqual(lib.note_path(d, lib.NOTE_TICKET).read_text(), "ticket")
+            lib.append_note(d, lib.NOTE_TICKET, "a")
+            lib.append_note(d, lib.NOTE_TICKET, "b")
+            self.assertEqual(lib.note_path(d, lib.NOTE_TICKET).read_text(), "ab")
 
 
 class EditNoteTest(unittest.TestCase):
@@ -107,16 +94,6 @@ class EditNoteTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaises(FileNotFoundError):
                 lib.edit_note(pathlib.Path(td), lib.NOTE_TICKET, "x", "y", replace_all=False)
-
-    def test_draft_edit_does_not_touch_ticket(self):
-        with tempfile.TemporaryDirectory() as td:
-            d = pathlib.Path(td)
-            lib.append_note(d, lib.NOTE_DRAFT, "hello world")
-            lib.append_note(d, lib.NOTE_TICKET, "hello world")
-            lib.edit_note(d, lib.NOTE_DRAFT, "world", "there", replace_all=False)
-            self.assertEqual(lib.note_path(d, lib.NOTE_DRAFT).read_text(), "hello there")
-            self.assertEqual(lib.note_path(d, lib.NOTE_TICKET).read_text(), "hello world")
-
 
 class StateRootTest(unittest.TestCase):
     def test_honors_xdg_state_home(self):

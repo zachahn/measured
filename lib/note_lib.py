@@ -18,10 +18,8 @@ from datetime import datetime
 CLAUDE_PROCESS_NAME = "claude"
 MAX_ANCESTOR_DEPTH = 64
 
-NOTE_DRAFT = "ticket-draft"
 NOTE_TICKET = "ticket"
 NOTE_FILENAMES = {
-    NOTE_DRAFT: "TICKET-DRAFT.md",
     NOTE_TICKET: "TICKET.md",
 }
 

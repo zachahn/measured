@@ -4,8 +4,7 @@
 Each invocation selects one note and one action.
 
 Note type (exactly one):
-  --ticket-draft        Operate on the draft scratchpad (TICKET-DRAFT.md).
-  --ticket              Operate on the finalized ticket (TICKET.md).
+  --ticket              Operate on the  ticket (TICKET.md).
 
 Action (exactly one):
   --read                Print the note's contents.
@@ -55,7 +54,7 @@ def cmd_edit(note_type: str, old: str, new: str, replace_all: bool) -> int:
 
 
 USAGE_TEXT = """\
-usage: measured-note (--ticket-draft | --ticket)
+usage: measured-note (--ticket)
                      (--read | --append [TEXT] |
                       --edit --old TEXT --new TEXT [--replace-all])
 """
@@ -66,7 +65,6 @@ HELP_TEXT = (
 Per-Claude-session note scratchpad.
 
 Note type:
-  --ticket-draft
   --ticket
 
 Action:
@@ -90,9 +88,6 @@ def main(argv: list[str]) -> int:
     parser.add_argument("-h", "--help", action="help")
 
     parser.add_argument(
-        "--ticket-draft", dest="note", action="store_const", const=lib.NOTE_DRAFT
-    )
-    parser.add_argument(
         "--ticket", dest="note", action="store_const", const=lib.NOTE_TICKET
     )
 
@@ -107,7 +102,7 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     if args.note is None:
-        parser.error("exactly one note type is required: --ticket-draft, --ticket")
+        parser.error("exactly one note type is required: --ticket")
 
     actions = [
         ("read", args.read),

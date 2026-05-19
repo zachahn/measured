@@ -29,14 +29,13 @@ Too little product context is the more common failure. Engineers end up making p
 
 ## Usage: `measured-note`
 
-usage: measured-note (--ticket-draft | --ticket)
+usage: measured-note (--ticket)
                      (--read | --append [TEXT] |
                       --edit --old TEXT --new TEXT [--replace-all])
 
 Per-Claude-session note scratchpad.
 
 Note type:
-  --ticket-draft
   --ticket
 
 Action:
