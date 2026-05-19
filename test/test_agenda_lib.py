@@ -14,24 +14,12 @@ sys.path.insert(0, str(REPO_ROOT / "lib"))
 import agenda_lib as lib  # noqa: E402
 
 
-class SlugifyTest(unittest.TestCase):
-    def test_lowercases_and_dasherizes(self):
-        self.assertEqual(lib.slugify("Fix Login Bug"), "fix-login-bug")
-
-    def test_strips_punctuation(self):
-        self.assertEqual(lib.slugify("hello, world!"), "hello-world")
-
-    def test_empty_falls_back_to_item(self):
-        self.assertEqual(lib.slugify("!!!"), "item")
-        self.assertEqual(lib.slugify(""), "item")
-
-
 class AddItemTest(unittest.TestCase):
-    def test_creates_file_with_title_header(self):
+    def test_creates_numbered_file_with_header(self):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
             target = lib.add_item(d, "Fix login", "body text")
-            self.assertEqual(target.name, "0010-fix-login.md")
+            self.assertEqual(target.name, "0010.md")
             self.assertEqual(target.read_text(), "# Fix login\n\nbody text\n")
 
     def test_handles_empty_body(self):
@@ -46,7 +34,7 @@ class AddItemTest(unittest.TestCase):
             lib.add_item(d, "First", "")
             lib.add_item(d, "Second", "")
             third = lib.add_item(d, "Third", "")
-            self.assertEqual(third.name, "0030-third.md")
+            self.assertEqual(third.name, "0030.md")
 
     def test_rejects_duplicate_title(self):
         with tempfile.TemporaryDirectory() as td:
@@ -54,6 +42,30 @@ class AddItemTest(unittest.TestCase):
             lib.add_item(d, "Dup", "")
             with self.assertRaises(ValueError):
                 lib.add_item(d, "Dup", "")
+
+    def test_rejects_newline_in_title(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            with self.assertRaises(ValueError):
+                lib.add_item(d, "two\nlines", "")
+            with self.assertRaises(ValueError):
+                lib.add_item(d, "carriage\rreturn", "")
+
+    def test_rejects_empty_or_whitespace_title(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            with self.assertRaises(ValueError):
+                lib.add_item(d, "", "")
+            with self.assertRaises(ValueError):
+                lib.add_item(d, "   ", "")
+
+    def test_preserves_punctuation_in_title(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            for title in ("has: colon", "has/slash", "emoji 🚀 test"):
+                path = lib.add_item(d, title, "")
+                _, found = lib.find_by_title(d, title)
+                self.assertEqual(found, path)
 
 
 class ListItemsTest(unittest.TestCase):
@@ -70,10 +82,18 @@ class ListItemsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
             (d / "README.md").write_text("not an item")
-            (d / "0010-broken").write_text("missing .md")
+            (d / "0010-with-slug.md").write_text("# Old format\n")
+            (d / "0010.txt").write_text("wrong extension")
             lib.add_item(d, "Real", "")
             titles = [t for _, _, t in lib.list_items(d)]
             self.assertEqual(titles, ["Real"])
+
+    def test_raises_on_headerless_item_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            (d / "0010.md").write_text("no header here\n")
+            with self.assertRaises(ValueError):
+                lib.list_items(d)
 
 
 class AppendItemTest(unittest.TestCase):
@@ -82,7 +102,7 @@ class AppendItemTest(unittest.TestCase):
             d = pathlib.Path(td)
             lib.add_item(d, "Item", "first\n")
             lib.append_item(d, "Item", "more\n")
-            text = (d / "0010-item.md").read_text()
+            text = (d / "0010.md").read_text()
             self.assertEqual(text, "# Item\n\nfirst\nmore\n")
 
     def test_missing_title_raises(self):
@@ -135,6 +155,34 @@ class UpdateItemTest(unittest.TestCase):
             d = pathlib.Path(td)
             with self.assertRaises(FileNotFoundError):
                 lib.update_item(d, "Nope", "x", "y", replace_all=False)
+
+    def test_can_rename_via_header_edit(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            lib.add_item(d, "Old name", "body")
+            lib.update_item(d, "Old name", "# Old name", "# New name", replace_all=False)
+            _, path = lib.find_by_title(d, "New name")
+            self.assertTrue(path.read_text().startswith("# New name\n"))
+            with self.assertRaises(FileNotFoundError):
+                lib.find_by_title(d, "Old name")
+
+    def test_rejects_rename_to_existing_title(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            lib.add_item(d, "Alpha", "")
+            lib.add_item(d, "Beta", "")
+            with self.assertRaises(ValueError):
+                lib.update_item(d, "Alpha", "# Alpha", "# Beta", replace_all=False)
+            # Original unchanged.
+            _, path = lib.find_by_title(d, "Alpha")
+            self.assertTrue(path.read_text().startswith("# Alpha\n"))
+
+    def test_rejects_removing_header(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = pathlib.Path(td)
+            lib.add_item(d, "Item", "body")
+            with self.assertRaises(ValueError):
+                lib.update_item(d, "Item", "# Item\n", "", replace_all=False)
 
 
 class RemoveItemTest(unittest.TestCase):

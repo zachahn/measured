@@ -2,15 +2,17 @@
 
 Agenda items live as markdown files in a per-session subdirectory:
 
-    <session>/AGENDA/0010-fix-login.md
-    <session>/AGENDA/0020-write-docs.md
+    <session>/AGENDA/0010.md
+    <session>/AGENDA/0020.md
 
-The numeric prefix orders the items; the slug after it is derived from the
-title. Each file starts with a `# Title` line so the original (un-slugified)
-title survives, and the body below is free-form markdown.
+The numeric filename controls sort order and nothing else — it is not
+intended to be human-meaningful. The *title* lives on the file's first line
+as a `# Title` markdown header, and that header is the canonical identity.
+LLM callers can rename an item by rewriting the first line via --update.
 
-Identification is always by *title*, never by filename — callers shouldn't
-have to know an item's sort prefix.
+Invariants enforced on every write:
+  - The first line is `# <title>` (non-empty after the `# `).
+  - Every item's title is unique within the directory.
 
 Kept stdlib-only, like note_lib, so the script runs from a fresh checkout.
 """
@@ -25,8 +27,8 @@ SORT_STEP = 10
 SORT_WIDTH = 4
 SORT_MAX = 10**SORT_WIDTH - 1
 
-_FILENAME_RE = re.compile(r"^(\d+)-(.*)\.md$")
-_SLUG_STRIP_RE = re.compile(r"[^a-z0-9]+")
+_FILENAME_RE = re.compile(r"^(\d+)\.md$")
+_HEADER_RE = re.compile(r"^#[ \t]+(\S.*?)[ \t]*$")
 
 
 def agenda_dir(session: pathlib.Path) -> pathlib.Path:
@@ -35,38 +37,34 @@ def agenda_dir(session: pathlib.Path) -> pathlib.Path:
     return path
 
 
-def slugify(title: str) -> str:
-    slug = _SLUG_STRIP_RE.sub("-", title.lower()).strip("-")
-    return slug or "item"
-
-
-def _parse_filename(name: str) -> tuple[int, str] | None:
+def _parse_filename(name: str) -> int | None:
     m = _FILENAME_RE.match(name)
-    if not m:
-        return None
-    return int(m.group(1)), m.group(2)
+    return int(m.group(1)) if m else None
 
 
 def _read_title(path: pathlib.Path) -> str:
-    # First line is `# Title`; fall back to the slug if missing.
     with open(path) as f:
         first = f.readline().rstrip("\n")
-    if first.startswith("# "):
-        return first[2:]
-    parsed = _parse_filename(path.name)
-    return parsed[1] if parsed else path.stem
+    m = _HEADER_RE.match(first)
+    if not m:
+        raise ValueError(f"{path.name} is missing a `# Title` header on line 1")
+    return m.group(1)
 
 
 def list_items(directory: pathlib.Path) -> list[tuple[int, pathlib.Path, str]]:
-    """Return (sort, path, title) triples in sort order."""
+    """Return (sort, path, title) triples in sort order.
+
+    Files that don't match the NNNN.md naming are skipped. Files that *do*
+    match but lack a valid header surface as a ValueError — that's a broken
+    item, not a stray file.
+    """
     out = []
     for entry in directory.iterdir():
         if not entry.is_file():
             continue
-        parsed = _parse_filename(entry.name)
-        if parsed is None:
+        sort_value = _parse_filename(entry.name)
+        if sort_value is None:
             continue
-        sort_value, _ = parsed
         out.append((sort_value, entry, _read_title(entry)))
     out.sort(key=lambda row: row[0])
     return out
@@ -91,36 +89,51 @@ def _next_sort(items: list[tuple[int, pathlib.Path, str]]) -> int:
     return candidate
 
 
-def _filename(sort_value: int, title: str) -> str:
-    return f"{sort_value:0{SORT_WIDTH}d}-{slugify(title)}.md"
+def _filename(sort_value: int) -> str:
+    return f"{sort_value:0{SORT_WIDTH}d}.md"
 
 
-def _write_item(path: pathlib.Path, title: str, body: str) -> None:
-    # Body may or may not end in a newline; normalise so the file always does.
-    if body and not body.endswith("\n"):
-        body += "\n"
-    path.write_text(f"# {title}\n\n{body}" if body else f"# {title}\n")
+def _validate_text(text: str, expect_title: str | None = None) -> str:
+    """Confirm `text` starts with a `# Title` line. Return the parsed title.
+
+    If `expect_title` is given, also confirm the parsed title matches it.
+    """
+    first_line = text.split("\n", 1)[0]
+    m = _HEADER_RE.match(first_line)
+    if not m:
+        raise ValueError("first line must be a `# Title` header")
+    title = m.group(1)
+    if expect_title is not None and title != expect_title:
+        raise ValueError(
+            f"first line header {title!r} does not match expected {expect_title!r}"
+        )
+    return title
 
 
-def _item_body(path: pathlib.Path) -> str:
-    text = path.read_text()
-    lines = text.splitlines(keepends=True)
-    if not lines:
-        return ""
-    # Drop the `# Title` line and a single trailing blank line if present.
-    rest = lines[1:]
-    if rest and rest[0].strip() == "":
-        rest = rest[1:]
-    return "".join(rest)
+def _check_unique(
+    items: list[tuple[int, pathlib.Path, str]],
+    title: str,
+    exclude: pathlib.Path | None = None,
+) -> None:
+    for _, p, t in items:
+        if p == exclude:
+            continue
+        if t == title:
+            raise ValueError(f"agenda item titled {title!r} already exists")
 
 
 def add_item(directory: pathlib.Path, title: str, body: str) -> pathlib.Path:
+    if "\n" in title or "\r" in title:
+        raise ValueError("title must not contain newlines")
+    if not title.strip():
+        raise ValueError("title must not be empty or whitespace")
     items = list_items(directory)
-    if any(t == title for _, _, t in items):
-        raise ValueError(f"agenda item titled {title!r} already exists")
+    _check_unique(items, title)
     sort_value = _next_sort(items)
-    target = directory / _filename(sort_value, title)
-    _write_item(target, title, body)
+    target = directory / _filename(sort_value)
+    if body and not body.endswith("\n"):
+        body += "\n"
+    target.write_text(f"# {title}\n\n{body}" if body else f"# {title}\n")
     return target
 
 
@@ -128,6 +141,12 @@ def append_item(directory: pathlib.Path, title: str, text: str) -> pathlib.Path:
     _, path = find_by_title(directory, title)
     with open(path, "a") as f:
         f.write(text)
+    # Belt-and-suspenders: the append must not have corrupted the header or
+    # duplicated a title. (Appending to EOF can't normally do either, but
+    # validate anyway so the invariants are checked at every write site.)
+    new_text = path.read_text()
+    new_title = _validate_text(new_text, expect_title=title)
+    _check_unique(list_items(directory), new_title, exclude=path)
     return path
 
 
@@ -146,6 +165,10 @@ def update_item(
             f"old string appears {count} times; pass --replace-all or add more context"
         )
     updated = text.replace(old, new) if replace_all else text.replace(old, new, 1)
+    # Validate before committing: the post-edit file must still have a header,
+    # and if the title changed it must not collide with another item.
+    new_title = _validate_text(updated)
+    _check_unique(list_items(directory), new_title, exclude=path)
     path.write_text(updated)
     return path, (count if replace_all else 1)
 
@@ -154,25 +177,6 @@ def remove_item(directory: pathlib.Path, title: str) -> pathlib.Path:
     _, path = find_by_title(directory, title)
     path.unlink()
     return path
-
-
-def _renumber(directory: pathlib.Path) -> list[tuple[int, pathlib.Path, str]]:
-    items = list_items(directory)
-    # Two-pass rename: first to temporary names, then to final names, so we
-    # never collide with an existing file mid-rename.
-    temp_paths: list[pathlib.Path] = []
-    for idx, (_, path, _) in enumerate(items):
-        tmp = path.with_name(f".tmp-{idx}-{path.name}")
-        path.rename(tmp)
-        temp_paths.append(tmp)
-    final: list[tuple[int, pathlib.Path, str]] = []
-    for idx, tmp in enumerate(temp_paths):
-        title = items[idx][2]
-        sort_value = (idx + 1) * SORT_STEP
-        new_path = directory / _filename(sort_value, title)
-        tmp.rename(new_path)
-        final.append((sort_value, new_path, title))
-    return final
 
 
 def move_item(
@@ -198,15 +202,14 @@ def move_item(
     insert_at = anchor_idx if before is not None else anchor_idx + 1
     order.insert(insert_at, title)
 
-    # Look up each title's current path and compute target sort positions.
     path_by_title = {t: p for _, p, t in items}
     targets = [(i + 1) * SORT_STEP for i in range(len(order))]
 
-    # Stage all renames to temp names, then to final names, to dodge collisions.
+    # Two-pass rename through temp names so we never collide mid-move.
     staged: list[tuple[pathlib.Path, pathlib.Path]] = []
     for idx, t in enumerate(order):
         current = path_by_title[t]
-        final = directory / _filename(targets[idx], t)
+        final = directory / _filename(targets[idx])
         if current == final:
             continue
         tmp = directory / f".tmp-{idx}-{current.name}"
@@ -215,7 +218,7 @@ def move_item(
     for tmp, final in staged:
         tmp.rename(final)
 
-    return directory / _filename(targets[order.index(title)], title)
+    return directory / _filename(targets[order.index(title)])
 
 
 def read_item(directory: pathlib.Path, title: str) -> str:
