@@ -31,27 +31,18 @@ module TestTasks
   task :test do
     require "yaml"
 
-    failures = []
-
     Dir.glob("source/skills/**/SKILL.md").each do |path|
-      failures += check_name(path, File.basename(File.dirname(path)))
+      check_name("test", path, File.basename(File.dirname(path)))
     rescue => e
-      failures.push("ERROR: #{path} -- #{e.message}")
+      RakeTaskFailure.create("test", path, e.message)
       next
     end
 
     Dir.glob("source/agents/*.md").each do |path|
-      failures += check_name(path, File.basename(path, ".md"))
+      check_name("test", path, File.basename(path, ".md"))
     rescue => e
-      failures.push("ERROR: #{path} -- #{e.message}")
+      RakeTaskFailure.create("test", path, e.message)
       next
-    end
-
-    if failures.empty?
-      puts "All skill and agent names match."
-    else
-      failures.each { |f| puts "FAIL: #{f}" }
-      abort "#{failures.size} file(s) failed validation"
     end
 
     sh "python3 test/test_note_lib.py"
@@ -59,10 +50,11 @@ module TestTasks
     puts "[test] done"
   end
 
-  def self.check_name(path, expected_name)
+  def self.check_name(task_name, path, expected_name)
     content = File.read(path)
     unless content.start_with?("---\n")
-      return ["#{path}: missing YAML frontmatter"]
+      RakeTaskFailure.create(task_name, path, "Missing YAML frontmatter")
+      return
     end
 
     _, frontmatter, _ = content.split(/^---\s*$/, 3)
@@ -71,11 +63,26 @@ module TestTasks
     actual_name = frontmatter["name"]
 
     if actual_name.nil?
-      ["#{path}: missing `name` in frontmatter"]
+      RakeTaskFailure.create(task_name, path, "Missing `name` in frontmatter")
     elsif actual_name != expected_name
-      ["#{path}: name `#{actual_name}` does not match expected `#{expected_name}`"]
-    else
-      []
+      RakeTaskFailure.create(task_name, path, "Name `#{actual_name}` does not match expected `#{expected_name}`")
+    end
+  end
+
+  def self.check_description(task_name, path)
+    content = File.read(path)
+    unless content.start_with?("---\n")
+      RakeTaskFailure.create(task_name, path, "Missing YAML frontmatter")
+      return
+    end
+
+    _, frontmatter, _ = content.split(/^---\s*$/, 3)
+    frontmatter = YAML.load(frontmatter)
+
+    actual_description = frontmatter["description"]
+
+    if actual_description.nil?
+      RakeTaskFailure.create(task_name, path, "Missing `description`")
     end
   end
 end
