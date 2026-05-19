@@ -22,10 +22,15 @@ Too little product context is the more common failure. Engineers end up making p
 1. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
 2. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs.
 3. Clarify unknowns with `AskUserQuestion`.
-4. Confirm the ticket with the user.
+4. Draft and revise the ticket:
     - Draft: `measured-note --ticket --append "..."`.
     - Revise with `measured-note --ticket --edit --old ... --new ...`.
-5. After final confirmation, Update or Create the ticket in the requested ticketing system.
+5. Once ticket is in a good place, use `Agent(measured:ticketing-review)` to review it.
+    - Resolve all problems with the ticket.
+    - Escalate issues to the user.
+    - Rerun the review if making any significant changes.
+6. Confirm the ticket with the user.
+7. After final confirmation, update or create the ticket in the requested ticketing system.
 
 ## Usage: `measured-note`
 
@@ -37,11 +42,11 @@ See example below for required fields. Name the feature in imperative mood, as i
 
 ---
 
-# Title of feature
+# Title of Feature
 
 ## Problem / Why
 
-One or two sentences on the user or business problem being solved. This is the most skipped and most valuable field. It lets engineers make good judgment calls when implementation surprises arise.
+One or two sentences on the user problem being solved. This is the most skipped and most valuable field. It lets engineers make good judgment calls when implementation surprises arise.
 
 ## User Stories
 
