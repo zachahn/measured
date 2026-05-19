@@ -52,6 +52,7 @@ module TestTasks
     end
 
     task :scripts do
+      sh "python3 test/test_session_lib.py"
       sh "python3 test/test_note_lib.py"
       sh "python3 test/test_agenda_lib.py"
       puts "[test] done"

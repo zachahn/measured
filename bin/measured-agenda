@@ -18,7 +18,7 @@ Action (exactly one):
   --list                                   Print item titles in sort order.
   --all                                    Print every item's file, concatenated.
 
-Shared logic lives in ../lib/agenda_lib.py.
+Shared logic lives in ../lib/agenda_lib.py; session-dir resolution in ../lib/session_lib.py.
 """
 
 import argparse
@@ -27,10 +27,11 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
 import agenda_lib as lib  # noqa: E402
+import session_lib  # noqa: E402
 
 
 def _directory() -> pathlib.Path:
-    return lib.agenda_dir(lib.session_dir())
+    return lib.agenda_dir(session_lib.session_dir())
 
 
 def cmd_add(title: str, text: str | None) -> int:

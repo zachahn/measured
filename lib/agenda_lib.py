@@ -14,13 +14,11 @@ Invariants enforced on every write:
   - The first line is `# <title>` (non-empty after the `# `).
   - Every item's title is unique within the directory.
 
-Kept stdlib-only, like note_lib, so the script runs from a fresh checkout.
+Kept stdlib-only so the script runs from a fresh checkout.
 """
 
 import pathlib
 import re
-
-import note_lib
 
 AGENDA_DIRNAME = "AGENDA"
 SORT_STEP = 10
@@ -231,7 +229,3 @@ def read_all(directory: pathlib.Path) -> str:
     for _, path, _ in list_items(directory):
         parts.append(path.read_text().rstrip("\n"))
     return "\n\n".join(parts) + ("\n" if parts else "")
-
-
-def session_dir() -> pathlib.Path:
-    return note_lib.session_dir()

@@ -17,7 +17,7 @@ Edit arguments (only valid with --edit):
   --new TEXT            Replacement text.
   --replace-all         Replace every occurrence instead of requiring exactly one.
 
-Shared logic lives in ../lib/note_lib.py.
+Shared logic lives in ../lib/note_lib.py; session-dir resolution in ../lib/session_lib.py.
 """
 
 import argparse
@@ -26,11 +26,12 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
 import note_lib as lib  # noqa: E402
+import session_lib  # noqa: E402
 
 
 def cmd_read(note_type: str) -> int:
     try:
-        sys.stdout.write(lib.read_note(lib.session_dir(), note_type))
+        sys.stdout.write(lib.read_note(session_lib.session_dir(), note_type))
     except FileNotFoundError as e:
         raise SystemExit(str(e))
     return 0
@@ -39,14 +40,14 @@ def cmd_read(note_type: str) -> int:
 def cmd_append(note_type: str, text: str | None) -> int:
     if text is None:
         text = sys.stdin.read()
-    target = lib.append_note(lib.session_dir(), note_type, text)
+    target = lib.append_note(session_lib.session_dir(), note_type, text)
     print(target)
     return 0
 
 
 def cmd_edit(note_type: str, old: str, new: str, replace_all: bool) -> int:
     try:
-        target, _ = lib.edit_note(lib.session_dir(), note_type, old, new, replace_all)
+        target, _ = lib.edit_note(session_lib.session_dir(), note_type, old, new, replace_all)
     except (ValueError, FileNotFoundError) as e:
         raise SystemExit(str(e))
     print(target)
