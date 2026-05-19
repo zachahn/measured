@@ -1,5 +1,6 @@
 ---
 name: reviewing-file-comments
+description: Only use when directed to.
 model: sonnet
 permissionMode: default
 effort: high

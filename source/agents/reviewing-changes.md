@@ -1,5 +1,6 @@
 ---
 name: reviewing-changes
+description: Only use when directed to.
 model: opus
 permissionMode: default
 effort: xhigh
