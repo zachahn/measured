@@ -46,6 +46,7 @@ module TestTasks
     end
 
     sh "python3 test/test_note_lib.py"
+    sh "python3 test/test_agenda_lib.py"
 
     puts "[test] done"
   end

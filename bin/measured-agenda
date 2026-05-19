@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+"""Manage a per-session agenda of ordered markdown items.
+
+Each item lives in its own markdown file under <session>/AGENDA/, with a
+numeric prefix that controls sort order. Items are identified by title.
+
+Action (exactly one):
+  --add TITLE [TEXT]                       Create a new item. Body from TEXT,
+                                           or stdin if TEXT is omitted.
+  --append TITLE [TEXT]                    Append to an item's body. Body from
+                                           TEXT, or stdin if TEXT is omitted.
+  --update TITLE --old TEXT --new TEXT     Replace TEXT in an item's file.
+                                           Pass --replace-all to allow >1 match.
+  --move TITLE (--before TITLE | --after TITLE)
+                                           Reorder an item relative to another.
+  --remove TITLE                           Delete an item.
+  --read TITLE                             Print one item's file.
+  --list                                   Print item titles in sort order.
+  --all                                    Print every item's file, concatenated.
+
+Shared logic lives in ../lib/agenda_lib.py.
+"""
+
+import argparse
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+import agenda_lib as lib  # noqa: E402
+
+
+def _directory() -> pathlib.Path:
+    return lib.agenda_dir(lib.session_dir())
+
+
+def cmd_add(title: str, text: str | None) -> int:
+    if text is None:
+        text = sys.stdin.read()
+    try:
+        target = lib.add_item(_directory(), title, text)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    print(target)
+    return 0
+
+
+def cmd_append(title: str, text: str | None) -> int:
+    if text is None:
+        text = sys.stdin.read()
+    try:
+        target = lib.append_item(_directory(), title, text)
+    except FileNotFoundError as e:
+        raise SystemExit(str(e))
+    print(target)
+    return 0
+
+
+def cmd_update(title: str, old: str, new: str, replace_all: bool) -> int:
+    try:
+        target, _ = lib.update_item(_directory(), title, old, new, replace_all)
+    except (ValueError, FileNotFoundError) as e:
+        raise SystemExit(str(e))
+    print(target)
+    return 0
+
+
+def cmd_move(title: str, before: str | None, after: str | None) -> int:
+    try:
+        target = lib.move_item(_directory(), title, before, after)
+    except (ValueError, FileNotFoundError) as e:
+        raise SystemExit(str(e))
+    print(target)
+    return 0
+
+
+def cmd_remove(title: str) -> int:
+    try:
+        target = lib.remove_item(_directory(), title)
+    except FileNotFoundError as e:
+        raise SystemExit(str(e))
+    print(target)
+    return 0
+
+
+def cmd_read(title: str) -> int:
+    try:
+        sys.stdout.write(lib.read_item(_directory(), title))
+    except (FileNotFoundError, ValueError) as e:
+        raise SystemExit(str(e))
+    return 0
+
+
+def cmd_list() -> int:
+    for _, _, title in lib.list_items(_directory()):
+        print(title)
+    return 0
+
+
+def cmd_all() -> int:
+    sys.stdout.write(lib.read_all(_directory()))
+    return 0
+
+
+USAGE_TEXT = """\
+usage: measured-agenda (--add TITLE [TEXT] | --append TITLE [TEXT] |
+                        --update TITLE --old TEXT --new TEXT [--replace-all] |
+                        --move TITLE (--before TITLE | --after TITLE) |
+                        --remove TITLE | --read TITLE | --list | --all)
+"""
+
+HELP_TEXT = (
+    USAGE_TEXT
+    + """
+Per-Claude-session agenda of ordered markdown items.
+
+Actions:
+  --add TITLE [TEXT]      Create new item (body from TEXT or stdin)
+  --append TITLE [TEXT]   Append to an item's body
+  --update TITLE          Edit body; requires --old and --new (optionally --replace-all)
+  --move TITLE            Reorder; requires --before or --after
+  --remove TITLE          Delete an item
+  --read TITLE            Print one item's file
+  --list                  Print titles in sort order
+  --all                   Print every item's file
+"""
+)
+
+
+class _Parser(argparse.ArgumentParser):
+    def format_help(self) -> str:
+        return HELP_TEXT
+
+    def format_usage(self) -> str:
+        return USAGE_TEXT
+
+
+def main(argv: list[str]) -> int:
+    parser = _Parser(prog="measured-agenda", add_help=False)
+    parser.add_argument("-h", "--help", action="help")
+
+    parser.add_argument("--add", nargs="+", metavar=("TITLE", "TEXT"))
+    parser.add_argument("--append", nargs="+", metavar=("TITLE", "TEXT"))
+    parser.add_argument("--update", metavar="TITLE")
+    parser.add_argument("--move", dest="move", metavar="TITLE")
+    parser.add_argument("--remove", metavar="TITLE")
+    parser.add_argument("--read", metavar="TITLE")
+    parser.add_argument("--list", action="store_true")
+    parser.add_argument("--all", dest="all_items", action="store_true")
+
+    parser.add_argument("--old", metavar="TEXT")
+    parser.add_argument("--new", metavar="TEXT")
+    parser.add_argument("--replace-all", action="store_true")
+    parser.add_argument("--before", metavar="TITLE")
+    parser.add_argument("--after", metavar="TITLE")
+
+    args = parser.parse_args(argv)
+
+    for flag, value in (("--add", args.add), ("--append", args.append)):
+        if value is not None and len(value) > 2:
+            parser.error(f"{flag} takes TITLE [TEXT]; got {len(value)} arguments")
+
+    actions = [
+        ("add", args.add is not None),
+        ("append", args.append is not None),
+        ("update", args.update is not None),
+        ("move", args.move is not None),
+        ("remove", args.remove is not None),
+        ("read", args.read is not None),
+        ("list", args.list),
+        ("all", args.all_items),
+    ]
+    chosen = [name for name, on in actions if on]
+    if len(chosen) != 1:
+        parser.error(
+            "exactly one action is required: "
+            "--add, --append, --update, --move, --remove, --read, --list, --all"
+        )
+
+    action = chosen[0]
+
+    if action == "update":
+        if args.old is None or args.new is None:
+            parser.error("--update requires both --old and --new")
+    elif args.old is not None or args.new is not None or args.replace_all:
+        parser.error("--old, --new, --replace-all are only valid with --update")
+
+    if action == "move":
+        if (args.before is None) == (args.after is None):
+            parser.error("--move requires exactly one of --before or --after")
+    elif args.before is not None or args.after is not None:
+        parser.error("--before, --after are only valid with --move")
+
+    if action == "add":
+        title = args.add[0]
+        text = args.add[1] if len(args.add) == 2 else None
+        return cmd_add(title, text)
+    if action == "append":
+        title = args.append[0]
+        text = args.append[1] if len(args.append) == 2 else None
+        return cmd_append(title, text)
+    if action == "update":
+        return cmd_update(args.update, args.old, args.new, args.replace_all)
+    if action == "move":
+        return cmd_move(args.move, args.before, args.after)
+    if action == "remove":
+        return cmd_remove(args.remove)
+    if action == "read":
+        return cmd_read(args.read)
+    if action == "list":
+        return cmd_list()
+    if action == "all":
+        return cmd_all()
+    parser.print_usage(sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
