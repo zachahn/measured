@@ -9,7 +9,7 @@ Action (exactly one):
                                            or stdin if TEXT is omitted.
   --append TITLE [TEXT]                    Append to an item's body. Body from
                                            TEXT, or stdin if TEXT is omitted.
-  --update TITLE --old TEXT --new TEXT     Replace TEXT in an item's file.
+  --edit TITLE --old TEXT --new TEXT       Replace TEXT in an item's file.
                                            Pass --replace-all to allow >1 match.
   --move TITLE (--before TITLE | --after TITLE)
                                            Reorder an item relative to another.
@@ -56,9 +56,9 @@ def cmd_append(title: str, text: str | None) -> int:
     return 0
 
 
-def cmd_update(title: str, old: str, new: str, replace_all: bool) -> int:
+def cmd_edit(title: str, old: str, new: str, replace_all: bool) -> int:
     try:
-        target, _ = lib.update_item(_directory(), title, old, new, replace_all)
+        target, _ = lib.edit_item(_directory(), title, old, new, replace_all)
     except (ValueError, FileNotFoundError) as e:
         raise SystemExit(str(e))
     print(target)
@@ -104,7 +104,7 @@ def cmd_all() -> int:
 
 USAGE_TEXT = """\
 usage: measured-plan (--add TITLE [TEXT] | --append TITLE [TEXT] |
-                      --update TITLE --old TEXT --new TEXT [--replace-all] |
+                      --edit TITLE --old TEXT --new TEXT [--replace-all] |
                       --move TITLE (--before TITLE | --after TITLE) |
                       --remove TITLE | --read TITLE | --list | --all)
 """
@@ -117,7 +117,7 @@ Per-Claude-session agenda of ordered markdown items.
 Actions:
   --add TITLE [TEXT]      Create new item (body from TEXT or stdin)
   --append TITLE [TEXT]   Append to an item's body
-  --update TITLE          Edit body; requires --old and --new (optionally --replace-all)
+  --edit TITLE            Edit body; requires --old and --new (optionally --replace-all)
   --move TITLE            Reorder; requires --before or --after
   --remove TITLE          Delete an item
   --read TITLE            Print one item's file
@@ -141,7 +141,7 @@ def main(argv: list[str]) -> int:
 
     parser.add_argument("--add", nargs="+", metavar=("TITLE", "TEXT"))
     parser.add_argument("--append", nargs="+", metavar=("TITLE", "TEXT"))
-    parser.add_argument("--update", metavar="TITLE")
+    parser.add_argument("--edit", metavar="TITLE")
     parser.add_argument("--move", dest="move", metavar="TITLE")
     parser.add_argument("--remove", metavar="TITLE")
     parser.add_argument("--read", metavar="TITLE")
@@ -163,7 +163,7 @@ def main(argv: list[str]) -> int:
     actions = [
         ("add", args.add is not None),
         ("append", args.append is not None),
-        ("update", args.update is not None),
+        ("edit", args.edit is not None),
         ("move", args.move is not None),
         ("remove", args.remove is not None),
         ("read", args.read is not None),
@@ -174,16 +174,16 @@ def main(argv: list[str]) -> int:
     if len(chosen) != 1:
         parser.error(
             "exactly one action is required: "
-            "--add, --append, --update, --move, --remove, --read, --list, --all"
+            "--add, --append, --edit, --move, --remove, --read, --list, --all"
         )
 
     action = chosen[0]
 
-    if action == "update":
+    if action == "edit":
         if args.old is None or args.new is None:
-            parser.error("--update requires both --old and --new")
+            parser.error("--edit requires both --old and --new")
     elif args.old is not None or args.new is not None or args.replace_all:
-        parser.error("--old, --new, --replace-all are only valid with --update")
+        parser.error("--old, --new, --replace-all are only valid with --edit")
 
     if action == "move":
         if (args.before is None) == (args.after is None):
@@ -199,8 +199,8 @@ def main(argv: list[str]) -> int:
         title = args.append[0]
         text = args.append[1] if len(args.append) == 2 else None
         return cmd_append(title, text)
-    if action == "update":
-        return cmd_update(args.update, args.old, args.new, args.replace_all)
+    if action == "edit":
+        return cmd_edit(args.edit, args.old, args.new, args.replace_all)
     if action == "move":
         return cmd_move(args.move, args.before, args.after)
     if action == "remove":

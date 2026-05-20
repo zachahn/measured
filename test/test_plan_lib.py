@@ -112,12 +112,12 @@ class AppendItemTest(unittest.TestCase):
                 lib.append_item(d, "Nope", "x")
 
 
-class UpdateItemTest(unittest.TestCase):
+class EditItemTest(unittest.TestCase):
     def test_replaces_single_occurrence(self):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
             lib.add_item(d, "Item", "hello world")
-            path, count = lib.update_item(d, "Item", "world", "there", replace_all=False)
+            path, count = lib.edit_item(d, "Item", "world", "there", replace_all=False)
             self.assertIn("hello there", path.read_text())
             self.assertEqual(count, 1)
 
@@ -126,13 +126,13 @@ class UpdateItemTest(unittest.TestCase):
             d = pathlib.Path(td)
             lib.add_item(d, "Item", "a a a")
             with self.assertRaises(ValueError):
-                lib.update_item(d, "Item", "a", "b", replace_all=False)
+                lib.edit_item(d, "Item", "a", "b", replace_all=False)
 
     def test_replace_all(self):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
             lib.add_item(d, "Item", "a a a")
-            path, count = lib.update_item(d, "Item", "a", "b", replace_all=True)
+            path, count = lib.edit_item(d, "Item", "a", "b", replace_all=True)
             self.assertIn("b b b", path.read_text())
             self.assertEqual(count, 3)
 
@@ -141,26 +141,26 @@ class UpdateItemTest(unittest.TestCase):
             d = pathlib.Path(td)
             lib.add_item(d, "Item", "hello")
             with self.assertRaises(ValueError):
-                lib.update_item(d, "Item", "absent", "x", replace_all=False)
+                lib.edit_item(d, "Item", "absent", "x", replace_all=False)
 
     def test_old_equals_new_raises(self):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
             lib.add_item(d, "Item", "hello")
             with self.assertRaises(ValueError):
-                lib.update_item(d, "Item", "hello", "hello", replace_all=False)
+                lib.edit_item(d, "Item", "hello", "hello", replace_all=False)
 
     def test_missing_title_raises(self):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
             with self.assertRaises(FileNotFoundError):
-                lib.update_item(d, "Nope", "x", "y", replace_all=False)
+                lib.edit_item(d, "Nope", "x", "y", replace_all=False)
 
     def test_can_rename_via_header_edit(self):
         with tempfile.TemporaryDirectory() as td:
             d = pathlib.Path(td)
             lib.add_item(d, "Old name", "body")
-            lib.update_item(d, "Old name", "# Old name", "# New name", replace_all=False)
+            lib.edit_item(d, "Old name", "# Old name", "# New name", replace_all=False)
             _, path = lib.find_by_title(d, "New name")
             self.assertTrue(path.read_text().startswith("# New name\n"))
             with self.assertRaises(FileNotFoundError):
@@ -172,7 +172,7 @@ class UpdateItemTest(unittest.TestCase):
             lib.add_item(d, "Alpha", "")
             lib.add_item(d, "Beta", "")
             with self.assertRaises(ValueError):
-                lib.update_item(d, "Alpha", "# Alpha", "# Beta", replace_all=False)
+                lib.edit_item(d, "Alpha", "# Alpha", "# Beta", replace_all=False)
             # Original unchanged.
             _, path = lib.find_by_title(d, "Alpha")
             self.assertTrue(path.read_text().startswith("# Alpha\n"))
@@ -182,7 +182,7 @@ class UpdateItemTest(unittest.TestCase):
             d = pathlib.Path(td)
             lib.add_item(d, "Item", "body")
             with self.assertRaises(ValueError):
-                lib.update_item(d, "Item", "# Item\n", "", replace_all=False)
+                lib.edit_item(d, "Item", "# Item\n", "", replace_all=False)
 
 
 class RemoveItemTest(unittest.TestCase):

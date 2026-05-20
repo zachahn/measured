@@ -8,7 +8,7 @@ Agenda items live as markdown files in a per-session subdirectory:
 The numeric filename controls sort order and nothing else — it is not
 intended to be human-meaningful. The *title* lives on the file's first line
 as a `# Title` markdown header, and that header is the canonical identity.
-LLM callers can rename an item by rewriting the first line via --update.
+LLM callers can rename an item by rewriting the first line via --edit.
 
 Invariants enforced on every write:
   - The first line is `# <title>` (non-empty after the `# `).
@@ -148,7 +148,7 @@ def append_item(directory: pathlib.Path, title: str, text: str) -> pathlib.Path:
     return path
 
 
-def update_item(
+def edit_item(
     directory: pathlib.Path, title: str, old: str, new: str, replace_all: bool
 ) -> tuple[pathlib.Path, int]:
     if old == new:
