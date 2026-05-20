@@ -70,6 +70,7 @@ Before defining tasks, map out which files will be created or modified and what 
 
 - Each appended task must work as its own, TDD-based commit.
 - Always use exact file paths
+- Do not prefix task titles with numbers (e.g. `"1. Add parser"`, `"Task 2: ..."`). `measured-plan` orders tasks itself; numbering in the title duplicates that and goes stale on `--move`.
 - Template below
 
 ---
