@@ -1,4 +1,4 @@
-"""Tests for lib/agenda_lib.py.
+"""Tests for lib/plan_lib.py.
 
 Run directly or via `rake test`. Stdlib unittest only.
 """
@@ -11,7 +11,7 @@ import unittest
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "lib"))
 
-import agenda_lib as lib  # noqa: E402
+import plan_lib as lib  # noqa: E402
 
 
 class AddItemTest(unittest.TestCase):
