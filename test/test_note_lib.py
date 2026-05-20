@@ -21,6 +21,15 @@ class NotePathTest(unittest.TestCase):
             self.assertEqual(lib.note_path(d, lib.NOTE_TICKET).name, "TICKET.md")
 
 
+class NoteDirTest(unittest.TestCase):
+    def test_creates_note_subdirectory(self):
+        with tempfile.TemporaryDirectory() as td:
+            session = pathlib.Path(td)
+            target = lib.note_dir(session)
+            self.assertEqual(target, session / "note")
+            self.assertTrue(target.is_dir())
+
+
 class ReadNoteTest(unittest.TestCase):
     def test_reads_existing_note(self):
         with tempfile.TemporaryDirectory() as td:

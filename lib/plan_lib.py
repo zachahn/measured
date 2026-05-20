@@ -2,8 +2,8 @@
 
 Agenda items live as markdown files in a per-session subdirectory:
 
-    <session>/AGENDA/0010.md
-    <session>/AGENDA/0020.md
+    <session>/plan/0010.md
+    <session>/plan/0020.md
 
 The numeric filename controls sort order and nothing else — it is not
 intended to be human-meaningful. The *title* lives on the file's first line
@@ -20,7 +20,7 @@ Kept stdlib-only so the script runs from a fresh checkout.
 import pathlib
 import re
 
-AGENDA_DIRNAME = "AGENDA"
+AGENDA_DIRNAME = "plan"
 SORT_STEP = 10
 SORT_WIDTH = 4
 SORT_MAX = 10**SORT_WIDTH - 1

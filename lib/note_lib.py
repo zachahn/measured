@@ -9,10 +9,17 @@ any install step.
 
 import pathlib
 
+NOTE_DIRNAME = "note"
 NOTE_TICKET = "ticket"
 NOTE_FILENAMES = {
     NOTE_TICKET: "TICKET.md",
 }
+
+
+def note_dir(session: pathlib.Path) -> pathlib.Path:
+    path = session / NOTE_DIRNAME
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def note_path(directory: pathlib.Path, note_type: str) -> pathlib.Path:
