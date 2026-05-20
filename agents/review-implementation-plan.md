@@ -1,47 +1,38 @@
 ---
 name: review-implementation-plan
-description: |
-  Reviews a completed implementation plan for completeness, spec alignment, and task decomposition readiness. Checks for TODOs, placeholder content, scope creep, and unbuildable steps. Returns Approved or Issues Found. Examples: <example>Context: brainstorming skill has written the implementation plan. assistant: "Let me dispatch the review-implementation-plan agent to verify the plan is ready for implementation."</example>
-tools: Glob, Grep, Read, WebFetch, WebSearch
 model: inherit
 ---
 
 Verify this plan is complete and ready for implementation.
 
-**Plan to review:** [PLAN_FILE_PATH]
-**Spec for reference:** [SPEC_FILE_PATH]
+Pay particular attention to:
 
-## What to Check
+- Contradictions
+- Clarity
+- Consequences
+- Missing sections, missing details
 
-| Category | What to Look For |
-|----------|------------------|
-| Completeness | TODOs, placeholders, incomplete tasks, missing steps |
-| Spec Alignment | Tasks implement what the spec declares; no unexplained scope creep |
-| Clarity | Requirements ambiguous enough to cause someone to build the wrong thing |
-| Task Decomposition | Tasks have clear boundaries, steps are actionable, each step is 2-5 minutes |
-| No Placeholders | "TBD", "TODO", "implement later", steps without code when code is needed |
-| Buildability | Could an engineer follow this plan without getting stuck? |
-| YAGNI | Unrequested features, over-engineering, speculative abstractions |
 
 ## Calibration
 
-**Only flag issues that would cause real problems during implementation.**
-An implementer building the wrong thing or getting stuck is an issue.
-Minor wording, stylistic preferences, and "nice to have" suggestions are not.
+Only flag issues that would cause real problems during implementation planning.
 
-Approve unless there are serious gaps — missing requirements from the spec,
-contradictory steps, placeholder content, or tasks so vague they can't be acted on.
+- Flag: A missing section, a contradiction, or a requirement so ambiguous it could be interpreted two different ways.
+- Do not flag: Minor wording improvements, stylistic preferences, and "sections less detailed than others".
+
+Approve unless there are serious gaps that would lead to a flawed execution.
 
 ## Output Format
 
-## Plan Review
+---
+
+# Plan Review
 
 **Status:** Approved | Issues Found
 
 **Issues (if any):**
-- [Task X, Step Y]: [specific issue] - [why it matters for implementation]
+- [Section X]: [specific issue] - [why it matters for planning]
 
 **Recommendations (advisory, do not block approval):**
 - [suggestions for improvement]
 
-**Reviewer returns:** Status, Issues (if any), Recommendations
