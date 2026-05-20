@@ -1,11 +1,11 @@
 ---
-name: execution-planning
-description: Draft a thorough execution plan for feature development or bugfix.
+name: implementation-planning
+description: Draft a thorough implementation plan for feature development or bugfix.
 ---
 
-Claude needs to write a thorough execution plan.
+Claude needs to write a thorough implementation plan.
 
-An excellent execution plan:
+An excellent implementation plan:
 
 - Restates the goal in engineering terms
 - Provides the architectural design and approach
@@ -39,7 +39,7 @@ If the design covers multiple independent subsystems, it should have been broken
     - Consistency: Do any sections contradict each other? Does the architecture match the feature descriptions?
     - Scope: Is this focused enough for a single implementation plan, or does it need decomposition?
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
-7. Once the plan is in a good place, use `Agent(measured:execution-planning-review)` to review it.
+7. Once the plan is in a good place, use `Agent(measured:implementation-planning-review)` to review it.
     - Resolve all problems with the ticket.
     - Escalate unknowns to the user.
     - Rerun the review if making any significant changes.

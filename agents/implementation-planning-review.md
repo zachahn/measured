@@ -1,8 +1,8 @@
 ---
-name: execution-planning-review
+name: implementation-planning-review
 ---
 
-Review the execution plan that is returned by `measured-plan --all`.
+Review the implementation plan that is returned by `measured-plan --all`.
 
 Pay particular attention to:
 

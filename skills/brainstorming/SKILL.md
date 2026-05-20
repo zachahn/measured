@@ -13,8 +13,8 @@ Use `Skill(measured:ticketing)` to fully understand the user's original request.
 Once you're done, move immediately to Phase 2 without user confirmation.
 
 
-## Phase 2 — Build the execution plan
+## Phase 2 — Build the implementation plan
 
-Use `Skill(measured:execution-planning)` to create a thorough implementation plan.
+Use `Skill(measured:implementation-planning)` to create a thorough implementation plan.
 
 On completion, move immediately to implementation without user confirmation.
