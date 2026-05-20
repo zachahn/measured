@@ -103,10 +103,10 @@ def cmd_all() -> int:
 
 
 USAGE_TEXT = """\
-usage: measured-agenda (--add TITLE [TEXT] | --append TITLE [TEXT] |
-                        --update TITLE --old TEXT --new TEXT [--replace-all] |
-                        --move TITLE (--before TITLE | --after TITLE) |
-                        --remove TITLE | --read TITLE | --list | --all)
+usage: measured-plan (--add TITLE [TEXT] | --append TITLE [TEXT] |
+                      --update TITLE --old TEXT --new TEXT [--replace-all] |
+                      --move TITLE (--before TITLE | --after TITLE) |
+                      --remove TITLE | --read TITLE | --list | --all)
 """
 
 HELP_TEXT = (
@@ -136,7 +136,7 @@ class _Parser(argparse.ArgumentParser):
 
 
 def main(argv: list[str]) -> int:
-    parser = _Parser(prog="measured-agenda", add_help=False)
+    parser = _Parser(prog="measured-plan", add_help=False)
     parser.add_argument("-h", "--help", action="help")
 
     parser.add_argument("--add", nargs="+", metavar=("TITLE", "TEXT"))

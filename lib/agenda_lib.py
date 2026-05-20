@@ -1,4 +1,4 @@
-"""Shared logic for the measured-agenda CLI.
+"""Shared logic for the measured-plan CLI.
 
 Agenda items live as markdown files in a per-session subdirectory:
 

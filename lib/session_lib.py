@@ -2,7 +2,7 @@
 
 Walks up the ancestor process chain to find the nearest `claude` process and
 derives a per-session state directory from that PID and its start time. Both
-`measured-note` and `measured-agenda` route through `session_dir()` so they
+`measured-note` and `measured-plan` route through `session_dir()` so they
 land in the same directory for a given Claude session.
 
 Kept stdlib-only so the scripts can be invoked from a fresh checkout without
