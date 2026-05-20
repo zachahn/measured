@@ -171,6 +171,62 @@ def find_claude_pid(start_pid: int) -> int:
     )
 
 
+def _pwd_linux(pid: int) -> str | None:
+    try:
+        with open(f"/proc/{pid}/environ", "rb") as f:
+            data = f.read()
+    except OSError:
+        return None
+    for entry in data.split(b"\0"):
+        if entry.startswith(b"PWD="):
+            return entry[len(b"PWD=") :].decode("utf-8", errors="replace")
+    return None
+
+
+def _pwd_macos(pid: int) -> str | None:
+    # `ps -E` appends the process environment after argv, space-separated —
+    # so values with embedded spaces will split. PWD paths with spaces are
+    # rare enough to ignore.
+    try:
+        result = subprocess.run(
+            ["ps", "-E", "-p", str(pid), "-o", "command="],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        return None
+    for token in result.stdout.split():
+        if token.startswith("PWD="):
+            return token[len("PWD=") :]
+    return None
+
+
+def claude_pwd(pid: int) -> str:
+    """Return the working directory of the Claude process, or fall back to ours.
+
+    Mirrors Claude Code's own `projects/<encoded-cwd>/` convention so that a
+    given repo gets a stable on-disk namespace regardless of where Claude
+    later cd's. Falls back to `os.getcwd()` on platforms or processes where
+    the environment isn't readable (notably Windows).
+    """
+    if sys.platform.startswith("linux"):
+        pwd = _pwd_linux(pid)
+    elif sys.platform == "darwin":
+        pwd = _pwd_macos(pid)
+    else:
+        pwd = None
+    return pwd or os.getcwd()
+
+
+def encode_project_path(path: str) -> str:
+    """Encode a filesystem path the way Claude Code encodes project dirs.
+
+    `/Users/zach/Code/Spike/measured` -> `-Users-zach-Code-Spike-measured`.
+    """
+    return path.replace("/", "-")
+
+
 def state_root() -> pathlib.Path:
     return pathlib.Path(
         os.environ.get("XDG_STATE_HOME") or pathlib.Path.home() / ".local" / "state"
@@ -180,6 +236,7 @@ def state_root() -> pathlib.Path:
 def session_dir() -> pathlib.Path:
     claude_pid = find_claude_pid(os.getppid())
     start_time = parent_start_time(claude_pid)
-    path = state_root() / f"{start_time}-{claude_pid}-note"
+    project = encode_project_path(claude_pwd(claude_pid))
+    path = state_root() / "projects" / project / f"{start_time}-{claude_pid}"
     path.mkdir(parents=True, exist_ok=True)
     return path

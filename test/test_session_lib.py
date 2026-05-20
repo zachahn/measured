@@ -55,5 +55,23 @@ class FindClaudePidTest(unittest.TestCase):
             lib.find_claude_pid(1)
 
 
+class EncodeProjectPathTest(unittest.TestCase):
+    def test_replaces_slashes_with_dashes(self):
+        self.assertEqual(
+            lib.encode_project_path("/Users/zach/Code/Spike/measured"),
+            "-Users-zach-Code-Spike-measured",
+        )
+
+    def test_relative_path(self):
+        self.assertEqual(lib.encode_project_path("a/b/c"), "a-b-c")
+
+
+class ClaudePwdTest(unittest.TestCase):
+    def test_returns_pwd_of_current_process(self):
+        # The current process necessarily has a PWD; the helper should find
+        # it (or fall back to os.getcwd(), which is the same value).
+        self.assertEqual(lib.claude_pwd(os.getpid()), os.getcwd())
+
+
 if __name__ == "__main__":
     unittest.main()
