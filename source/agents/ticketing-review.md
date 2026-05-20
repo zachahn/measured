@@ -6,13 +6,11 @@ Review the ticket `measured-note --ticket --read`. We want to create an excellen
 
 An excellent ticket provides context but does not over-prescribe implementation details.
 
-Pay particular attention to:
+<%= partials("reviewing_attention.md") %>
 
-- Contradictions
-- Consequences
-- Missing sections, missing details
+## Required sections
 
-Ensure it has all of the required information, but note that truly trivial changes may not require every section.
+Ensure it has all of the required information.
 
 - **Title of Feature:** This must be in imperative mood.
 - **Problem / Why:** A few sentences on the problem being solved.
@@ -21,3 +19,5 @@ Ensure it has all of the required information, but note that truly trivial chang
 - **Scope:** List of items in and out of scope.
 - **Edge cases and Error states:** Empty states, failed API calls. What's likely, and how to resolve?
 - **Technical and design context:** List of code areas, designs, etc that are a good starting point
+
+<%= partials("review_plan_cohesion.md") %>

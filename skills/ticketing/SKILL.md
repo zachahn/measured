@@ -4,7 +4,7 @@ description: Draft an excellent ticket for feature development or bugfix
 disable-model-invocation: true
 ---
 
-We need to write an excellent ticket. Claude will be given some information but will need to find or query for other information.
+Claude needs to write an excellent ticket. Claude will be given some information but will need to find or query for other information.
 
 An excellent ticket:
 
@@ -12,6 +12,7 @@ An excellent ticket:
 - Describes the constraints (performance targets, backward compatibility, accessibility)
 - Suggests the approach only when context may live outside this ticket — a specific API contract, a known footgun, an architectural decision already made
 - Leaves the implementation to the engineer
+- Leaves nothing ambiguous
 
 Too much implementation detail is a smell. It means either the ticket author doesn't trust the engineers, or it was written by someone who's already mentally solved it and is just transcribing their solution. This kills ownership and often produces worse outcomes — the engineer follows a prescribed solution that was written before they understood the problem.
 
@@ -20,17 +21,21 @@ Too little product context is the more common failure. Engineers end up making p
 ## Workflow
 
 1. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
-2. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs.
-3. Clarify unknowns with `AskUserQuestion`.
+2. Clarify unknowns with `AskUserQuestion`.
+3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs.
 4. Draft and revise the ticket:
     - Draft: `measured-note --ticket --append "..."`.
-    - Revise with `measured-note --ticket --edit --old ... --new ...`.
-5. Once ticket is in a good place, use `Agent(measured:ticketing-review)` to review it.
+    - Revise: `measured-note --ticket --edit --old ... --new ...`.
+5. Self review the ticket
+    - `measured-note --ticket --read`
+    - Consistency: Do any sections contradict each other?
+    - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
+6. Once the ticket is in a good place, use `Agent(measured:ticketing-review)` to review it.
     - Resolve all problems with the ticket.
-    - Escalate issues to the user.
+    - Escalate unknowns to the user.
     - Rerun the review if making any significant changes.
-6. Confirm the ticket with the user.
-7. After final confirmation, update or create the ticket in the requested ticketing system.
+7. Confirm the ticket with the user.
+8. After final confirmation, update or create the ticket in the requested ticketing system.
 
 ## Usage: `measured-note`
 
