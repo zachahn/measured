@@ -4,6 +4,16 @@ name: brainstorm-specification
 
 You are helping to understand a user's request before implementation planning begins. Your job is to figure out **what** to build — not how.
 
+## Required: user is in the loop
+
+This skill exists because the user's input is the input. You MUST stop and wait for the user's reply at every checkpoint marked **Wait for user** below. Do not infer answers, do not pick approaches on the user's behalf, do not advance steps on your own.
+
+**Auto Mode does NOT override this.** Auto Mode lets you skip *clarifying* pauses where you'd otherwise check in out of caution. It does not authorize you to skip *required* user inputs. The checkpoints in this skill are required inputs — a spec the user didn't actually shape is the wrong spec, no matter how plausible it looks.
+
+If you catch yourself about to proceed past a **Wait for user** checkpoint without a user message in between, stop. That is the bug this skill exists to prevent.
+
+## Setup
+
 First, `EnterPlanMode` to enter Plan mode.
 
 Use `TaskCreate` to create a task for each step below:
@@ -20,7 +30,7 @@ By the time you `ExitPlanMode`, all tasks must be completed.
 
 ## Step 1: Ask clarifying questions
 
-Ask 1-4 targeted questions. Only ask what you need to understand the request — don't ask for things you can infer from the code.
+Ask 1-4 targeted questions via `AskUserQuestion`. Only ask what you need to understand the request — don't ask for things you can infer from the code.
 
 Good questions to consider:
 
@@ -29,11 +39,13 @@ Good questions to consider:
 - What does success look like?
 - Is there existing code this should integrate with or replace?
 
-Skip this step if you already have enough to proceed with confidence.
+You may skip this step only if every requirement is already unambiguous from the user's message and the code. "I can guess what they probably want" is not unambiguous — ask.
+
+**Wait for user.** Do not proceed to Step 2 until the user has answered.
 
 ## Step 2: Propose 2-3 approaches
 
-Present 2-3 different interpretations or scope options for **what** to build. Focus on problem framing and scope — not implementation details.
+Present 2-3 different interpretations or scope options via `AskUserQuestion`. Focus on problem framing and scope — not implementation details.
 
 For each approach:
 
@@ -43,14 +55,18 @@ For each approach:
 
 Lead with your recommended approach and explain why.
 
+**Wait for user.** Do not proceed to Step 3 until the user has picked an approach (or explicitly confirmed yours). Do not pick for them.
+
 ## Step 3: Expand chosen approach
 
-Once the user picks an approach (or confirms yours), expand it into a full description:
+Once the user picks an approach, expand it into a full description:
 
 - Goals and non-goals
 - Key requirements
 - Scope boundaries
 - Any constraints or known risks
+
+If expanding the approach surfaces a new ambiguity or decision point that materially shapes scope, use `AskUserQuestion` and **Wait for user** before continuing.
 
 ## Step 4: Self-review the output
 
@@ -63,7 +79,7 @@ Before presenting, check your work:
 - Are all file paths full file paths?
 - Are there any open questions?
 
-Fix issues inline.
+Fix issues inline. If a question can only be resolved by the user, ask via `AskUserQuestion` and **Wait for user**.
 
 ## Step 5: Write specification to plan
 
@@ -107,8 +123,8 @@ Agent tool (review-specification):
     **Spec file:** [PLAN_FILE_PATH]
 ```
 
-Fix all of the issues that the subagents find.
+Fix all of the issues that the subagents find. If a fix requires a user decision, use `AskUserQuestion` and **Wait for user**.
 
 ## Step 7: Present finalized plan
 
-Call `ExitPlanMode` for the user to review.
+Call `ExitPlanMode` for the user to review. **Wait for user** approval before any downstream skill begins implementation.

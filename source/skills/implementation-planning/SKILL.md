@@ -5,6 +5,14 @@ description: Draft a thorough implementation plan for feature development or bug
 
 Claude needs to write a thorough implementation plan.
 
+## Required: user is in the loop
+
+This skill is a collaboration with the user, not a solo run. You MUST stop and wait for the user's reply at every step that uses `AskUserQuestion` and at the final presentation. Do not infer answers, do not pick approaches on the user's behalf, do not advance steps on your own.
+
+**Auto Mode does NOT override this.** Auto Mode lets you skip *clarifying* pauses where you'd otherwise check in out of caution. It does not authorize you to skip *required* user inputs. The questions in this skill are required inputs — a plan the user didn't actually shape is the wrong plan, no matter how plausible it looks.
+
+If you catch yourself about to proceed past an `AskUserQuestion` step without a user message in between, stop. That is the bug this skill exists to prevent.
+
 An excellent implementation plan:
 
 - Restates the goal in engineering terms
@@ -21,11 +29,11 @@ If the design covers multiple independent subsystems, it should have been broken
 ## Workflow
 
 1. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
-2. Clarify unknowns with `AskUserQuestion`.
-3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs.
+2. Clarify unknowns with `AskUserQuestion`. **Wait for the user's reply** before continuing. Skip only if every requirement is already unambiguous from the user's message and the code — "I can guess what they probably want" is not unambiguous.
+3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. **Wait for the user's reply** before continuing. Do not pick for them.
     - Lead with your recommended approach and explain why
     - Cover: architecture, key libraries or patterns, how it integrates with existing code
-4. Assess scope. Determine if this warrants multiple plans.
+4. Assess scope. Determine if this warrants multiple plans. If decomposition is needed, surface that to the user via `AskUserQuestion` and **wait for the user's reply** before continuing.
 5. Expand chosen approach
     - Architecture and components
     - Data flow
@@ -41,9 +49,9 @@ If the design covers multiple independent subsystems, it should have been broken
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 7. Once the plan is in a good place, use `Agent(measured:implementation-planning-review)` to review it.
     - Resolve all problems with the ticket.
-    - Escalate unknowns to the user.
+    - Escalate unknowns to the user via `AskUserQuestion` and **wait for the user's reply**.
     - Rerun the review if making any significant changes.
-8. Present plan
+8. Present plan to the user and **wait for the user's reply** before any downstream skill begins implementation. Do not assume approval.
 
 ## Usage: `measured-plan`
 
