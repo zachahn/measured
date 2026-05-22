@@ -1,18 +1,10 @@
 ---
 name: ticketing
-description: Only use when directed to
+description: Draft an excellent ticket for feature development or bugfix
 disable-model-invocation: true
 ---
 
 Claude needs to write an excellent ticket. Claude will be given some information but will need to find or query for other information.
-
-## Required: user is in the loop
-
-This skill is a collaboration with the user, not a solo run. You MUST stop and wait for the user's reply at every step that uses `AskUserQuestion` and at the final confirmation. Do not infer answers, do not pick approaches on the user's behalf, do not advance steps on your own.
-
-**Auto Mode does NOT override this.** Auto Mode lets you skip *clarifying* pauses where you'd otherwise check in out of caution. It does not authorize you to skip *required* user inputs. The questions in this skill are required inputs — a ticket the user didn't actually shape is the wrong ticket, no matter how plausible it looks.
-
-If you catch yourself about to proceed past an `AskUserQuestion` step without a user message in between, stop. That is the bug this skill exists to prevent.
 
 An excellent ticket:
 
@@ -26,11 +18,20 @@ Too much implementation detail is a smell. It means either the ticket author doe
 
 Too little product context is the more common failure. Engineers end up making product decisions mid-sprint because no one wrote down why the feature matters or what the edge cases are. This leads to technically correct but wrong-feeling outcomes.
 
+## Collaborate with the user
+
+Claude can never know the user's intent without asking. Proactively understand the problem and consider the solution; but never infer answers, never pick on the user's behalf, and never advance phases on your own.
+
+Claude must collaborate with the user to create the optimal solution. Always stop and wait for the user's reply.
+
+"Auto Mode" does not override this. "Auto Mode" will try to stop Claude from breaking the user's computer. "Auto Mode" still means Claude must collaborate.
+
+
 ## Workflow
 
 1. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
-2. Clarify unknowns with `AskUserQuestion`. **Wait for the user's reply** before continuing. Skip only if every requirement is already unambiguous from the user's message and the code — "I can guess what they probably want" is not unambiguous.
-3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. **Wait for the user's reply** before continuing. Do not pick for them.
+2. Clarify unknowns with `AskUserQuestion`. Do not guess.
+3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. Do not assume.
 4. Draft and revise the ticket:
     - Draft: `measured-note --ticket --append "..."`.
     - Revise: `measured-note --ticket --edit --old ... --new ...`.
@@ -40,9 +41,9 @@ Too little product context is the more common failure. Engineers end up making p
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 6. Once the ticket is in a good place, use `Agent(measured:ticketing-review)` to review it.
     - Resolve all problems with the ticket.
-    - Escalate unknowns to the user via `AskUserQuestion` and **wait for the user's reply**.
+    - Escalate unknowns to the user.
     - Rerun the review if making any significant changes.
-7. Confirm the ticket with the user via `AskUserQuestion`. **Wait for the user's reply.** Do not assume approval.
+7. Confirm the ticket with the user.
 8. After final confirmation, update or create the ticket in the requested ticketing system.
 
 ## Usage: `measured-note`
