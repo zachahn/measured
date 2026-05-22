@@ -1,6 +1,5 @@
 ---
 name: review-implementation-plan
-model: inherit
 ---
 
 Verify this plan is complete and ready for implementation.

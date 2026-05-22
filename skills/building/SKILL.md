@@ -1,5 +1,5 @@
 ---
-name: brainstorming
+name: building
 description: "Two-phase design process: understand what to build, then plan how to build it."
 disable-model-invocation: true
 ---
