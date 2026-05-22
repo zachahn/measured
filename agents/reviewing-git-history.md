@@ -1,6 +1,6 @@
 ---
 name: reviewing-git-history
-description: Only use when directed to.
+description: Only use when directed to
 model: sonnet
 permissionMode: default
 effort: high

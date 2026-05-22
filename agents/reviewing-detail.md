@@ -1,6 +1,6 @@
 ---
 name: reviewing-detail
-description: Only use when directed to.
+description: Only use when directed to
 model: opus
 permissionMode: default
 effort: xhigh

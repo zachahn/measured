@@ -1,6 +1,6 @@
 ---
 name: reviewing-summary
-description: Only use when directed to.
+description: Only use when directed to
 model: haiku
 permissionMode: default
 effort: high

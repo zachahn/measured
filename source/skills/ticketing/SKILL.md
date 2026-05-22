@@ -1,6 +1,6 @@
 ---
 name: ticketing
-description: Draft an excellent ticket for feature development or bugfix
+description: Only use when directed to
 disable-model-invocation: true
 ---
 
