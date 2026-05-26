@@ -6,10 +6,15 @@ disable-model-invocation: true
 
 Create an agent team:
 
-1. Spawn a teammate using the sub-agent: `measured:ticketing-pm`
-2. Spawn a teammate using the sub-agent: `measured:ticketing-review`
-3. One must review the ticket as an experienced engineer.
-    - `measured-note --ticket --read`
-    - Verify that the ticket is implementable; that there is no ambiguity.
+1. Spawn a teammate using the subagent: `measured:ticketing-pm`
+2. Wait for the subagent to finish the first draft
+3. Afterwards, spawn these reviewers:
+    - Spawn a teammate using the sub-agent: `measured:ticketing-review`
+    - Spawn a teammate to review the ticket as an experienced engineer.
+        - `measured-note --ticket --read`
+        - Verify that the ticket is implementable; that there is no ambiguity.
+4. Ensure feedback is incorporated. Iterate as necessary.
 
 All sub-agents can and should ask the user for clarity.
+
+Bad assumptions and miscommunication is expensive. Self-research, but be sure to escalate all questions and concerns to the user.
