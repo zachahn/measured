@@ -1,7 +1,6 @@
 ---
-name: ticketing
+name: ticketing-pm
 description: Draft an excellent ticket for feature development or bugfix
-disable-model-invocation: true
 ---
 
 Claude needs to write an excellent ticket. Claude will be given some information but will need to find or query for other information.
@@ -32,7 +31,7 @@ Claude must collaborate with the user to create the optimal solution. Always sto
 1. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
 2. Clarify unknowns with `AskUserQuestion`. Do not guess.
 3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. Do not assume.
-4. Confirm and verify the problem statement before delving into the other sections.
+4. Confirm and verify the problem statement with the user before delving into the other sections.
 5. Draft and revise the ticket:
     - Draft: `measured-note --ticket --append "..."`.
     - Revise: `measured-note --ticket --edit --old ... --new ...`.
@@ -40,12 +39,7 @@ Claude must collaborate with the user to create the optimal solution. Always sto
     - `measured-note --ticket --read`
     - Consistency: Do any sections contradict each other?
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
-7. Once the ticket is in a good place, use `Agent(measured:ticketing-review)` to review it.
-    - Resolve all problems with the ticket.
-    - Escalate unknowns to the user.
-    - Rerun the review if making any significant changes.
-8. Confirm the ticket with the user.
-9. After final confirmation, update or create the ticket in the requested ticketing system.
+7. Confirm the ticket with the user.
 
 ## Usage: `measured-note`
 

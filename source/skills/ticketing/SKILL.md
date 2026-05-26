@@ -25,19 +25,20 @@ Too little product context is the more common failure. Engineers end up making p
 1. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
 2. Clarify unknowns with `AskUserQuestion`. Do not guess.
 3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. Do not assume.
-4. Draft and revise the ticket:
+4. Confirm and verify the problem statement before delving into the other sections.
+5. Draft and revise the ticket:
     - Draft: `measured-note --ticket --append "..."`.
     - Revise: `measured-note --ticket --edit --old ... --new ...`.
-5. Self review the ticket
+6. Self review the ticket
     - `measured-note --ticket --read`
     - Consistency: Do any sections contradict each other?
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
-6. Once the ticket is in a good place, use `Agent(measured:ticketing-review)` to review it.
+7. Once the ticket is in a good place, use `Agent(measured:ticketing-review)` to review it.
     - Resolve all problems with the ticket.
     - Escalate unknowns to the user.
     - Rerun the review if making any significant changes.
-7. Confirm the ticket with the user.
-8. After final confirmation, update or create the ticket in the requested ticketing system.
+8. Confirm the ticket with the user.
+9. After final confirmation, update or create the ticket in the requested ticketing system.
 
 ## Usage: `measured-note`
 
