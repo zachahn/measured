@@ -1,6 +1,7 @@
 ---
 name: writing-clearly
 description: Use when writing documentation, comments, PR descriptions, or commit messages — not for code generation.
+disable-model-invocation: true
 ---
 
 # Writing Clearly

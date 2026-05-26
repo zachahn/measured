@@ -1,6 +1,7 @@
 ---
 name: reviewing
 description: Use when the user explicitly asks to review a pull request, branch, or other code change — orchestrates a multi-agent code review and prints the result to the invoking user in the command line. User-invoked only; do not trigger on general "look at this code" or "review my changes" requests that don't reference a specific PR or branch.
+disable-model-invocation: true
 ---
 
 # Reviewing a Pull Request
