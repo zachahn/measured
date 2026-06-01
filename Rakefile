@@ -32,8 +32,8 @@ module TestTasks
 
   namespace :test do
     task :skills do
-      puts "[test] source/skills"
-      Dir.glob("source/*/skills/**/SKILL.md").each do |path|
+      puts "[test] */source/skills"
+      Dir.glob("*/source/skills/**/SKILL.md").each do |path|
         check_name("test", path, File.basename(File.dirname(path)))
       rescue => e
         RakeTaskFailure.create("test", path, e.message)
@@ -42,8 +42,8 @@ module TestTasks
     end
 
     task :agents do
-      puts "[test] source/agents"
-      Dir.glob("source/*/agents/*.md").each do |path|
+      puts "[test] */source/agents"
+      Dir.glob("*/source/agents/*.md").each do |path|
         check_name("test", path, File.basename(path, ".md"))
       rescue => e
         RakeTaskFailure.create("test", path, e.message)
@@ -108,13 +108,27 @@ end
 module BuildTasks
   extend Rake::DSL
 
+  # Source files live inside each plugin at <plugin>/source/<rest> and build
+  # to <plugin>/<rest>. Partials are shared helpers under <plugin>/source/_*
+  # and are never built or pruned on their own.
+  SOURCE_GLOB = "*/source/**/*".freeze
+
   def self.partials(path)
     @partials ||= {}
-    @partials[path] ||= File.read(File.join("source/_partials", path))
+    @partials[path] ||= File.read(Dir.glob("*/source/_partials/#{path}").first)
   end
 
   def self.root
     Pathname.new(__dir__)
+  end
+
+  # Map a source path (<plugin>/source/<rest>) to its built destination
+  # (<plugin>/<rest>), or nil if it is a partial or otherwise not buildable.
+  def self.dest_for(source)
+    plugin, rest = source.split("/source/", 2)
+    return nil if rest.nil? || rest.empty?
+    return nil if rest.start_with?("_") || rest.split("/").include?("_partials")
+    File.join(plugin, rest)
   end
 
   task :build do
@@ -122,18 +136,16 @@ module BuildTasks
     require "fileutils"
     require "pathname"
 
-    Dir.glob("source/**/*").each do |source|
-      dest = source.sub(%r{\Asource/}, "")
-      destdir = File.dirname(dest)
-      next if dest == source
+    Dir.glob(SOURCE_GLOB).each do |source|
       next if File.directory?(source)
-      next if source.start_with?("source/_")
+      dest = dest_for(source)
+      next if dest.nil?
 
       original = File.read(source)
       erb = ERB.new(original)
       built = erb.result(binding)
 
-      FileUtils.mkdir_p(destdir)
+      FileUtils.mkdir_p(File.dirname(dest))
       File.write(dest, built)
     rescue => e
       RakeTaskFailure.create(:build, source, e.message)
@@ -145,30 +157,28 @@ module BuildTasks
     puts "[build] done"
   end
 
-  # Delete built files whose source no longer exists. We only sweep the
-  # buildable subdirectories that the build actually generates — each
-  # plugin's skills/ and agents/ (source/<plugin>/<subdir> → <plugin>/<subdir>)
-  # — and reconstruct the expected source path for each destination. If that
-  # source is gone, the destination is an orphan and gets removed. Hand-authored
-  # plugin contents like bin/, lib/, test/, and .claude-plugin/ have no source/
-  # counterpart and are never considered. Source files are never touched.
+  # Delete built files whose source no longer exists. Every built file came
+  # from <plugin>/source/<rest>, so for each source we recompute its
+  # destination and collect the set of files the build owns. Any file already
+  # present in a built directory but absent from that set is an orphan and is
+  # removed. Partials and source files are never touched.
   def self.prune_orphans
-    require "fileutils"
+    require "set"
 
-    # Buildable source subdirs look like source/<plugin>/<subdir>, skipping
-    # partials (source/_*). Map each to its destination: <plugin>/<subdir>.
-    build_dirs = Dir.glob("source/*/*")
-      .select { |p| File.directory?(p) }
-      .reject { |p| p.sub(%r{\Asource/}, "").start_with?("_") }
+    owned = Dir.glob(SOURCE_GLOB)
+      .reject { |s| File.directory?(s) }
+      .map { |s| dest_for(s) }
+      .compact
+      .to_set
 
-    dest_dirs = build_dirs.map { |p| p.sub(%r{\Asource/}, "") }
+    # Built directories are the plugin-relative parents of every owned file
+    # (e.g. measured/skills, measured/agents). Sweep them for stragglers.
+    build_dirs = owned.map { |dest| dest[%r{\A[^/]+/[^/]+}] }.compact.to_set
 
-    dest_dirs.each do |dir|
+    build_dirs.each do |dir|
       Dir.glob("#{dir}/**/*").each do |dest|
         next if File.directory?(dest)
-
-        source = File.join("source", dest)
-        next if File.exist?(source)
+        next if owned.include?(dest)
 
         File.delete(dest)
         puts "[build] pruned #{dest}"
