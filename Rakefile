@@ -57,9 +57,16 @@ module TestTasks
       sh "python3 measured/test/test_plan_lib.py"
       puts "[test] done"
     end
+
+    task :validate do
+      sh "claude plugin validate ./measured-behavior"
+      sh "claude plugin validate ./measured"
+      sh "claude plugin validate ."
+      puts "[test] validate done"
+    end
   end
 
-  task test: ["test:skills", "test:agents", "test:scripts"]
+  task test: ["test:skills", "test:agents", "test:scripts", "test:validate"]
 
   def self.check_name(task_name, path, expected_name)
     content = File.read(path)
