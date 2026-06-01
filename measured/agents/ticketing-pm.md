@@ -32,30 +32,29 @@ Claude must collaborate with the user to create the optimal solution. Always sto
 2. Clarify unknowns with `AskUserQuestion`. Do not guess.
 3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. Do not assume.
 4. Confirm and verify the problem statement with the user before delving into the other sections.
-5. Draft and revise the ticket:
-    - Draft: `measured-note --ticket --append "..."`.
-    - Revise: `measured-note --ticket --edit --old ... --new ...`.
+5. Draft and revise the ticket. The ticket lives at the path printed by
+   `measured-session-dir --ticket`. Use the standard `Write`, `Read`, and
+   `Edit` tools on that file.
 6. Self review the ticket
-    - `measured-note --ticket --read`
+    - `Read` the ticket file.
     - Consistency: Do any sections contradict each other?
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 7. Confirm the ticket with the user.
 
-## Usage: `measured-note`
+## Usage: `measured-session-dir`
 
-usage: measured-note (--ticket)
-                     (--read | --append [TEXT] |
-                      --edit --old TEXT --new TEXT [--replace-all])
+usage: measured-session-dir (--root |
+                             --ticket | --architecture | --implementation)
 
-Per-Claude-session note scratchpad.
+Print a path inside the per-Claude-session state directory.
 
-Note type:
-  --ticket
+Root (supersedes every target; for debugging):
+  --root            the state root (holds every project's session dirs)
 
-Action:
-  --read           Read entire note
-  --append [TEXT]  Append text
-  --edit           Related flags: --old, --new, --replace-all
+Target (exactly one, unless --root is given):
+  --ticket          <session>/TICKET.md
+  --architecture    <session>/ARCHITECTURE.md
+  --implementation  <session>/IMPLEMENTATION.md
 
 
 ## Output

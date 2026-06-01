@@ -23,18 +23,18 @@ An excellent architecture design:
     - Lead with your recommended approach and explain why
     - Cover: architecture, key libraries or patterns, how it integrates with existing code
 4. Expand chosen approach
-5. Draft and revise the plan:
-    - Draft: `measured-plan --append "Section Title" "Section Body"`.
-    - Revise: `measured-plan --edit "Section Title" --old ... --new ...`.
+5. Draft and revise the plan. The architecture plan lives at the path printed
+   by `measured-session-dir --architecture`. Use the standard `Write`, `Read`,
+   and `Edit` tools on that file.
 6. Self review the plan
-    - `measured-plan --all`
+    - `Read` the architecture plan.
     - Consistency: Do any sections contradict each other?
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 7. Request reviews and incorporate feedback.
 
-## Usage: `measured-plan`
+## Usage: `measured-session-dir`
 
-<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-plan").to_s} --help` %>
+<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-session-dir").to_s} --help` %>
 
 ## Template
 

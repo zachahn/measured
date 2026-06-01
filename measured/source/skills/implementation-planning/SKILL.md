@@ -34,11 +34,11 @@ If the design covers multiple independent subsystems, it should have been broken
     - Data flow
     - Error handling
     - Testing approach
-5. Draft and revise the plan:
-    - Draft: `measured-plan --append "Task Title" "Task Body"`.
-    - Revise: `measured-plan --edit "Task Title" --old ... --new ...`.
+5. Draft and revise the plan. The implementation plan lives at the path printed
+   by `measured-session-dir --implementation`. Use the standard `Write`, `Read`,
+   and `Edit` tools on that file.
 6. Self review the plan
-    - `measured-plan --all`
+    - `Read` the implementation plan.
     - Consistency: Do any sections contradict each other? Does the architecture match the feature descriptions?
     - Scope: Is this focused enough for a single implementation plan, or does it need decomposition?
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
@@ -48,9 +48,9 @@ If the design covers multiple independent subsystems, it should have been broken
     - Rerun the review if making any significant changes.
 8. Present plan.
 
-## Usage: `measured-plan`
+## Usage: `measured-session-dir`
 
-<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-plan").to_s} --help` %>
+<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-session-dir").to_s} --help` %>
 
 ## System design
 
@@ -63,9 +63,8 @@ Before defining tasks, map out which files will be created or modified and what 
 
 ## Task Structure
 
-- Each appended task must work as its own, TDD-based commit.
+- Each task must work as its own, TDD-based commit.
 - Always use exact file paths
-- Do not prefix task titles with numbers (e.g. `"1. Add parser"`, `"Task 2: ..."`). `measured-plan` orders tasks itself; numbering in the title duplicates that and goes stale on `--move`.
 - Template below
 
 ---

@@ -2,7 +2,7 @@
 name: implementation-planning-review
 ---
 
-Review the implementation plan that is returned by `measured-plan --all`.
+Review the implementation plan. `Read` it from the path printed by `measured-session-dir --implementation`.
 
 Pay particular attention to:
 

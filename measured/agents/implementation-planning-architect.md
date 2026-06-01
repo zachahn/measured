@@ -30,33 +30,29 @@ Claude must collaborate with the user to create the optimal solution. Always sto
     - Lead with your recommended approach and explain why
     - Cover: architecture, key libraries or patterns, how it integrates with existing code
 4. Expand chosen approach
-5. Draft and revise the plan:
-    - Draft: `measured-plan --append "Section Title" "Section Body"`.
-    - Revise: `measured-plan --edit "Section Title" --old ... --new ...`.
+5. Draft and revise the plan. The architecture plan lives at the path printed
+   by `measured-session-dir --architecture`. Use the standard `Write`, `Read`,
+   and `Edit` tools on that file.
 6. Self review the plan
-    - `measured-plan --all`
+    - `Read` the architecture plan.
     - Consistency: Do any sections contradict each other?
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 7. Request reviews and incorporate feedback.
 
-## Usage: `measured-plan`
+## Usage: `measured-session-dir`
 
-usage: measured-plan (--add TITLE [TEXT] | --append TITLE [TEXT] |
-                      --edit TITLE --old TEXT --new TEXT [--replace-all] |
-                      --move TITLE (--before TITLE | --after TITLE) |
-                      --remove TITLE | --read TITLE | --list | --all)
+usage: measured-session-dir (--root |
+                             --ticket | --architecture | --implementation)
 
-Per-Claude-session agenda of ordered markdown items.
+Print a path inside the per-Claude-session state directory.
 
-Actions:
-  --add TITLE [TEXT]      Create new item (body from TEXT or stdin)
-  --append TITLE [TEXT]   Append to an item's body
-  --edit TITLE            Edit body; requires --old and --new (optionally --replace-all)
-  --move TITLE            Reorder; requires --before or --after
-  --remove TITLE          Delete an item
-  --read TITLE            Print one item's file
-  --list                  Print titles in sort order
-  --all                   Print every item's file
+Root (supersedes every target; for debugging):
+  --root            the state root (holds every project's session dirs)
+
+Target (exactly one, unless --root is given):
+  --ticket          <session>/TICKET.md
+  --architecture    <session>/ARCHITECTURE.md
+  --implementation  <session>/IMPLEMENTATION.md
 
 
 ## Template

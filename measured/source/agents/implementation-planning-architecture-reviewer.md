@@ -2,7 +2,7 @@
 name: implementation-planning-architecture-reviewer
 ---
 
-Review the architecture plan that is returned by `measured-plan --all`.
+Review the architecture plan. `Read` it from the path printed by `measured-session-dir --architecture`.
 
 Ensure it aligns with the product spec. Ensure too that it covers:
 

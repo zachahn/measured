@@ -10,7 +10,7 @@ Create an agent team:
 2. Wait for the subagent to finish a draft. Afterwards, spawn subagents to review it:
     - Spawn a teammate using the subagent: `measured:ticketing-review`
     - Spawn a teammate to review the ticket as an experienced engineer.
-        - `measured-note --ticket --read`
+        - `Read` the ticket at the path printed by `measured-session-dir --ticket`.
         - Verify that the ticket is implementable; that there is no ambiguity.
 3. Ensure feedback is incorporated. Iterate as necessary.
 
