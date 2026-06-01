@@ -69,8 +69,10 @@ def decide(tool_name: str, tool_input: dict) -> bool:
     if tool_name == "Read":
         return _is_within(target, session_lib.state_root().resolve())
 
-    # Edit: limited to the current session's own directory.
-    return _is_within(target, session_lib.session_dir().resolve())
+    # Edit: limited to the current session's own directory. Cached because the
+    # hook runs as a fresh process on every Edit, so resolving the session each
+    # time would re-walk the process tree.
+    return _is_within(target, session_lib.cached_session_dir().resolve())
 
 
 def main() -> None:
