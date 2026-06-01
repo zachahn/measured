@@ -1,7 +1,7 @@
 {
   "name": "measured-behavior",
   "description": "Behavior plugin for Claude Code",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "author": {
     "name": "Zach Ahn",
     "email": "measured-dev@zachahn.com"
