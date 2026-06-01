@@ -10,7 +10,17 @@
       "name": "measured",
       "description": "Skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
       "version": "1.0.14",
-      "source": "./",
+      "source": "./measured",
+      "author": {
+        "name": "Zach Ahn",
+        "email": "measured-dev@zachahn.com"
+      }
+    },
+    {
+      "name": "measured-behavior",
+      "description": "Behavior plugin for Claude Code",
+      "version": "1.0.14",
+      "source": "./measured-behavior",
       "author": {
         "name": "Zach Ahn",
         "email": "measured-dev@zachahn.com"

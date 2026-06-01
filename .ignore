@@ -1,2 +1,4 @@
-/skills
-/agents
+/measured/skills
+/measured/agents
+/measured-behavior/skills
+/measured-behavior/agents

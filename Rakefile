@@ -33,7 +33,7 @@ module TestTasks
   namespace :test do
     task :skills do
       puts "[test] source/skills"
-      Dir.glob("source/skills/**/SKILL.md").each do |path|
+      Dir.glob("source/*/skills/**/SKILL.md").each do |path|
         check_name("test", path, File.basename(File.dirname(path)))
       rescue => e
         RakeTaskFailure.create("test", path, e.message)
@@ -43,7 +43,7 @@ module TestTasks
 
     task :agents do
       puts "[test] source/agents"
-      Dir.glob("source/agents/*.md").each do |path|
+      Dir.glob("source/*/agents/*.md").each do |path|
         check_name("test", path, File.basename(path, ".md"))
       rescue => e
         RakeTaskFailure.create("test", path, e.message)

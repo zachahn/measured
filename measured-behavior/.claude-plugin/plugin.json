@@ -1,0 +1,15 @@
+{
+  "name": "measured-behavior",
+  "description": "Behavior plugin for Claude Code",
+  "version": "1.0.14",
+  "author": {
+    "name": "Zach Ahn",
+    "email": "measured-dev@zachahn.com"
+  },
+  "homepage": "https://github.com/zachahn/measured",
+  "repository": "https://github.com/zachahn/measured",
+  "license": "MIT",
+  "keywords": [
+    "behavior"
+  ]
+}
