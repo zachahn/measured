@@ -133,7 +133,35 @@ module BuildTasks
       next
     end
 
+    prune_orphans
+
     puts "[build] done"
+  end
+
+  # Delete built files whose source no longer exists. We only consider
+  # destinations that mirror a buildable source location (skills/, agents/,
+  # etc.), and we reconstruct the expected source path for each — if that
+  # source is gone, the destination is an orphan and gets removed. Source
+  # files are never touched.
+  def self.prune_orphans
+    require "fileutils"
+
+    source_dirs = Dir.glob("source/*").select { |p| File.directory?(p) }
+    dest_dirs = source_dirs
+      .map { |p| p.sub(%r{\Asource/}, "") }
+      .reject { |p| p.start_with?("_") }
+
+    dest_dirs.each do |dir|
+      Dir.glob("#{dir}/**/*").each do |dest|
+        next if File.directory?(dest)
+
+        source = File.join("source", dest)
+        next if File.exist?(source)
+
+        File.delete(dest)
+        puts "[build] pruned #{dest}"
+      end
+    end
   end
 end
 
