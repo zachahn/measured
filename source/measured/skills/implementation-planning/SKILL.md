@@ -50,7 +50,7 @@ If the design covers multiple independent subsystems, it should have been broken
 
 ## Usage: `measured-plan`
 
-<%= `/usr/bin/env python3 #{root.join("bin/measured-plan").to_s} --help` %>
+<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-plan").to_s} --help` %>
 
 ## System design
 

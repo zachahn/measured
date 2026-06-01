@@ -52,9 +52,9 @@ module TestTasks
     end
 
     task :scripts do
-      sh "python3 test/test_session_lib.py"
-      sh "python3 test/test_note_lib.py"
-      sh "python3 test/test_plan_lib.py"
+      sh "python3 measured/test/test_session_lib.py"
+      sh "python3 measured/test/test_note_lib.py"
+      sh "python3 measured/test/test_plan_lib.py"
       puts "[test] done"
     end
   end
@@ -138,18 +138,23 @@ module BuildTasks
     puts "[build] done"
   end
 
-  # Delete built files whose source no longer exists. We only consider
-  # destinations that mirror a buildable source location (skills/, agents/,
-  # etc.), and we reconstruct the expected source path for each — if that
-  # source is gone, the destination is an orphan and gets removed. Source
-  # files are never touched.
+  # Delete built files whose source no longer exists. We only sweep the
+  # buildable subdirectories that the build actually generates — each
+  # plugin's skills/ and agents/ (source/<plugin>/<subdir> → <plugin>/<subdir>)
+  # — and reconstruct the expected source path for each destination. If that
+  # source is gone, the destination is an orphan and gets removed. Hand-authored
+  # plugin contents like bin/, lib/, test/, and .claude-plugin/ have no source/
+  # counterpart and are never considered. Source files are never touched.
   def self.prune_orphans
     require "fileutils"
 
-    source_dirs = Dir.glob("source/*").select { |p| File.directory?(p) }
-    dest_dirs = source_dirs
-      .map { |p| p.sub(%r{\Asource/}, "") }
-      .reject { |p| p.start_with?("_") }
+    # Buildable source subdirs look like source/<plugin>/<subdir>, skipping
+    # partials (source/_*). Map each to its destination: <plugin>/<subdir>.
+    build_dirs = Dir.glob("source/*/*")
+      .select { |p| File.directory?(p) }
+      .reject { |p| p.sub(%r{\Asource/}, "").start_with?("_") }
+
+    dest_dirs = build_dirs.map { |p| p.sub(%r{\Asource/}, "") }
 
     dest_dirs.each do |dir|
       Dir.glob("#{dir}/**/*").each do |dest|

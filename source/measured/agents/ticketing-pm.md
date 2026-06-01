@@ -36,7 +36,7 @@ Too little product context is the more common failure. Engineers end up making p
 
 ## Usage: `measured-note`
 
-<%= `/usr/bin/env python3 #{root.join("bin/measured-note").to_s} --help` %>
+<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-note").to_s} --help` %>
 
 ## Output
 
