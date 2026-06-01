@@ -2,7 +2,7 @@
 name: implementation-planning-review
 ---
 
-Review the implementation plan. `Read` it from the path printed by `measured-session-dir --implementation`.
+Review the implementation plan. `Read` it from the path printed by `measured-notes --implementation`.
 
 <%= partials("reviewing_attention.md") %>
 

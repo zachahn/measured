@@ -15,11 +15,11 @@ An excellent implementation plan:
 ## Workflow
 
 1. Review the architecture plan.
-    - `Read` it from the path printed by `measured-session-dir --architecture`.
+    - `Read` it from the path printed by `measured-notes --architecture`.
 2. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
 3. Clarify unknowns with `AskUserQuestion`.
 4. Draft and revise the plan. The implementation plan lives at the path printed
-   by `measured-session-dir --implementation`. Use the standard `Write`, `Read`,
+   by `measured-notes --implementation`. Use the standard `Write`, `Read`,
    and `Edit` tools on that file.
 5. Self review the plan
     - `Read` the implementation plan.
@@ -32,9 +32,9 @@ An excellent implementation plan:
     - Rerun the review if making any significant changes.
 7. Present plan.
 
-## Usage: `measured-session-dir`
+## Usage: `measured-notes`
 
-<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-session-dir").to_s} --help` %>
+<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-notes").to_s} --help` %>
 
 ## System design
 

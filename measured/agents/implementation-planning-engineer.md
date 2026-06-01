@@ -22,11 +22,11 @@ Claude must collaborate with the user to create the optimal solution. Always sto
 ## Workflow
 
 1. Review the architecture plan.
-    - `Read` it from the path printed by `measured-session-dir --architecture`.
+    - `Read` it from the path printed by `measured-notes --architecture`.
 2. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
 3. Clarify unknowns with `AskUserQuestion`.
 4. Draft and revise the plan. The implementation plan lives at the path printed
-   by `measured-session-dir --implementation`. Use the standard `Write`, `Read`,
+   by `measured-notes --implementation`. Use the standard `Write`, `Read`,
    and `Edit` tools on that file.
 5. Self review the plan
     - `Read` the implementation plan.
@@ -39,10 +39,10 @@ Claude must collaborate with the user to create the optimal solution. Always sto
     - Rerun the review if making any significant changes.
 7. Present plan.
 
-## Usage: `measured-session-dir`
+## Usage: `measured-notes`
 
-usage: measured-session-dir (--root |
-                             --ticket | --architecture | --implementation)
+usage: measured-notes (--root |
+                       --ticket | --architecture | --implementation)
 
 Print a path inside the per-Claude-session state directory.
 

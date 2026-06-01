@@ -26,7 +26,7 @@ Too little product context is the more common failure. Engineers end up making p
 3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. Do not assume.
 4. Confirm and verify the problem statement with the user before delving into the other sections.
 5. Draft and revise the ticket. The ticket lives at the path printed by
-   `measured-session-dir --ticket`. Use the standard `Write`, `Read`, and
+   `measured-notes --ticket`. Use the standard `Write`, `Read`, and
    `Edit` tools on that file.
 6. Self review the ticket
     - `Read` the ticket file.
@@ -34,9 +34,9 @@ Too little product context is the more common failure. Engineers end up making p
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 7. Confirm the ticket with the user.
 
-## Usage: `measured-session-dir`
+## Usage: `measured-notes`
 
-<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-session-dir").to_s} --help` %>
+<%= `/usr/bin/env python3 #{root.join("measured/bin/measured-notes").to_s} --help` %>
 
 ## Output
 

@@ -42,7 +42,7 @@ If the design covers multiple independent subsystems, it should have been broken
     - Error handling
     - Testing approach
 5. Draft and revise the plan. The implementation plan lives at the path printed
-   by `measured-session-dir --implementation`. Use the standard `Write`, `Read`,
+   by `measured-notes --implementation`. Use the standard `Write`, `Read`,
    and `Edit` tools on that file.
 6. Self review the plan
     - `Read` the implementation plan.
@@ -55,10 +55,10 @@ If the design covers multiple independent subsystems, it should have been broken
     - Rerun the review if making any significant changes.
 8. Present plan.
 
-## Usage: `measured-session-dir`
+## Usage: `measured-notes`
 
-usage: measured-session-dir (--root |
-                             --ticket | --architecture | --implementation)
+usage: measured-notes (--root |
+                       --ticket | --architecture | --implementation)
 
 Print a path inside the per-Claude-session state directory.
 

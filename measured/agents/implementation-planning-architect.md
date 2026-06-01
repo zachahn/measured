@@ -31,7 +31,7 @@ Claude must collaborate with the user to create the optimal solution. Always sto
     - Cover: architecture, key libraries or patterns, how it integrates with existing code
 4. Expand chosen approach
 5. Draft and revise the plan. The architecture plan lives at the path printed
-   by `measured-session-dir --architecture`. Use the standard `Write`, `Read`,
+   by `measured-notes --architecture`. Use the standard `Write`, `Read`,
    and `Edit` tools on that file.
 6. Self review the plan
     - `Read` the architecture plan.
@@ -39,10 +39,10 @@ Claude must collaborate with the user to create the optimal solution. Always sto
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 7. Request reviews and incorporate feedback.
 
-## Usage: `measured-session-dir`
+## Usage: `measured-notes`
 
-usage: measured-session-dir (--root |
-                             --ticket | --architecture | --implementation)
+usage: measured-notes (--root |
+                       --ticket | --architecture | --implementation)
 
 Print a path inside the per-Claude-session state directory.
 
