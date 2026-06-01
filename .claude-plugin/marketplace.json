@@ -1,5 +1,6 @@
 {
   "name": "measured-suite",
+  "description": "Plugins for careful software engineering",
   "owner": {
     "name": "Zach Ahn"
   },
