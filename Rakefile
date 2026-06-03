@@ -132,6 +132,10 @@ module BuildTasks
     return nil if rest.start_with?("_") || segments.include?("_partials")
     # evals/ holds the eval set and is tooling input, not shipped with the skill.
     return nil if segments.include?("evals")
+    # *-workspace/ dirs are gitignored scratch (eval runs). Skipping them keeps
+    # that scratch out of the shipped tree and out of the orphan sweep's build
+    # dirs, so a stray workspace can't make prune delete a real committed file.
+    return nil if segments.any? { |s| s.end_with?("-workspace") }
     File.join(plugin, rest)
   end
 
