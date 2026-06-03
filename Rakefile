@@ -187,6 +187,34 @@ module BuildTasks
         puts "[build] pruned #{dest}"
       end
     end
+
+    # Pruning a file (e.g. the only file in an excluded evals/ dir) can leave
+    # an empty directory behind. Sweep those away too, deepest-first so a
+    # parent that becomes empty once its children go is also removed.
+    build_dirs.each do |dir|
+      Dir.glob("#{dir}/**/*").select { |d| File.directory?(d) }
+        .sort_by { |d| -d.count("/") }
+        .each do |d|
+          next unless (Dir.entries(d) - %w[. ..]).empty?
+          Dir.rmdir(d)
+          puts "[build] pruned empty dir #{d}"
+        end
+    end
+  end
+end
+
+module EvalTasks
+  extend Rake::DSL
+
+  namespace :eval do
+    desc "Aggregate an iteration's grading.json + timing.json into benchmark.json"
+    task :benchmark, [:iteration, :skill_name] do |_t, args|
+      iteration = args[:iteration]
+      abort "Usage: rake eval:benchmark[path/to/iteration-N,skill-name]" if iteration.nil?
+      cmd = ["python3", "measured/bin/eval-benchmark", iteration]
+      cmd += ["--skill-name", args[:skill_name]] if args[:skill_name]
+      sh(*cmd)
+    end
   end
 end
 

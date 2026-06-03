@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""Aggregate skill-eval runs into a benchmark.json the eval viewer understands.
+
+Given an iteration directory laid out as
+
+    <iteration>/eval-*/<arm>/grading.json
+    <iteration>/eval-*/<arm>/timing.json   (optional)
+
+where <arm> is "with_skill" or "without_skill", this reads each run's grading
+(an `expectations` list of {text, passed, evidence}) and timing, then writes
+<iteration>/benchmark.json in the skill-creator schema (runs[] with nested
+result, run_summary per arm with mean/stddev/min/max, and a delta block) and
+prints a per-run summary.
+
+This is the generic half of the eval loop. The skill-specific part — deciding
+which assertions to check and writing grading.json — lives next to each skill
+as source/skills/<skill>/evals/grade.py. Stdlib only.
+"""
+
+import argparse
+import datetime
+import json
+import pathlib
+import statistics
+import sys
+
+ARMS = ("with_skill", "without_skill")
+
+
+def load_json(path: pathlib.Path):
+    try:
+        return json.loads(path.read_text())
+    except FileNotFoundError:
+        return None
+
+
+def stat(xs: list[float]) -> dict:
+    return {
+        "mean": statistics.mean(xs),
+        "stddev": statistics.pstdev(xs) if len(xs) > 1 else 0.0,
+        "min": min(xs),
+        "max": max(xs),
+    }
+
+
+def collect_runs(iteration: pathlib.Path):
+    """Yield one run dict per eval-*/<arm> that has a grading.json."""
+    runs = []
+    for eval_dir in sorted(iteration.glob("eval-*")):
+        if not eval_dir.is_dir():
+            continue
+        # Derive a numeric id and a name from "eval-<id>-<name>".
+        stem = eval_dir.name[len("eval-"):]
+        head, _, tail = stem.partition("-")
+        eval_id = int(head) if head.isdigit() else stem
+        eval_name = tail or stem
+
+        per_arm_counts = {}
+        for arm in ARMS:
+            run_dir = eval_dir / arm
+            grading = load_json(run_dir / "grading.json")
+            if grading is None:
+                continue
+            timing = load_json(run_dir / "timing.json") or {}
+            exps = grading.get("expectations", [])
+            passed = sum(1 for e in exps if e.get("passed"))
+            total = len(exps)
+            per_arm_counts[arm] = per_arm_counts.get(arm, 0) + 1
+            runs.append({
+                "eval_id": eval_id,
+                "eval_name": eval_name,
+                "configuration": arm,
+                "run_number": per_arm_counts[arm],
+                "result": {
+                    "pass_rate": (passed / total) if total else 0.0,
+                    "passed": passed,
+                    "failed": total - passed,
+                    "total": total,
+                    "time_seconds": timing.get("total_duration_seconds", 0.0),
+                    "tokens": timing.get("total_tokens", 0),
+                    "tool_calls": timing.get("tool_calls", 0),
+                    "errors": 0,
+                },
+                "expectations": exps,
+                "notes": grading.get("notes", []),
+            })
+    return runs
+
+
+def summarize(runs):
+    summary = {}
+    by_arm = {arm: [r for r in runs if r["configuration"] == arm] for arm in ARMS}
+    for arm in ARMS:
+        rs = by_arm[arm]
+        if not rs:
+            continue
+        summary[arm] = {
+            "pass_rate": stat([r["result"]["pass_rate"] for r in rs]),
+            "time_seconds": stat([r["result"]["time_seconds"] for r in rs]),
+            "tokens": stat([float(r["result"]["tokens"]) for r in rs]),
+        }
+    if "with_skill" in summary and "without_skill" in summary:
+        w, b = summary["with_skill"], summary["without_skill"]
+        summary["delta"] = {
+            "pass_rate": f"{w['pass_rate']['mean'] - b['pass_rate']['mean']:+.2f}",
+            "time_seconds": f"{w['time_seconds']['mean'] - b['time_seconds']['mean']:+.1f}",
+            "tokens": f"{w['tokens']['mean'] - b['tokens']['mean']:+.0f}",
+        }
+    return summary
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(prog="eval-benchmark")
+    parser.add_argument("iteration", help="path to an iteration-N directory")
+    parser.add_argument("--skill-name", default="")
+    parser.add_argument("--model", default="")
+    args = parser.parse_args(argv)
+
+    iteration = pathlib.Path(args.iteration)
+    if not iteration.is_dir():
+        parser.error(f"not a directory: {iteration}")
+
+    runs = collect_runs(iteration)
+    if not runs:
+        parser.error(f"no eval-*/<arm>/grading.json found under {iteration}")
+
+    summary = summarize(runs)
+    benchmark = {
+        "metadata": {
+            "skill_name": args.skill_name,
+            "executor_model": args.model,
+            "timestamp": datetime.datetime.now(datetime.timezone.utc)
+            .strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "evals_run": sorted({r["eval_id"] for r in runs}, key=str),
+            "runs_per_configuration": max(
+                (r["run_number"] for r in runs), default=0
+            ),
+        },
+        "runs": runs,
+        "run_summary": summary,
+        "notes": [],
+    }
+
+    out = iteration / "benchmark.json"
+    out.write_text(json.dumps(benchmark, indent=2) + "\n")
+
+    # Human-readable summary.
+    for r in runs:
+        res = r["result"]
+        print(f"  {('eval-%s' % r['eval_id']):10s} {r['configuration']:14s} "
+              f"{res['passed']}/{res['total']}  "
+              f"{res['time_seconds']:.0f}s  {res['tokens']} tok")
+    if "delta" in summary:
+        d = summary["delta"]
+        print(f"\n  pass_rate delta {d['pass_rate']}  "
+              f"time {d['time_seconds']}s  tokens {d['tokens']}")
+    print(f"\nWrote {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
