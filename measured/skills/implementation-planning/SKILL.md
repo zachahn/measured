@@ -57,15 +57,18 @@ If the design covers multiple independent subsystems, it should have been broken
 
 ## Usage: `measured-notes`
 
-usage: measured-notes (--root | --ticket | --architecture | --implementation |
-                       --task-new | --task-list | --task-get REF)
+usage: measured-notes (--root-dir | --project-dir | --session-dir | --ticket |
+                       --architecture | --implementation | --task-new |
+                       --task-list | --task-get REF)
 
 Print a path inside the per-Claude-session state directory.
 
-Root (supersedes every target; for debugging):
-  --root            the state root (holds every project's session dirs)
+Debugging (each prints a directory, superseding any target):
+  --root-dir        the state root (holds every project's session dirs)
+  --project-dir     this project's dir (holds every session dir for the repo)
+  --session-dir     this session's dir (where the targets below live)
 
-Single-file target (exactly one, unless --root is given):
+Single-file target (exactly one, unless a debugging flag is given):
   --ticket          <session>/TICKET.md
   --architecture    <session>/ARCHITECTURE.md
   --implementation  <session>/IMPLEMENTATION.md

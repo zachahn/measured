@@ -234,11 +234,28 @@ def state_root() -> pathlib.Path:
     ) / "measured-claude-plugin"
 
 
+def _project_dir_for(claude_pid: int) -> pathlib.Path:
+    """The project dir for an already-resolved Claude pid (does not create it)."""
+    project = encode_project_path(claude_pwd(claude_pid))
+    return state_root() / "projects" / project
+
+
+def project_dir() -> pathlib.Path:
+    """Return the directory that holds every session dir for this project.
+
+    Namespaced by Claude's working directory the same way Claude Code names
+    its own `projects/<encoded-cwd>/` dirs, so one repo maps to one stable
+    location regardless of which session is running.
+    """
+    path = _project_dir_for(find_claude_pid(os.getppid()))
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def session_dir() -> pathlib.Path:
     claude_pid = find_claude_pid(os.getppid())
     start_time = parent_start_time(claude_pid)
-    project = encode_project_path(claude_pwd(claude_pid))
-    path = state_root() / "projects" / project / f"{start_time}-{claude_pid}"
+    path = _project_dir_for(claude_pid) / f"{start_time}-{claude_pid}"
     path.mkdir(parents=True, exist_ok=True)
     return path
 

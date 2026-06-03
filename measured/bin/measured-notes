@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Print a path inside the per-Claude-session state directory.
 
-With --root, print the state root that contains every project's session
-directories (and ignore any target flag). Otherwise exactly one target is
-required. The single-file targets map to a well-known file; the --task-*
-targets manage a series of numbered task files:
+The directory flags each print a directory and supersede any target.
+Otherwise exactly one target is required. The single-file targets map to a
+well-known file; the --task-* targets manage a series of numbered task files:
 
-  --root            the state root (holds every project's session dirs)
+  --root-dir        the state root (holds every project's session dirs)
+  --project-dir     this project's dir (holds every session dir for the repo)
+  --session-dir     this session's dir (where the targets below live)
   --ticket          <session>/TICKET.md
   --architecture    <session>/ARCHITECTURE.md
   --implementation  <session>/IMPLEMENTATION.md
@@ -33,8 +34,9 @@ TARGETS = {
 
 
 USAGE_TEXT = """\
-usage: measured-notes (--root | --ticket | --architecture | --implementation |
-                       --task-new | --task-list | --task-get REF)
+usage: measured-notes (--root-dir | --project-dir | --session-dir | --ticket |
+                       --architecture | --implementation | --task-new |
+                       --task-list | --task-get REF)
 """
 
 HELP_TEXT = (
@@ -42,10 +44,12 @@ HELP_TEXT = (
     + """
 Print a path inside the per-Claude-session state directory.
 
-Root (supersedes every target; for debugging):
-  --root            the state root (holds every project's session dirs)
+Debugging (each prints a directory, superseding any target):
+  --root-dir        the state root (holds every project's session dirs)
+  --project-dir     this project's dir (holds every session dir for the repo)
+  --session-dir     this session's dir (where the targets below live)
 
-Single-file target (exactly one, unless --root is given):
+Single-file target (exactly one, unless a debugging flag is given):
   --ticket          <session>/TICKET.md
   --architecture    <session>/ARCHITECTURE.md
   --implementation  <session>/IMPLEMENTATION.md
@@ -71,7 +75,14 @@ def main(argv: list[str]) -> int:
     parser = _Parser(prog="measured-notes", add_help=False)
     parser.add_argument("-h", "--help", action="help")
 
-    parser.add_argument("--root", action="store_true")
+    dirs = parser.add_mutually_exclusive_group()
+    dirs.add_argument("--root-dir", dest="dir", action="store_const", const="root")
+    dirs.add_argument(
+        "--project-dir", dest="dir", action="store_const", const="project"
+    )
+    dirs.add_argument(
+        "--session-dir", dest="dir", action="store_const", const="session"
+    )
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -95,8 +106,13 @@ def main(argv: list[str]) -> int:
 
     args = parser.parse_args(argv)
 
-    if args.root:
-        print(session_lib.state_root())
+    if args.dir is not None:
+        printers = {
+            "root": session_lib.state_root,
+            "project": session_lib.project_dir,
+            "session": session_lib.session_dir,
+        }
+        print(printers[args.dir]())
         return 0
 
     if args.task_ref is not None:
