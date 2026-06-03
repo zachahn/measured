@@ -1,5 +1,4 @@
-# Writing Clearly
-
+<guidance>
 Consider _Elements of Style_:
 
 - Avoid adverbs. Replace them with stronger verbs.
@@ -7,3 +6,4 @@ Consider _Elements of Style_:
 - Prefer active voice.
 - Use concrete nouns. Name the thing, not the category.
 - Prefer full sentences. Reserve fragments for lists and headings.
+</guidance>
