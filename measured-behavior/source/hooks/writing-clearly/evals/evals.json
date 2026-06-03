@@ -1,0 +1,69 @@
+{
+  "skill_name": "writing-clearly",
+  "kind": "hook",
+  "note": "writing-clearly is a SessionStart hook, not a skill. The 'with_skill' arm prepends hooks/writing-clearly.md to the author's context (what the hook injects); 'without_skill' omits it. The prompt is identical across arms. Grading is by a judge agent (see judge.md), not a mechanical proxy — prose quality doesn't reduce to regex. grade.py turns the judge's per-rule scores into the harness schema.",
+  "rubric": [
+    {
+      "id": "adverbs",
+      "rule": "Avoid adverbs. Replace them with stronger verbs.",
+      "adheres": "Verbs carry the meaning: 'cut latency in half', 'the job crashes'. Adverbs are rare and load-bearing.",
+      "violates": "Adverb pile-ups doing the work a verb should: 'significantly improved', 'completely broke', 'quickly added', 'really important'."
+    },
+    {
+      "id": "needless_words",
+      "rule": "Omit needless words.",
+      "adheres": "Every word earns its place. No throat-clearing, no filler.",
+      "violates": "'in order to', 'the fact that', 'it should be noted that', 'basically', 'at this point in time', restating the prompt before answering."
+    },
+    {
+      "id": "active_voice",
+      "rule": "Prefer active voice.",
+      "adheres": "The actor leads: 'the retry loop swallows the error', 'we ship the export async'.",
+      "violates": "Agentless passives where the actor matters: 'the bug was introduced', 'it is handled by', 'changes were made', 'is expected to be done'."
+    },
+    {
+      "id": "concrete_nouns",
+      "rule": "Use concrete nouns. Name the thing, not the category.",
+      "adheres": "Names the actual thing: 'CheckoutController', 'the 100k-row CSV', 'the nightly cron'.",
+      "violates": "Vague category nouns standing in for specifics: 'the component', 'various aspects', 'certain functionality', 'the relevant systems', 'some changes'."
+    },
+    {
+      "id": "full_sentences",
+      "rule": "Prefer full sentences. Reserve fragments for lists and headings.",
+      "adheres": "Prose runs in complete sentences; fragments appear only inside bullet lists and headings.",
+      "violates": "Sentence fragments used as prose, or a wall of bullets where a paragraph belongs."
+    }
+  ],
+  "evals": [
+    {
+      "id": 0,
+      "name": "bugfix-pr-description",
+      "prompt": "Write the description for a pull request. The change: our checkout flow double-charged customers when the payment webhook arrived before our local order record was committed, because the webhook handler read the order from a replica that hadn't caught up yet. The fix routes the handler's read to the primary database and adds an idempotency key so a retried webhook can't create a second charge. Write the PR description a reviewer would read.",
+      "expected_output": "A PR description that explains the race condition, the fix, and why, in clear prose. Names the concrete pieces (webhook handler, replica lag, primary read, idempotency key) rather than 'the system'. Active voice, few adverbs, full sentences with bullets only where a list fits."
+    },
+    {
+      "id": 1,
+      "name": "refactor-commit-message",
+      "prompt": "Write the body of a git commit message. The change extracts duplicated payment logic that was copy-pasted across CheckoutController, SubscriptionController, and RefundController into a single PaymentService, with no behavior change. Explain what moved and why for someone reading `git log` in a year.",
+      "expected_output": "A commit body that states what was extracted, from where, into what, and that behavior is unchanged. Concrete class names, active voice, no filler, complete sentences."
+    },
+    {
+      "id": 2,
+      "name": "launch-delay-update",
+      "prompt": "Write a short message to stakeholders. The reporting dashboard launch we promised for Friday will slip to the following Wednesday because load testing found that the CSV export blocks the request thread and times out on datasets above 50,000 rows; we're moving export to a background job. Tell them what's happening and the new date.",
+      "expected_output": "A stakeholder update that states the slip, the new date, and the concrete reason (export blocks the request thread, times out past 50k rows, moving to a background job) without hedging or adverb padding. Active voice, full sentences."
+    },
+    {
+      "id": 3,
+      "name": "function-docstring",
+      "prompt": "Write a docstring (prose, 4-8 sentences) for a function `allocate_task_file(dir)` that picks the next free TASK-NNN.md filename in a directory and creates it atomically with O_EXCL, so that concurrent callers never receive the same number; it scans existing TASK-NNN.md files, takes the highest number, and counts up from there, retrying on collision. Explain the contract and why it's safe under concurrency.",
+      "expected_output": "A docstring that explains what the function returns, the atomic-create/O_EXCL guarantee, and the count-up-from-highest behavior. Concrete (names O_EXCL, the retry, the numbering), active voice, complete sentences, minimal adverbs."
+    },
+    {
+      "id": 4,
+      "name": "design-tradeoff-summary",
+      "prompt": "Write a short section (one or two paragraphs) for a design doc weighing two ways to generate the large CSV export: (a) stream rows straight to the HTTP response as they're read from the database, versus (b) write the file to object storage in a background job and email the user a download link. Cover the tradeoff and make a recommendation.",
+      "expected_output": "A design-doc section that contrasts streaming vs background-job-plus-link on the axes that matter (timeout risk, memory, user experience, complexity), names them concretely, and recommends one. Active voice, full-sentence prose, few adverbs, no filler."
+    }
+  ]
+}

@@ -53,6 +53,7 @@ module TestTasks
 
     task :scripts do
       sh "python3 measured/test/test_session_lib.py"
+      sh "python3 measured-behavior/test/test_writing_clearly.py"
       puts "[test] done"
     end
 
