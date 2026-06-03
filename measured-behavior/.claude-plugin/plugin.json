@@ -11,5 +11,18 @@
   "license": "MIT",
   "keywords": [
     "behavior"
-  ]
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/writing-clearly.py"
+          }
+        ]
+      }
+    ]
+  }
 }
