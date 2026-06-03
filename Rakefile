@@ -121,11 +121,16 @@ module BuildTasks
   end
 
   # Map a source path (<plugin>/source/<rest>) to its built destination
-  # (<plugin>/<rest>), or nil if it is a partial or otherwise not buildable.
+  # (<plugin>/<rest>), or nil if it is a partial, eval tooling, or otherwise
+  # not part of the shipped output. Returning nil here makes the build skip
+  # the file and the orphan sweep prune any stale built copy of it.
   def self.dest_for(source)
     plugin, rest = source.split("/source/", 2)
     return nil if rest.nil? || rest.empty?
-    return nil if rest.start_with?("_") || rest.split("/").include?("_partials")
+    segments = rest.split("/")
+    return nil if rest.start_with?("_") || segments.include?("_partials")
+    # evals/ holds the eval set and is tooling input, not shipped with the skill.
+    return nil if segments.include?("evals")
     File.join(plugin, rest)
   end
 
