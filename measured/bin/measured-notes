@@ -2,13 +2,18 @@
 """Print a path inside the per-Claude-session state directory.
 
 With --root, print the state root that contains every project's session
-directories (and ignore any target flag). Otherwise exactly one target flag
-is required; each maps to a well-known file inside the session directory:
+directories (and ignore any target flag). Otherwise exactly one target is
+required. The single-file targets map to a well-known file; the --task-*
+targets manage a series of numbered task files:
 
   --root            the state root (holds every project's session dirs)
   --ticket          <session>/TICKET.md
   --architecture    <session>/ARCHITECTURE.md
   --implementation  <session>/IMPLEMENTATION.md
+  --task-new        create and print the next <session>/TASK-NNN.md
+  --task-list       print the basename of every TASK-NNN.md, in order
+  --task-get REF    print the full path of a task (REF: 123, TASK-123,
+                    or TASK-123.md), or exit 1 if it doesn't exist
 
 Session-dir resolution lives in ../lib/session_lib.py.
 """
@@ -28,8 +33,8 @@ TARGETS = {
 
 
 USAGE_TEXT = """\
-usage: measured-notes (--root |
-                       --ticket | --architecture | --implementation)
+usage: measured-notes (--root | --ticket | --architecture | --implementation |
+                       --task-new | --task-list | --task-get REF)
 """
 
 HELP_TEXT = (
@@ -40,10 +45,16 @@ Print a path inside the per-Claude-session state directory.
 Root (supersedes every target; for debugging):
   --root            the state root (holds every project's session dirs)
 
-Target (exactly one, unless --root is given):
+Single-file target (exactly one, unless --root is given):
   --ticket          <session>/TICKET.md
   --architecture    <session>/ARCHITECTURE.md
   --implementation  <session>/IMPLEMENTATION.md
+
+Task series:
+  --task-new        create and print the next <session>/TASK-NNN.md
+  --task-list       print the basename of every TASK-NNN.md, in order
+  --task-get REF    print the full path of a task (REF: 123, TASK-123,
+                    or TASK-123.md), or exit 1 if it doesn't exist
 """
 )
 
@@ -72,6 +83,15 @@ def main(argv: list[str]) -> int:
     group.add_argument(
         "--implementation", dest="target", action="store_const", const="implementation"
     )
+    group.add_argument(
+        "--task-new", dest="target", action="store_const", const="task-new"
+    )
+    group.add_argument(
+        "--task-list", dest="target", action="store_const", const="task-list"
+    )
+    group.add_argument(
+        "--task-get", dest="task_ref", metavar="REF", default=None
+    )
 
     args = parser.parse_args(argv)
 
@@ -79,11 +99,31 @@ def main(argv: list[str]) -> int:
         print(session_lib.state_root())
         return 0
 
+    if args.task_ref is not None:
+        path = session_lib.resolve_task_file(session_lib.session_dir(), args.task_ref)
+        if path is None:
+            print(f"no such task: {args.task_ref}", file=sys.stderr)
+            return 1
+        print(path)
+        return 0
+
     if args.target is None:
         parser.error(
-            "exactly one target is required: "
-            "--ticket, --architecture, --implementation"
+            "exactly one target is required: --ticket, --architecture, "
+            "--implementation, --task-new, --task-list, --task-get"
         )
+
+    # The --task-* targets manage a series of numbered files: --task-new
+    # allocates the next free TASK-NNN.md (creating it, race-free), --task-list
+    # enumerates them. The remaining targets are fixed, well-known filenames.
+    if args.target == "task-new":
+        print(session_lib.allocate_task_file(session_lib.session_dir()))
+        return 0
+
+    if args.target == "task-list":
+        for name in session_lib.list_task_files(session_lib.session_dir()):
+            print(name)
+        return 0
 
     print(session_lib.session_dir() / TARGETS[args.target])
     return 0

@@ -12,6 +12,7 @@ any install step.
 import ctypes
 import os
 import pathlib
+import re
 import subprocess
 import sys
 from datetime import datetime
@@ -240,3 +241,59 @@ def session_dir() -> pathlib.Path:
     path = state_root() / "projects" / project / f"{start_time}-{claude_pid}"
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+TASK_FILENAME = "TASK-{:03d}.md"
+_TASK_PATTERN = re.compile(r"\ATASK-(\d+)\.md\Z")
+
+
+def allocate_task_file(directory: pathlib.Path) -> pathlib.Path:
+    """Create and return a fresh, sequentially numbered TASK-NNN.md file.
+
+    The first call in an empty directory yields TASK-001.md, the next
+    TASK-002.md, and so on. The file is always created (never just named),
+    using O_CREAT | O_EXCL so that two processes racing on the same directory
+    can never be handed the same path: the loser of any given number sees
+    EEXIST, bumps to the next number, and tries again.
+    """
+    highest = 0
+    for entry in directory.iterdir():
+        match = _TASK_PATTERN.match(entry.name)
+        if match:
+            highest = max(highest, int(match.group(1)))
+
+    candidate = highest + 1
+    while True:
+        path = directory / TASK_FILENAME.format(candidate)
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            candidate += 1
+            continue
+        os.close(fd)
+        return path
+
+
+def list_task_files(directory: pathlib.Path) -> list[str]:
+    """Return the basenames of every TASK-NNN.md in numeric order.
+
+    Empty when there are no task files — that is a normal state, not an error.
+    """
+    names = [e.name for e in directory.iterdir() if _TASK_PATTERN.match(e.name)]
+    return sorted(names, key=lambda n: int(_TASK_PATTERN.match(n).group(1)))
+
+
+def resolve_task_file(directory: pathlib.Path, ref: str) -> pathlib.Path | None:
+    """Resolve a task reference to its full path, or None if it doesn't exist.
+
+    Accepts the three forms a caller naturally has on hand: a full filename
+    ("TASK-123.md"), the stem ("TASK-123"), or a bare number ("123" / 123).
+    The number is normalized to the canonical zero-padded filename so that
+    "7", "TASK-7", and "TASK-007.md" all resolve to the same file.
+    """
+    ref = ref.strip()
+    match = re.fullmatch(r"(?:TASK-)?(\d+)(?:\.md)?", ref, re.IGNORECASE)
+    if not match:
+        return None
+    path = directory / TASK_FILENAME.format(int(match.group(1)))
+    return path if path.is_file() else None

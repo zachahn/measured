@@ -41,18 +41,24 @@ Claude must collaborate with the user to create the optimal solution. Always sto
 
 ## Usage: `measured-notes`
 
-usage: measured-notes (--root |
-                       --ticket | --architecture | --implementation)
+usage: measured-notes (--root | --ticket | --architecture | --implementation |
+                       --task-new | --task-list | --task-get REF)
 
 Print a path inside the per-Claude-session state directory.
 
 Root (supersedes every target; for debugging):
   --root            the state root (holds every project's session dirs)
 
-Target (exactly one, unless --root is given):
+Single-file target (exactly one, unless --root is given):
   --ticket          <session>/TICKET.md
   --architecture    <session>/ARCHITECTURE.md
   --implementation  <session>/IMPLEMENTATION.md
+
+Task series:
+  --task-new        create and print the next <session>/TASK-NNN.md
+  --task-list       print the basename of every TASK-NNN.md, in order
+  --task-get REF    print the full path of a task (REF: 123, TASK-123,
+                    or TASK-123.md), or exit 1 if it doesn't exist
 
 
 ## Template
