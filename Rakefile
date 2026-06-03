@@ -211,7 +211,7 @@ module EvalTasks
     task :benchmark, [:iteration, :skill_name] do |_t, args|
       iteration = args[:iteration]
       abort "Usage: rake eval:benchmark[path/to/iteration-N,skill-name]" if iteration.nil?
-      cmd = ["python3", "measured/bin/eval-benchmark", iteration]
+      cmd = ["python3", "repo-scripts/eval-benchmark", iteration]
       cmd += ["--skill-name", args[:skill_name]] if args[:skill_name]
       sh(*cmd)
     end
