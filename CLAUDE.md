@@ -1,5 +1,6 @@
 - Never edit `skills/` or `agents/`. Edit `source/` and run `rake build`
 - Always opt to use the standard library. Never install any libraries.
+- Write shipped and tested code — hooks, the `measured-notes` CLI, libs, tests, eval scripts — in Python; it runs on users' machines and needs no Ruby. Keep Ruby to the `Rakefile`, which drives the build, tests, and version bumps and depends on ERB for templating.
 
 ## Evaluating a skill
 
