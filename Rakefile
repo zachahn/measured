@@ -112,9 +112,16 @@ module BuildTasks
   # and are never built or pruned on their own.
   SOURCE_GLOB = "*/source/**/*".freeze
 
+  # Inline a shared partial. The partial is itself rendered as ERB so a partial
+  # may nest other partials or embed command output, just like a source file.
+  # Rendering happens in this module's binding, where `partials`, `root`, and
+  # backtick command substitution all resolve.
   def self.partials(path)
     @partials ||= {}
-    @partials[path] ||= File.read(Dir.glob("*/source/_partials/#{path}").first)
+    @partials[path] ||= begin
+      raw = File.read(Dir.glob("*/source/_partials/#{path}").first)
+      ERB.new(raw).result(binding)
+    end
   end
 
   def self.root
