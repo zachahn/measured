@@ -1,5 +1,5 @@
 ---
-name: implementation-planning-beta
+name: implementation-planning
 description: Design an architecture plan for a feature or bugfix, then break it into well-scoped, implementation-ready tickets.
 disable-model-invocation: true
 ---
