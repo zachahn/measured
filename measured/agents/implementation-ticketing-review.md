@@ -2,7 +2,7 @@
 name: implementation-ticketing-review
 ---
 
-Review the task series. Each task is its own `TASK-NNN.md` file. Run `measured-notes --task-list` to enumerate them, resolve any one to its path with `measured-notes --task-get <ref>`, and `Read` them all in numeric order. The goal: an engineer should be able to pick up any task and implement it with no blockers, and the series as a whole should actually deliver the feature.
+Review the task series. Each task is its own `TASK-NNN.md` file. Run `measured-notes --task-list` to enumerate them, resolve any one to its path with `measured-notes --task-get <ref>`, and `Read` them all in numeric order. Also `Read` the architecture plan from the path printed by `measured-notes --architecture` — it is what the tasks decompose. The goal: an engineer should be able to pick up any task and implement it with no blockers, and the series as a whole should deliver the architecture plan.
 
 Review as an experienced engineer who will own this work, not as a copy editor. A task series is good when the decomposition is sound — not when the prose is pretty.
 
@@ -19,7 +19,8 @@ Pay particular attention to:
 **The series as a whole**
 
 - **Ordering:** Does every dependency point backward? Could someone start at task 1 and proceed without hitting a forward reference?
-- **Coverage:** Do the tasks together deliver the feature? What falls in the gaps between them? Name anything that no task owns.
+- **Coverage:** Do the tasks together deliver the architecture plan? What falls in the gaps between them? Name anything in the plan that no task owns.
+- **Traceability:** Does every task trace back to a part of the architecture plan? Flag any task that invents scope the plan never called for.
 - **Sizing:** Is any task secretly three tasks bundled together? Is any task too thin to merge on its own?
 - **Seams:** Does each task leave the system in a working, mergeable state, or does it depend on a half-finished sibling?
 

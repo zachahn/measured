@@ -12,7 +12,7 @@ Use `Skill(measured:ticketing)` to fully understand the user's original request.
 
 ## Phase 2 — Build the implementation plan
 
-Use `Skill(measured:implementation-planning)` to create a thorough implementation plan.
+Use `Skill(measured:implementation-planning-beta)` to design the architecture and break it into tickets.
 
 ## Phase 3 — Implement
 

@@ -24,24 +24,25 @@ The two failure modes to actively fight:
 
 ## Workflow
 
-1. Explore the codebase. Understand current behavior, the relevant modules, and how the work will land. Read before you decompose — the seams come from the code, not your imagination.
-2. Clarify unknowns with `AskUserQuestion`. Do not guess at requirements, scope boundaries, or which existing system owns a concern.
-3. When there's a real fork in how to slice the work (e.g. "ship behind a flag in one task" vs. "three incremental tasks"), use `AskUserQuestion` to propose 2+ decompositions with tradeoffs. The decomposition is the deliverable — don't pick silently.
-4. Confirm the overall shape (how many tasks, their titles, the dependency order) with the user before fleshing out every section. It's cheap to re-slice an outline, expensive to rewrite seven full tasks.
-5. Draft and revise the task series. Each task lives in its own file: run
+1. Read the architecture plan from the path printed by `measured-notes --architecture`. It is the source of truth for what gets built; your tickets decompose it. Every ticket should trace back to a part of the plan, and the tickets together should deliver it with no gaps.
+2. Explore the codebase. Understand current behavior, the relevant modules, and how the work will land. Read before you decompose — the seams come from the code, not your imagination.
+3. Clarify unknowns with `AskUserQuestion`. Do not guess at requirements, scope boundaries, or which existing system owns a concern.
+4. When there's a real fork in how to slice the work (e.g. "ship behind a flag in one task" vs. "three incremental tasks"), use `AskUserQuestion` to propose 2+ decompositions with tradeoffs. The decomposition is the deliverable — don't pick silently.
+5. Confirm the overall shape (how many tasks, their titles, the dependency order) with the user before fleshing out every section. It's cheap to re-slice an outline, expensive to rewrite seven full tasks.
+6. Draft and revise the task series. Each task lives in its own file: run
    `measured-notes --task-new` once per task to get a fresh, numbered path
    (`TASK-001.md`, `TASK-002.md`, …) — it creates the file for you, so call it
    in the order you want the tasks numbered. Use the standard `Write`, `Read`,
    and `Edit` tools on each path. Do not reuse one path for multiple tasks.
    `measured-notes --task-list` shows the tasks you've created so far, and
    `measured-notes --task-get <ref>` resolves a number back to its path.
-6. Self review:
+7. Self review:
     - `Read` every task file back.
     - Ordering: Does every dependency point backward, never forward? Can someone start at task 1 and proceed?
     - Sizing: Is any task secretly three tasks? Is any task too thin to stand alone?
     - Testability: Could two engineers disagree about whether a task's Acceptance Criteria are met? If so, tighten it.
-    - Coverage: Do the tasks together actually deliver the feature? What falls in the gaps between them?
-7. Confirm the task series with the user.
+    - Coverage: Do the tasks together actually deliver the architecture plan? What falls in the gaps between them?
+8. Confirm the task series with the user.
 
 ## Usage: `measured-notes`
 
@@ -63,7 +64,7 @@ Action-oriented and specific — "Add rate limiting to /api/auth endpoints", not
 
 ## Context / Background
 
-One to three sentences: why this task exists and what problem it solves. Link the parent epic, PRD, or thread if there is one. The implementer shouldn't need to go digging.
+One to three sentences: why this task exists and what problem it solves. Reference the section of the architecture plan this task implements (it lives at the path from `measured-notes --architecture`). The implementer shouldn't need to go digging.
 
 ## Acceptance Criteria
 
