@@ -6,15 +6,15 @@ disable-model-invocation: true
 
 # Subagent-Driven Development
 
-## Where the tasks live
+## Find the tasks
 
-Planning produces a **project** — a persistent, repo-scoped directory holding the architecture plan and one `TASK-NNNN.md` per task. You are given the project's reference (a number like `7`). Resolve its tasks with `measured-notes`:
+You are given a project reference (a number like `7`). Resolve its files with `measured-notes`:
 
-- `measured-notes --task-list <project>` lists the tasks in dependency order (their numbers run in that order).
-- `measured-notes --task-get <ref>` prints the full path of a task by its global ID.
-- `measured-notes --architecture <project>` prints the architecture plan, the source of truth the tasks decompose.
+- `measured-notes --task-list <project>` — task files, in dependency order.
+- `measured-notes --task-get <ref>` — a task's path by its global ID.
+- `measured-notes --architecture <project>` — the architecture plan.
 
-Read each task and the plan yourself, then paste the full task text into the implementer's prompt — never make the implementer resolve files or read the plan. Run `measured-notes --help` for the full flag set.
+Read each task yourself and paste its full text into the implementer's prompt. Run `measured-notes --help` for all flags.
 
 ## Model Selection
 
