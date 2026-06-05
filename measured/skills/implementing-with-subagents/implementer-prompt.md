@@ -10,7 +10,7 @@ Task tool (general-purpose):
 
     ## Task Description
 
-    [FULL TEXT of task from plan - paste it here, don't make subagent read file]
+    [FULL TEXT of the task's TASK-NNNN.md - paste it here, don't make subagent resolve or read the file]
 
     ## Context
 

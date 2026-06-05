@@ -6,6 +6,16 @@ disable-model-invocation: true
 
 # Subagent-Driven Development
 
+## Where the tasks live
+
+Planning produces a **project** — a persistent, repo-scoped directory holding the architecture plan and one `TASK-NNNN.md` per task. You are given the project's reference (a number like `7`). Resolve its tasks with `measured-notes`:
+
+- `measured-notes --task-list <project>` lists the tasks in dependency order (their numbers run in that order).
+- `measured-notes --task-get <ref>` prints the full path of a task by its global ID.
+- `measured-notes --architecture <project>` prints the architecture plan, the source of truth the tasks decompose.
+
+Read each task and the plan yourself, then paste the full task text into the implementer's prompt — never make the implementer resolve files or read the plan. Run `measured-notes --help` for the full flag set.
+
 ## Model Selection
 
 Use the least powerful model that can handle each role to conserve cost and increase speed.
@@ -48,10 +58,11 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 ## Example Workflow
 
 ```
-You: I'm using Subagent-Driven Development to execute this plan.
+You: I'm using Subagent-Driven Development to execute project 7.
 
-[Read plan file once: docs/superpowers/plans/feature-plan.md]
-[Extract all 5 tasks with full text and context]
+[List tasks once: measured-notes --task-list 7]
+[Read the architecture plan: measured-notes --architecture 7]
+[Read each TASK-NNNN.md, extract full text and context]
 [Create TodoWrite with all tasks]
 
 Task 1: Hook installation script
@@ -155,7 +166,7 @@ Done!
 - Skip reviews (spec compliance OR code quality)
 - Proceed with unfixed issues
 - Dispatch multiple implementation subagents in parallel (conflicts)
-- Make subagent read plan file (provide full text instead)
+- Make subagent resolve or read its task file (provide full text instead)
 - Skip scene-setting context (subagent needs to understand where task fits)
 - Ignore subagent questions (answer before letting them proceed)
 - Accept "close enough" on spec compliance (spec reviewer found issues = not done)
