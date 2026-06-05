@@ -251,15 +251,6 @@ def new_task(directory: pathlib.Path, conn, plan_id: int) -> pathlib.Path:
     return path
 
 
-def list_task_files(directory: pathlib.Path) -> list[str]:
-    """Return the basenames of every TASK-NNNN.md in numeric order.
-
-    Empty when there are no task files — that is a normal state, not an error.
-    """
-    names = [e.name for e in directory.iterdir() if _TASK_PATTERN.match(e.name)]
-    return sorted(names, key=lambda n: int(_TASK_PATTERN.match(n).group(1)))
-
-
 def resolve_task_file(directory: pathlib.Path, ref: str) -> pathlib.Path | None:
     """Resolve a task ref to its full path within a project dir, or None.
 

@@ -32,8 +32,9 @@ You are given a **plan reference** (a number like `7`); it names the plan direct
    tasks numbered. Task numbers are global across all plans, so they may not
    start at 1; that's fine. Use the standard `Write`, `Read`, and `Edit` tools
    on each path. Do not reuse one path for multiple tasks.
-   `measured-notes --task-list <plan>` shows the tasks you've created so far,
-   and `measured-notes --task-get <ref>` resolves a task number back to its path.
+   `measured-notes --plan-dir <plan>` is the plan's directory — list its
+   `TASK-NNNN.md` files to see the tasks you've created so far — and
+   `measured-notes --task-get <ref>` resolves a task number back to its path.
 7. Self review:
     - `Read` every task file back.
     - Ordering: Does every dependency point backward, never forward? Can someone start at task 1 and proceed?

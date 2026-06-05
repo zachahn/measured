@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 You are given a plan reference (a number like `7`). Resolve its files with `measured-notes`:
 
-- `measured-notes --task-list <plan>` — task files, in dependency order.
+- `measured-notes --plan-dir <plan>` — the plan's directory. List its `TASK-NNNN.md` files (Glob/`ls`) to enumerate the tasks; their numbers run in dependency order.
 - `measured-notes --task-get <ref>` — a task's path by its global ID.
 - `measured-notes --architecture <plan>` — the architecture plan.
 
@@ -60,7 +60,7 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 ```
 You: I'm using Subagent-Driven Development to execute plan 7.
 
-[List tasks once: measured-notes --task-list 7]
+[List tasks once: measured-notes --plan-dir 7, then Glob its TASK-NNNN.md files]
 [Read the architecture plan: measured-notes --architecture 7]
 [Read each TASK-NNNN.md, extract full text and context]
 [Create TodoWrite with all tasks]

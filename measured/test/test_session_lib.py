@@ -152,21 +152,6 @@ class PlanAndTaskTest(unittest.TestCase):
         self.assertEqual(t2.parent.name, "PLAN-0002")
         self.assertTrue(t1.exists() and t2.exists())
 
-    def test_list_task_files_numeric_order(self):
-        plan = lib.new_plan(self.repo, self.conn)
-        for _ in range(3):
-            lib.new_task(plan, self.conn, 1)
-        # Drop a non-task file to prove it's ignored.
-        (plan / "TICKET.md").write_text("")
-        self.assertEqual(
-            lib.list_task_files(plan),
-            ["TASK-0001.md", "TASK-0002.md", "TASK-0003.md"],
-        )
-
-    def test_list_empty_plan(self):
-        plan = lib.new_plan(self.repo, self.conn)
-        self.assertEqual(lib.list_task_files(plan), [])
-
     def test_resolve_task_file_forms(self):
         plan = lib.new_plan(self.repo, self.conn)
         lib.new_task(plan, self.conn, 1)

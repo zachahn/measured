@@ -10,12 +10,11 @@ Most targets act within a single plan, named with --plan REF (a number,
 PLAN-7, etc.). --task-get is the exception: a task ID is globally unique, so
 it resolves on its own.
 
-Pass --plans-root DIR to use DIR as the state dir verbatim (it holds the db,
-the plans, and ARCHIVE/). Omit it to derive the dir from Claude's working
-directory, as before.
+Pass --set-plans-root DIR (or -R DIR) to use DIR as the plans root verbatim
+(it holds the db, the plans, and ARCHIVE/). Omit it to derive the root from
+Claude's working directory, as before. --plans-root prints the resolved root.
 
-  --repo-dir          this repo's state dir (holds the db, plans, ARCHIVE/)
-  --root-dir          the state root (holds every repo's dir)
+  --plans-root        print the resolved plans root (the db, plans, ARCHIVE/)
   --plan-new          allocate the next PLAN-NNNN and print its dir
   --plan-dir REF      print a plan's dir (active or archived)
   --plan-archive REF    move a plan under ARCHIVE/, print its new dir
@@ -24,7 +23,6 @@ directory, as before.
   --architecture REF  <plan>/ARCHITECTURE.md
   --implementation REF  <plan>/IMPLEMENTATION.md
   --task-new REF      create and print the next TASK-NNNN.md in the plan
-  --task-list REF     print the basename of every TASK-NNNN.md, in order
   --task-get REF      print the full path of a task by its global ID
 
 Path resolution lives in ../lib/session_lib.py; ID allocation in ../lib/db.py.
@@ -47,12 +45,11 @@ FILE_TARGETS = {
 
 
 USAGE_TEXT = """\
-usage: measured-notes [--plans-root DIR]
-                      (--repo-dir | --root-dir | --plan-new |
-                       --plan-dir REF | --plan-archive REF |
-                       --plan-unarchive REF | --ticket REF |
-                       --architecture REF | --implementation REF |
-                       --task-new REF | --task-list REF | --task-get REF)
+usage: measured-notes [--set-plans-root DIR | -R DIR]
+                      (--plans-root | --plan-new | --plan-dir REF |
+                       --plan-archive REF | --plan-unarchive REF |
+                       --ticket REF | --architecture REF |
+                       --implementation REF | --task-new REF | --task-get REF)
 """
 
 HELP_TEXT = (
@@ -64,13 +61,10 @@ State is shared across every Claude session in the repo. It holds one
 `state.sqlite3` plus a PLAN-NNNN directory per planning effort (one
 ARCHITECTURE.md and its tasks); completed plans move under ARCHIVE/.
 
-State location:
-  --plans-root DIR  use DIR as the state dir verbatim, rather than deriving
-                    it from Claude's working directory (the default)
-
-Debugging (each prints a directory):
-  --repo-dir        this repo's state dir (holds the db, plans, ARCHIVE/)
-  --root-dir        the state root (holds every repo's dir)
+Plans root:
+  -R, --set-plans-root DIR  use DIR as the plans root verbatim, rather than
+                            deriving it from Claude's working directory
+  --plans-root              print the resolved plans root
 
 Plans:
   --plan-new            allocate the next PLAN-NNNN, print its dir
@@ -83,7 +77,6 @@ Within a plan (REF names the plan: a number, PLAN-7, ...):
   --architecture REF       <plan>/ARCHITECTURE.md
   --implementation REF     <plan>/IMPLEMENTATION.md
   --task-new REF           create and print the next TASK-NNNN.md
-  --task-list REF          print the basename of every TASK-NNNN.md, in order
 
 Tasks (global):
   --task-get REF           print the full path of a task by its global ID,
@@ -117,11 +110,14 @@ def _resolve_plan_dir(parser, repo, plan_id: int) -> pathlib.Path:
 def main(argv: list[str]) -> int:
     parser = _Parser(prog="measured-notes", add_help=False)
     parser.add_argument("-h", "--help", action="help")
-    parser.add_argument("--plans-root", dest="plans_root", metavar="DIR")
+    parser.add_argument(
+        "-R", "--set-plans-root", dest="set_plans_root", metavar="DIR"
+    )
 
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--repo-dir", dest="action", action="store_const", const="repo-dir")
-    group.add_argument("--root-dir", dest="action", action="store_const", const="root-dir")
+    group.add_argument(
+        "--plans-root", dest="action", action="store_const", const="plans-root"
+    )
     group.add_argument(
         "--plan-new", dest="action", action="store_const", const="plan-new"
     )
@@ -132,21 +128,16 @@ def main(argv: list[str]) -> int:
     group.add_argument("--architecture", dest="architecture", metavar="REF")
     group.add_argument("--implementation", dest="implementation", metavar="REF")
     group.add_argument("--task-new", dest="task_new", metavar="REF")
-    group.add_argument("--task-list", dest="task_list", metavar="REF")
     group.add_argument("--task-get", dest="task_get", metavar="REF")
 
     args = parser.parse_args(argv)
 
-    if args.action == "root-dir":
-        print(session_lib.state_root())
-        return 0
-
-    if args.plans_root is not None:
-        repo = session_lib.repo_dir_at(args.plans_root)
+    if args.set_plans_root is not None:
+        repo = session_lib.repo_dir_at(args.set_plans_root)
     else:
         repo = session_lib.repo_dir()
 
-    if args.action == "repo-dir":
+    if args.action == "plans-root":
         print(repo)
         return 0
 
@@ -204,7 +195,6 @@ def main(argv: list[str]) -> int:
     # The remaining targets all act within one plan named by their REF.
     for attr, target in (
         ("task_new", "task-new"),
-        ("task_list", "task-list"),
         ("ticket", "ticket"),
         ("architecture", "architecture"),
         ("implementation", "implementation"),
@@ -221,11 +211,6 @@ def main(argv: list[str]) -> int:
                 print(session_lib.new_task(plan, conn, pid))
             finally:
                 conn.close()
-            return 0
-
-        if target == "task-list":
-            for name in session_lib.list_task_files(plan):
-                print(name)
             return 0
 
         print(plan / FILE_TARGETS[target])

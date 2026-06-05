@@ -44,8 +44,9 @@ You are given a **plan reference** (a number like `7`); it names the plan direct
    tasks numbered. Task numbers are global across all plans, so they may not
    start at 1; that's fine. Use the standard `Write`, `Read`, and `Edit` tools
    on each path. Do not reuse one path for multiple tasks.
-   `measured-notes --task-list <plan>` shows the tasks you've created so far,
-   and `measured-notes --task-get <ref>` resolves a task number back to its path.
+   `measured-notes --plan-dir <plan>` is the plan's directory — list its
+   `TASK-NNNN.md` files to see the tasks you've created so far — and
+   `measured-notes --task-get <ref>` resolves a task number back to its path.
 7. Self review:
     - `Read` every task file back.
     - Ordering: Does every dependency point backward, never forward? Can someone start at task 1 and proceed?
@@ -56,12 +57,11 @@ You are given a **plan reference** (a number like `7`); it names the plan direct
 
 ## Usage: `measured-notes`
 
-usage: measured-notes [--plans-root DIR]
-                      (--repo-dir | --root-dir | --plan-new |
-                       --plan-dir REF | --plan-archive REF |
-                       --plan-unarchive REF | --ticket REF |
-                       --architecture REF | --implementation REF |
-                       --task-new REF | --task-list REF | --task-get REF)
+usage: measured-notes [--set-plans-root DIR | -R DIR]
+                      (--plans-root | --plan-new | --plan-dir REF |
+                       --plan-archive REF | --plan-unarchive REF |
+                       --ticket REF | --architecture REF |
+                       --implementation REF | --task-new REF | --task-get REF)
 
 Print a path inside this repo's persistent ticketing directory.
 
@@ -69,13 +69,10 @@ State is shared across every Claude session in the repo. It holds one
 `state.sqlite3` plus a PLAN-NNNN directory per planning effort (one
 ARCHITECTURE.md and its tasks); completed plans move under ARCHIVE/.
 
-State location:
-  --plans-root DIR  use DIR as the state dir verbatim, rather than deriving
-                    it from Claude's working directory (the default)
-
-Debugging (each prints a directory):
-  --repo-dir        this repo's state dir (holds the db, plans, ARCHIVE/)
-  --root-dir        the state root (holds every repo's dir)
+Plans root:
+  -R, --set-plans-root DIR  use DIR as the plans root verbatim, rather than
+                            deriving it from Claude's working directory
+  --plans-root              print the resolved plans root
 
 Plans:
   --plan-new            allocate the next PLAN-NNNN, print its dir
@@ -88,7 +85,6 @@ Within a plan (REF names the plan: a number, PLAN-7, ...):
   --architecture REF       <plan>/ARCHITECTURE.md
   --implementation REF     <plan>/IMPLEMENTATION.md
   --task-new REF           create and print the next TASK-NNNN.md
-  --task-list REF          print the basename of every TASK-NNNN.md, in order
 
 Tasks (global):
   --task-get REF           print the full path of a task by its global ID,
