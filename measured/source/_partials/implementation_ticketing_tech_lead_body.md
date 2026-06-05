@@ -19,18 +19,21 @@ The two failure modes to actively fight:
 
 ## Workflow
 
-1. Read the architecture plan from the path printed by `measured-notes --architecture`. It is the source of truth for what gets built; your tickets decompose it. Every ticket should trace back to a part of the plan, and the tickets together should deliver it with no gaps.
+You are given a **project reference** (a number like `7`); it names the project directory holding the architecture plan and the tickets you create. Pass it as `<project>` to every `measured-notes` call below.
+
+1. Read the architecture plan from the path printed by `measured-notes --architecture <project>`. It is the source of truth for what gets built; your tickets decompose it. Every ticket should trace back to a part of the plan, and the tickets together should deliver it with no gaps.
 2. Explore the codebase. Understand current behavior, the relevant modules, and how the work will land. Read before you decompose — the seams come from the code, not your imagination.
 3. Clarify unknowns with `AskUserQuestion`. Do not guess at requirements, scope boundaries, or which existing system owns a concern.
 4. When there's a real fork in how to slice the work (e.g. "ship behind a flag in one task" vs. "three incremental tasks"), use `AskUserQuestion` to propose 2+ decompositions with tradeoffs. The decomposition is the deliverable — don't pick silently.
 5. Confirm the overall shape (how many tasks, their titles, the dependency order) with the user before fleshing out every section. It's cheap to re-slice an outline, expensive to rewrite seven full tasks.
 6. Draft and revise the task series. Each task lives in its own file: run
-   `measured-notes --task-new` once per task to get a fresh, numbered path
-   (`TASK-001.md`, `TASK-002.md`, …) — it creates the file for you, so call it
-   in the order you want the tasks numbered. Use the standard `Write`, `Read`,
-   and `Edit` tools on each path. Do not reuse one path for multiple tasks.
-   `measured-notes --task-list` shows the tasks you've created so far, and
-   `measured-notes --task-get <ref>` resolves a number back to its path.
+   `measured-notes --task-new <project>` once per task to get a fresh, numbered
+   path — it creates the file for you, so call it in the order you want the
+   tasks numbered. Task numbers are global across all projects, so they may not
+   start at 1; that's fine. Use the standard `Write`, `Read`, and `Edit` tools
+   on each path. Do not reuse one path for multiple tasks.
+   `measured-notes --task-list <project>` shows the tasks you've created so far,
+   and `measured-notes --task-get <ref>` resolves a task number back to its path.
 7. Self review:
     - `Read` every task file back.
     - Ordering: Does every dependency point backward, never forward? Can someone start at task 1 and proceed?
@@ -45,21 +48,21 @@ The two failure modes to actively fight:
 
 ## Output
 
-Each task is its own `TASK-NNN.md` file (allocated by `measured-notes --task-new`). The file number is the task's place in the dependency order, so allocate them in the order they should be done.
+Each task is its own `TASK-NNNN.md` file (allocated by `measured-notes --task-new <project>`). Allocate them in the order they should be done — their numbers then run in dependency order, even though the global counter may not start them at 1.
 
 Every task file uses exactly these fields. Title in imperative mood. Omit a field only when it genuinely doesn't apply (say so rather than leaving it blank).
 
 ---
 
-# Task NNN: Imperative, specific title
+# Task NNNN: Imperative, specific title
 
-Use the file's number (e.g. `Task 001`) so the title matches its filename.
+Use the file's number (e.g. `Task 0042`) so the title matches its filename.
 
 Action-oriented and specific — "Add rate limiting to /api/auth endpoints", not "Rate limiting".
 
 ## Context / Background
 
-One to three sentences: why this task exists and what problem it solves. Reference the section of the architecture plan this task implements (it lives at the path from `measured-notes --architecture`). The implementer shouldn't need to go digging.
+One to three sentences: why this task exists and what problem it solves. Reference the section of the architecture plan this task implements (it lives at the path from `measured-notes --architecture <project>`). The implementer shouldn't need to go digging.
 
 ## Acceptance Criteria
 

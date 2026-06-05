@@ -1,22 +1,29 @@
 #!/usr/bin/env python3
-"""Print a path inside the per-Claude-session state directory.
+"""Print a path inside this repo's persistent ticketing directory.
 
-The directory flags each print a directory and supersede any target.
-Otherwise exactly one target is required. The single-file targets map to a
-well-known file; the --task-* targets manage a series of numbered task files:
+State lives under one dir per repo (namespaced by working directory, like
+Claude Code's own projects/<encoded-cwd>/). That dir holds a `state.sqlite3`
+plus a PROJECT-NNNN directory per planning effort; completed projects move
+under ARCHIVE/. Task IDs are unique across every project in the repo.
 
-  --root-dir        the state root (holds every project's session dirs)
-  --project-dir     this project's dir (holds every session dir for the repo)
-  --session-dir     this session's dir (where the targets below live)
-  --ticket          <session>/TICKET.md
-  --architecture    <session>/ARCHITECTURE.md
-  --implementation  <session>/IMPLEMENTATION.md
-  --task-new        create and print the next <session>/TASK-NNN.md
-  --task-list       print the basename of every TASK-NNN.md, in order
-  --task-get REF    print the full path of a task (REF: 123, TASK-123,
-                    or TASK-123.md), or exit 1 if it doesn't exist
+Most targets act within a single project, named with --project REF (a number,
+PROJECT-7, etc.). --task-get is the exception: a task ID is globally unique, so
+it resolves on its own.
 
-Session-dir resolution lives in ../lib/session_lib.py.
+  --repo-dir          this repo's state dir (holds the db, projects, ARCHIVE/)
+  --root-dir          the state root (holds every repo's dir)
+  --project-new       allocate the next PROJECT-NNNN and print its dir
+  --project-dir REF   print a project's dir (active or archived)
+  --project-archive REF    move a project under ARCHIVE/, print its new dir
+  --project-unarchive REF  move it back out of ARCHIVE/, print its new dir
+  --ticket REF        <project>/TICKET.md
+  --architecture REF  <project>/ARCHITECTURE.md
+  --implementation REF  <project>/IMPLEMENTATION.md
+  --task-new REF      create and print the next TASK-NNNN.md in the project
+  --task-list REF     print the basename of every TASK-NNNN.md, in order
+  --task-get REF      print the full path of a task by its global ID
+
+Path resolution lives in ../lib/session_lib.py; ID allocation in ../lib/db.py.
 """
 
 import argparse
@@ -24,9 +31,11 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+import db  # noqa: E402
 import session_lib  # noqa: E402
 
-TARGETS = {
+# The single-file targets that resolve to a well-known name within a project.
+FILE_TARGETS = {
     "ticket": "TICKET.md",
     "architecture": "ARCHITECTURE.md",
     "implementation": "IMPLEMENTATION.md",
@@ -34,31 +43,42 @@ TARGETS = {
 
 
 USAGE_TEXT = """\
-usage: measured-notes (--root-dir | --project-dir | --session-dir | --ticket |
-                       --architecture | --implementation | --task-new |
-                       --task-list | --task-get REF)
+usage: measured-notes (--repo-dir | --root-dir | --project-new |
+                       --project-dir REF | --project-archive REF |
+                       --project-unarchive REF | --ticket REF |
+                       --architecture REF | --implementation REF |
+                       --task-new REF | --task-list REF | --task-get REF)
 """
 
 HELP_TEXT = (
     USAGE_TEXT
     + """
-Print a path inside the per-Claude-session state directory.
+Print a path inside this repo's persistent ticketing directory.
 
-Debugging (each prints a directory, superseding any target):
-  --root-dir        the state root (holds every project's session dirs)
-  --project-dir     this project's dir (holds every session dir for the repo)
-  --session-dir     this session's dir (where the targets below live)
+State is shared across every Claude session in the repo. It holds one
+`state.sqlite3` plus a PROJECT-NNNN directory per planning effort (one
+ARCHITECTURE.md and its tasks); completed projects move under ARCHIVE/.
 
-Single-file target (exactly one, unless a debugging flag is given):
-  --ticket          <session>/TICKET.md
-  --architecture    <session>/ARCHITECTURE.md
-  --implementation  <session>/IMPLEMENTATION.md
+Debugging (each prints a directory):
+  --repo-dir        this repo's state dir (holds the db, projects, ARCHIVE/)
+  --root-dir        the state root (holds every repo's dir)
 
-Task series:
-  --task-new        create and print the next <session>/TASK-NNN.md
-  --task-list       print the basename of every TASK-NNN.md, in order
-  --task-get REF    print the full path of a task (REF: 123, TASK-123,
-                    or TASK-123.md), or exit 1 if it doesn't exist
+Projects:
+  --project-new            allocate the next PROJECT-NNNN, print its dir
+  --project-dir REF        print a project's dir (active or archived)
+  --project-archive REF    move a project under ARCHIVE/, print its new dir
+  --project-unarchive REF  move it back out of ARCHIVE/, print its new dir
+
+Within a project (REF names the project: a number, PROJECT-7, ...):
+  --ticket REF             <project>/TICKET.md
+  --architecture REF       <project>/ARCHITECTURE.md
+  --implementation REF     <project>/IMPLEMENTATION.md
+  --task-new REF           create and print the next TASK-NNNN.md
+  --task-list REF          print the basename of every TASK-NNNN.md, in order
+
+Tasks (global):
+  --task-get REF           print the full path of a task by its global ID,
+                           wherever its project lives, or exit 1 if missing
 """
 )
 
@@ -71,78 +91,135 @@ class _Parser(argparse.ArgumentParser):
         return USAGE_TEXT
 
 
+def _project_ref(parser, raw: str) -> int:
+    project_id = session_lib.parse_ref(raw, "PROJECT")
+    if project_id is None:
+        parser.error(f"not a project reference: {raw!r}")
+    return project_id
+
+
+def _resolve_project_dir(parser, repo, project_id: int) -> pathlib.Path:
+    path = session_lib.project_dir(repo, project_id)
+    if path is None:
+        parser.error(f"no such project: PROJECT-{project_id:04d}")
+    return path
+
+
 def main(argv: list[str]) -> int:
     parser = _Parser(prog="measured-notes", add_help=False)
     parser.add_argument("-h", "--help", action="help")
 
-    dirs = parser.add_mutually_exclusive_group()
-    dirs.add_argument("--root-dir", dest="dir", action="store_const", const="root")
-    dirs.add_argument(
-        "--project-dir", dest="dir", action="store_const", const="project"
-    )
-    dirs.add_argument(
-        "--session-dir", dest="dir", action="store_const", const="session"
-    )
-
-    group = parser.add_mutually_exclusive_group()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--repo-dir", dest="action", action="store_const", const="repo-dir")
+    group.add_argument("--root-dir", dest="action", action="store_const", const="root-dir")
     group.add_argument(
-        "--ticket", dest="target", action="store_const", const="ticket"
+        "--project-new", dest="action", action="store_const", const="project-new"
     )
-    group.add_argument(
-        "--architecture", dest="target", action="store_const", const="architecture"
-    )
-    group.add_argument(
-        "--implementation", dest="target", action="store_const", const="implementation"
-    )
-    group.add_argument(
-        "--task-new", dest="target", action="store_const", const="task-new"
-    )
-    group.add_argument(
-        "--task-list", dest="target", action="store_const", const="task-list"
-    )
-    group.add_argument(
-        "--task-get", dest="task_ref", metavar="REF", default=None
-    )
+    group.add_argument("--project-dir", dest="project_dir", metavar="REF")
+    group.add_argument("--project-archive", dest="project_archive", metavar="REF")
+    group.add_argument("--project-unarchive", dest="project_unarchive", metavar="REF")
+    group.add_argument("--ticket", dest="ticket", metavar="REF")
+    group.add_argument("--architecture", dest="architecture", metavar="REF")
+    group.add_argument("--implementation", dest="implementation", metavar="REF")
+    group.add_argument("--task-new", dest="task_new", metavar="REF")
+    group.add_argument("--task-list", dest="task_list", metavar="REF")
+    group.add_argument("--task-get", dest="task_get", metavar="REF")
 
     args = parser.parse_args(argv)
 
-    if args.dir is not None:
-        printers = {
-            "root": session_lib.state_root,
-            "project": session_lib.project_dir,
-            "session": session_lib.session_dir,
-        }
-        print(printers[args.dir]())
+    if args.action == "root-dir":
+        print(session_lib.state_root())
         return 0
 
-    if args.task_ref is not None:
-        path = session_lib.resolve_task_file(session_lib.session_dir(), args.task_ref)
+    repo = session_lib.repo_dir()
+
+    if args.action == "repo-dir":
+        print(repo)
+        return 0
+
+    if args.action == "project-new":
+        conn = db.connect(repo)
+        try:
+            print(session_lib.new_project(repo, conn))
+        finally:
+            conn.close()
+        return 0
+
+    if args.project_dir is not None:
+        pid = _project_ref(parser, args.project_dir)
+        print(_resolve_project_dir(parser, repo, pid))
+        return 0
+
+    if args.project_archive is not None:
+        pid = _project_ref(parser, args.project_archive)
+        try:
+            print(session_lib.archive_project(repo, pid))
+        except (FileNotFoundError, FileExistsError) as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        return 0
+
+    if args.project_unarchive is not None:
+        pid = _project_ref(parser, args.project_unarchive)
+        try:
+            print(session_lib.unarchive_project(repo, pid))
+        except (FileNotFoundError, FileExistsError) as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        return 0
+
+    if args.task_get is not None:
+        task_id = session_lib.parse_ref(args.task_get, "TASK")
+        if task_id is None:
+            parser.error(f"not a task reference: {args.task_get!r}")
+        conn = db.connect(repo)
+        try:
+            project_id = db.task_project(conn, task_id)
+        finally:
+            conn.close()
+        path = None
+        if project_id is not None:
+            proj = session_lib.project_dir(repo, project_id)
+            if proj is not None:
+                path = session_lib.resolve_task_file(proj, str(task_id))
         if path is None:
-            print(f"no such task: {args.task_ref}", file=sys.stderr)
+            print(f"no such task: {args.task_get}", file=sys.stderr)
             return 1
         print(path)
         return 0
 
-    if args.target is None:
-        parser.error(
-            "exactly one target is required: --ticket, --architecture, "
-            "--implementation, --task-new, --task-list, --task-get"
-        )
+    # The remaining targets all act within one project named by their REF.
+    for attr, target in (
+        ("task_new", "task-new"),
+        ("task_list", "task-list"),
+        ("ticket", "ticket"),
+        ("architecture", "architecture"),
+        ("implementation", "implementation"),
+    ):
+        raw = getattr(args, attr)
+        if raw is None:
+            continue
+        pid = _project_ref(parser, raw)
+        proj = _resolve_project_dir(parser, repo, pid)
 
-    # The --task-* targets manage a series of numbered files: --task-new
-    # allocates the next free TASK-NNN.md (creating it, race-free), --task-list
-    # enumerates them. The remaining targets are fixed, well-known filenames.
-    if args.target == "task-new":
-        print(session_lib.allocate_task_file(session_lib.session_dir()))
+        if target == "task-new":
+            conn = db.connect(repo)
+            try:
+                print(session_lib.new_task(proj, conn, pid))
+            finally:
+                conn.close()
+            return 0
+
+        if target == "task-list":
+            for name in session_lib.list_task_files(proj):
+                print(name)
+            return 0
+
+        print(proj / FILE_TARGETS[target])
         return 0
 
-    if args.target == "task-list":
-        for name in session_lib.list_task_files(session_lib.session_dir()):
-            print(name)
-        return 0
-
-    print(session_lib.session_dir() / TARGETS[args.target])
-    return 0
+    # add_mutually_exclusive_group(required=True) guarantees we never reach here.
+    parser.error("no target given")
 
 
 if __name__ == "__main__":

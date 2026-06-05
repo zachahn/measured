@@ -1,101 +1,29 @@
-"""Per-session state directory shared by the measured CLIs.
+"""Repo-scoped state directory shared by the measured CLIs.
 
 Walks up the ancestor process chain to find the nearest `claude` process and
-derives a per-session state directory from that PID and its start time. Both
-`measured-note` and `measured-plan` route through `session_dir()` so they
-land in the same directory for a given Claude session.
+derives a per-repo state directory from its working directory, the same way
+Claude Code names its own `projects/<encoded-cwd>/` dirs. Every Claude session
+in a given repo lands in the same place, so the ticketing state persists across
+sessions and is shared between them.
+
+That repo dir holds one `state.sqlite3` (see db.py) plus a PROJECT-NNNN
+directory per planning effort; completed projects move under ARCHIVE/. Task
+content lives in the `.md` files; the database only hands out IDs.
 
 Kept stdlib-only so the scripts can be invoked from a fresh checkout without
 any install step.
 """
 
-import ctypes
 import os
 import pathlib
 import re
 import subprocess
 import sys
-from datetime import datetime
+
+import db
 
 CLAUDE_PROCESS_NAME = "claude"
 MAX_ANCESTOR_DEPTH = 64
-
-
-def _start_time_linux(pid: int) -> int:
-    with open("/proc/stat") as f:
-        for line in f:
-            if line.startswith("btime "):
-                btime = int(line.split()[1])
-                break
-        else:
-            raise RuntimeError("btime not found in /proc/stat")
-
-    with open(f"/proc/{pid}/stat") as f:
-        # Field 2 (comm) is wrapped in parens and may itself contain spaces or
-        # parens, so split around the LAST ')' rather than splitting on spaces.
-        data = f.read()
-        rparen = data.rindex(")")
-        fields = data[rparen + 2 :].split()
-        # Post-comm field index 19 == original stat field 22 (starttime, in ticks).
-        starttime_ticks = int(fields[19])
-
-    clk_tck = os.sysconf("SC_CLK_TCK")
-    return btime + starttime_ticks // clk_tck
-
-
-def _start_time_macos(pid: int) -> int:
-    # `ps -o lstart=` emits e.g. "Wed May 13 09:37:13 2026" in the local timezone.
-    result = subprocess.run(
-        ["ps", "-o", "lstart=", "-p", str(pid)],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    raw = result.stdout.strip()
-    if not raw:
-        raise RuntimeError(f"ps returned no start time for pid {pid}")
-    dt = datetime.strptime(raw, "%a %b %d %H:%M:%S %Y")
-    return int(dt.astimezone().timestamp())
-
-
-def _start_time_windows(pid: int) -> int:
-    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-
-    handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
-    if not handle:
-        raise ctypes.WinError(ctypes.get_last_error())
-
-    try:
-        creation = ctypes.c_ulonglong()
-        exit_t = ctypes.c_ulonglong()
-        kernel_t = ctypes.c_ulonglong()
-        user_t = ctypes.c_ulonglong()
-        ok = kernel32.GetProcessTimes(
-            handle,
-            ctypes.byref(creation),
-            ctypes.byref(exit_t),
-            ctypes.byref(kernel_t),
-            ctypes.byref(user_t),
-        )
-        if not ok:
-            raise ctypes.WinError(ctypes.get_last_error())
-    finally:
-        kernel32.CloseHandle(handle)
-
-    # FILETIME counts 100ns intervals since 1601-01-01 UTC; subtract the offset
-    # to the Unix epoch (1970-01-01).
-    return creation.value // 10_000_000 - 11_644_473_600
-
-
-def parent_start_time(pid: int) -> int:
-    if sys.platform.startswith("linux"):
-        return _start_time_linux(pid)
-    if sys.platform == "darwin":
-        return _start_time_macos(pid)
-    if sys.platform == "win32":
-        return _start_time_windows(pid)
-    raise RuntimeError(f"unsupported platform: {sys.platform}")
 
 
 def _proc_info_linux(pid: int) -> tuple[int, str]:
@@ -234,65 +162,85 @@ def state_root() -> pathlib.Path:
     ) / "measured-claude-plugin"
 
 
-def _project_dir_for(claude_pid: int) -> pathlib.Path:
-    """The project dir for an already-resolved Claude pid (does not create it)."""
+def _repo_dir_for(claude_pid: int) -> pathlib.Path:
+    """The repo dir for an already-resolved Claude pid (does not create it)."""
     project = encode_project_path(claude_pwd(claude_pid))
     return state_root() / "projects" / project
 
 
-def project_dir() -> pathlib.Path:
-    """Return the directory that holds every session dir for this project.
+def repo_dir() -> pathlib.Path:
+    """Return this repo's state dir — the root of its ticketing layout.
 
     Namespaced by Claude's working directory the same way Claude Code names
     its own `projects/<encoded-cwd>/` dirs, so one repo maps to one stable
-    location regardless of which session is running.
+    location across every session. Holds `state.sqlite3`, the PROJECT-NNNN
+    directories, and ARCHIVE/.
     """
-    path = _project_dir_for(find_claude_pid(os.getppid()))
+    path = _repo_dir_for(find_claude_pid(os.getppid()))
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def session_dir() -> pathlib.Path:
-    claude_pid = find_claude_pid(os.getppid())
-    start_time = parent_start_time(claude_pid)
-    path = _project_dir_for(claude_pid) / f"{start_time}-{claude_pid}"
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
-TASK_FILENAME = "TASK-{:03d}.md"
+ARCHIVE_DIRNAME = "ARCHIVE"
+PROJECT_DIRNAME = "PROJECT-{:04d}"
+_PROJECT_PATTERN = re.compile(r"\APROJECT-(\d+)\Z")
+TASK_FILENAME = "TASK-{:04d}.md"
 _TASK_PATTERN = re.compile(r"\ATASK-(\d+)\.md\Z")
 
 
-def allocate_task_file(directory: pathlib.Path) -> pathlib.Path:
-    """Create and return a fresh, sequentially numbered TASK-NNN.md file.
+def parse_ref(ref: str, prefix: str) -> int | None:
+    """Parse a project/task ref to its integer ID, or None if unparseable.
 
-    The first call in an empty directory yields TASK-001.md, the next
-    TASK-002.md, and so on. The file is always created (never just named),
-    using O_CREAT | O_EXCL so that two processes racing on the same directory
-    can never be handed the same path: the loser of any given number sees
-    EEXIST, bumps to the next number, and tries again.
+    Accepts the forms a caller naturally has on hand: a bare number ("7"),
+    the prefixed stem ("PROJECT-7" / "TASK-7"), or a task filename
+    ("TASK-7.md"). Case-insensitive on the prefix.
     """
-    highest = 0
-    for entry in directory.iterdir():
-        match = _TASK_PATTERN.match(entry.name)
-        if match:
-            highest = max(highest, int(match.group(1)))
+    match = re.fullmatch(
+        rf"(?:{prefix}-)?(\d+)(?:\.md)?", ref.strip(), re.IGNORECASE
+    )
+    return int(match.group(1)) if match else None
 
-    candidate = highest + 1
-    while True:
-        path = directory / TASK_FILENAME.format(candidate)
-        try:
-            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-        except FileExistsError:
-            candidate += 1
-            continue
-        os.close(fd)
-        return path
+
+def project_dir(repo: pathlib.Path, project_id: int) -> pathlib.Path | None:
+    """Resolve a project's directory, active or archived, or None if missing.
+
+    Checks the active location first, then ARCHIVE/ — the folder's location is
+    the sole record of whether a project is archived (the database doesn't
+    track it).
+    """
+    name = PROJECT_DIRNAME.format(project_id)
+    active = repo / name
+    if active.is_dir():
+        return active
+    archived = repo / ARCHIVE_DIRNAME / name
+    if archived.is_dir():
+        return archived
+    return None
+
+
+def new_project(repo: pathlib.Path, conn) -> pathlib.Path:
+    """Allocate the next project ID and create its (active) directory."""
+    project_id = db.allocate_project(conn)
+    path = repo / PROJECT_DIRNAME.format(project_id)
+    path.mkdir(parents=True, exist_ok=False)
+    return path
+
+
+def new_task(directory: pathlib.Path, conn, project_id: int) -> pathlib.Path:
+    """Allocate the next global task ID and create its TASK-NNNN.md file.
+
+    The ID comes from the shared database, so it is unique across every project
+    in the repo. The file is created empty for the caller to Write into.
+    """
+    task_id = db.allocate_task(conn, project_id)
+    path = directory / TASK_FILENAME.format(task_id)
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    os.close(fd)
+    return path
 
 
 def list_task_files(directory: pathlib.Path) -> list[str]:
-    """Return the basenames of every TASK-NNN.md in numeric order.
+    """Return the basenames of every TASK-NNNN.md in numeric order.
 
     Empty when there are no task files — that is a normal state, not an error.
     """
@@ -301,16 +249,48 @@ def list_task_files(directory: pathlib.Path) -> list[str]:
 
 
 def resolve_task_file(directory: pathlib.Path, ref: str) -> pathlib.Path | None:
-    """Resolve a task reference to its full path, or None if it doesn't exist.
+    """Resolve a task ref to its full path within a project dir, or None.
 
-    Accepts the three forms a caller naturally has on hand: a full filename
-    ("TASK-123.md"), the stem ("TASK-123"), or a bare number ("123" / 123).
-    The number is normalized to the canonical zero-padded filename so that
-    "7", "TASK-7", and "TASK-007.md" all resolve to the same file.
+    Normalizes the ref to the canonical zero-padded filename so that "7",
+    "TASK-7", and "TASK-0007.md" all resolve to the same file.
     """
-    ref = ref.strip()
-    match = re.fullmatch(r"(?:TASK-)?(\d+)(?:\.md)?", ref, re.IGNORECASE)
-    if not match:
+    task_id = parse_ref(ref, "TASK")
+    if task_id is None:
         return None
-    path = directory / TASK_FILENAME.format(int(match.group(1)))
+    path = directory / TASK_FILENAME.format(task_id)
     return path if path.is_file() else None
+
+
+def archive_project(repo: pathlib.Path, project_id: int) -> pathlib.Path:
+    """Move a project's directory under ARCHIVE/. Returns the new path.
+
+    Raises if the project isn't active (already archived or never existed) or
+    an archived copy already sits in the way.
+    """
+    name = PROJECT_DIRNAME.format(project_id)
+    src = repo / name
+    if not src.is_dir():
+        raise FileNotFoundError(f"no active project {name}")
+    dest_parent = repo / ARCHIVE_DIRNAME
+    dest_parent.mkdir(parents=True, exist_ok=True)
+    dest = dest_parent / name
+    if dest.exists():
+        raise FileExistsError(f"{name} already exists under {ARCHIVE_DIRNAME}/")
+    src.rename(dest)
+    return dest
+
+
+def unarchive_project(repo: pathlib.Path, project_id: int) -> pathlib.Path:
+    """Move a project's directory back out of ARCHIVE/. Returns the new path.
+
+    Raises if no archived copy exists or an active one already sits in the way.
+    """
+    name = PROJECT_DIRNAME.format(project_id)
+    src = repo / ARCHIVE_DIRNAME / name
+    if not src.is_dir():
+        raise FileNotFoundError(f"no archived project {name}")
+    dest = repo / name
+    if dest.exists():
+        raise FileExistsError(f"active {name} already exists")
+    src.rename(dest)
+    return dest

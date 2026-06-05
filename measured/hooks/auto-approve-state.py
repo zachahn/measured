@@ -9,10 +9,12 @@ otherwise, letting Claude Code's normal permission flow handle everything else.
 
 Rules (paths resolved via ../lib/session_lib.py):
   Read  - approved if the target is anywhere under `state_root()`.
-  Edit  - approved if the target is under the current `session_dir()`.
+  Edit  - approved if the target is under this repo's `repo_dir()`.
 
-`session_dir()` is itself a subtree of `state_root()`, so any editable file is
-also readable, which keeps the two rules consistent.
+`repo_dir()` is itself a subtree of `state_root()`, so any editable file is
+also readable, which keeps the two rules consistent. Edit approval covers every
+PROJECT-NNNN directory and ARCHIVE/ for this repo, but stays bounded to the
+plugin's own state — it can never approve an edit to the actual source tree.
 
 Anything else - other tools, paths outside the state dirs, or a target we can't
 resolve - produces no decision, so Claude Code falls back to asking the user.
@@ -69,8 +71,8 @@ def decide(tool_name: str, tool_input: dict) -> bool:
     if tool_name == "Read":
         return _is_within(target, session_lib.state_root().resolve())
 
-    # Edit: limited to the current session's own directory.
-    return _is_within(target, session_lib.session_dir().resolve())
+    # Edit: limited to this repo's own state directory.
+    return _is_within(target, session_lib.repo_dir().resolve())
 
 
 def main() -> None:

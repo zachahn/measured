@@ -33,8 +33,9 @@ Claude must collaborate with the user to create the optimal solution. Always sto
 3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. Do not assume.
 4. Confirm and verify the problem statement with the user before delving into the other sections.
 5. Draft and revise the ticket. The ticket lives at the path printed by
-   `measured-notes --ticket`. Use the standard `Write`, `Read`, and
-   `Edit` tools on that file.
+   `measured-notes --ticket <project>`, where `<project>` is the project
+   reference you were given. Use the standard `Write`, `Read`, and `Edit`
+   tools on that file.
 6. Self review the ticket
     - `Read` the ticket file.
     - Consistency: Do any sections contradict each other?
@@ -43,27 +44,38 @@ Claude must collaborate with the user to create the optimal solution. Always sto
 
 ## Usage: `measured-notes`
 
-usage: measured-notes (--root-dir | --project-dir | --session-dir | --ticket |
-                       --architecture | --implementation | --task-new |
-                       --task-list | --task-get REF)
+usage: measured-notes (--repo-dir | --root-dir | --project-new |
+                       --project-dir REF | --project-archive REF |
+                       --project-unarchive REF | --ticket REF |
+                       --architecture REF | --implementation REF |
+                       --task-new REF | --task-list REF | --task-get REF)
 
-Print a path inside the per-Claude-session state directory.
+Print a path inside this repo's persistent ticketing directory.
 
-Debugging (each prints a directory, superseding any target):
-  --root-dir        the state root (holds every project's session dirs)
-  --project-dir     this project's dir (holds every session dir for the repo)
-  --session-dir     this session's dir (where the targets below live)
+State is shared across every Claude session in the repo. It holds one
+`state.sqlite3` plus a PROJECT-NNNN directory per planning effort (one
+ARCHITECTURE.md and its tasks); completed projects move under ARCHIVE/.
 
-Single-file target (exactly one, unless a debugging flag is given):
-  --ticket          <session>/TICKET.md
-  --architecture    <session>/ARCHITECTURE.md
-  --implementation  <session>/IMPLEMENTATION.md
+Debugging (each prints a directory):
+  --repo-dir        this repo's state dir (holds the db, projects, ARCHIVE/)
+  --root-dir        the state root (holds every repo's dir)
 
-Task series:
-  --task-new        create and print the next <session>/TASK-NNN.md
-  --task-list       print the basename of every TASK-NNN.md, in order
-  --task-get REF    print the full path of a task (REF: 123, TASK-123,
-                    or TASK-123.md), or exit 1 if it doesn't exist
+Projects:
+  --project-new            allocate the next PROJECT-NNNN, print its dir
+  --project-dir REF        print a project's dir (active or archived)
+  --project-archive REF    move a project under ARCHIVE/, print its new dir
+  --project-unarchive REF  move it back out of ARCHIVE/, print its new dir
+
+Within a project (REF names the project: a number, PROJECT-7, ...):
+  --ticket REF             <project>/TICKET.md
+  --architecture REF       <project>/ARCHITECTURE.md
+  --implementation REF     <project>/IMPLEMENTATION.md
+  --task-new REF           create and print the next TASK-NNNN.md
+  --task-list REF          print the basename of every TASK-NNNN.md, in order
+
+Tasks (global):
+  --task-get REF           print the full path of a task by its global ID,
+                           wherever its project lives, or exit 1 if missing
 
 
 ## Output

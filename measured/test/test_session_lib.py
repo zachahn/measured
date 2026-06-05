@@ -13,6 +13,7 @@ import unittest
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "lib"))
 
+import db  # noqa: E402
 import session_lib as lib  # noqa: E402
 
 
@@ -75,108 +76,135 @@ class ClaudePwdTest(unittest.TestCase):
         self.assertEqual(lib.claude_pwd(os.getpid()), os.getcwd())
 
 
-class AllocateTaskFileTest(unittest.TestCase):
+class ParseRefTest(unittest.TestCase):
+    def test_bare_number(self):
+        self.assertEqual(lib.parse_ref("7", "TASK"), 7)
+
+    def test_prefixed_stem(self):
+        self.assertEqual(lib.parse_ref("TASK-7", "TASK"), 7)
+        self.assertEqual(lib.parse_ref("PROJECT-3", "PROJECT"), 3)
+
+    def test_filename_form(self):
+        self.assertEqual(lib.parse_ref("TASK-0007.md", "TASK"), 7)
+
+    def test_case_insensitive_prefix(self):
+        self.assertEqual(lib.parse_ref("task-7", "TASK"), 7)
+
+    def test_unparseable_is_none(self):
+        self.assertIsNone(lib.parse_ref("banana", "TASK"))
+        # A project ref must not accept the wrong prefix.
+        self.assertIsNone(lib.parse_ref("TASK-7", "PROJECT"))
+
+
+class ProjectAndTaskTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
-        self.dir = pathlib.Path(self._tmp.name)
+        self.repo = pathlib.Path(self._tmp.name)
         self.addCleanup(self._tmp.cleanup)
+        self.conn = db.connect(self.repo)
+        self.addCleanup(self.conn.close)
 
-    def test_first_call_is_task_001(self):
-        path = lib.allocate_task_file(self.dir)
-        self.assertEqual(path.name, "TASK-001.md")
-        self.assertTrue(path.exists(), "the file must be created, not just named")
+    def test_new_project_creates_padded_dir(self):
+        path = lib.new_project(self.repo, self.conn)
+        self.assertEqual(path.name, "PROJECT-0001")
+        self.assertTrue(path.is_dir())
 
-    def test_numbers_increment_across_calls(self):
-        names = [lib.allocate_task_file(self.dir).name for _ in range(3)]
-        self.assertEqual(names, ["TASK-001.md", "TASK-002.md", "TASK-003.md"])
+    def test_project_dir_resolves_active(self):
+        lib.new_project(self.repo, self.conn)
+        self.assertEqual(
+            lib.project_dir(self.repo, 1), self.repo / "PROJECT-0001"
+        )
 
-    def test_continues_after_highest_existing_number(self):
-        # A gap below the max must not be backfilled — allocation always moves
-        # forward from the highest existing number.
-        (self.dir / "TASK-005.md").write_text("")
-        path = lib.allocate_task_file(self.dir)
-        self.assertEqual(path.name, "TASK-006.md")
+    def test_project_dir_missing_is_none(self):
+        self.assertIsNone(lib.project_dir(self.repo, 99))
 
-    def test_ignores_unrelated_filenames(self):
-        (self.dir / "TICKET.md").write_text("")
-        (self.dir / "TASK-notes.md").write_text("")
-        path = lib.allocate_task_file(self.dir)
-        self.assertEqual(path.name, "TASK-001.md")
+    def test_new_task_uses_global_id_and_creates_file(self):
+        p1 = lib.new_project(self.repo, self.conn)
+        p2 = lib.new_project(self.repo, self.conn)
+        # Task IDs are global, so the file numbers continue across projects.
+        t1 = lib.new_task(p1, self.conn, 1)
+        t2 = lib.new_task(p2, self.conn, 2)
+        self.assertEqual(t1.name, "TASK-0001.md")
+        self.assertEqual(t2.name, "TASK-0002.md")
+        self.assertEqual(t1.parent.name, "PROJECT-0001")
+        self.assertEqual(t2.parent.name, "PROJECT-0002")
+        self.assertTrue(t1.exists() and t2.exists())
 
-    def test_concurrent_allocation_never_collides(self):
-        # Each thread must get a distinct file; O_EXCL guarantees no two
-        # callers are handed the same number.
-        results = []
-        lock = threading.Lock()
+    def test_list_task_files_numeric_order(self):
+        proj = lib.new_project(self.repo, self.conn)
+        for _ in range(3):
+            lib.new_task(proj, self.conn, 1)
+        # Drop a non-task file to prove it's ignored.
+        (proj / "TICKET.md").write_text("")
+        self.assertEqual(
+            lib.list_task_files(proj),
+            ["TASK-0001.md", "TASK-0002.md", "TASK-0003.md"],
+        )
 
-        def worker():
-            path = lib.allocate_task_file(self.dir)
-            with lock:
-                results.append(path)
+    def test_list_empty_project(self):
+        proj = lib.new_project(self.repo, self.conn)
+        self.assertEqual(lib.list_task_files(proj), [])
 
-        threads = [threading.Thread(target=worker) for _ in range(25)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
-
-        names = sorted(p.name for p in results)
-        self.assertEqual(len(set(names)), 25, "every allocated path must be unique")
-        expected = sorted(f"TASK-{i:03d}.md" for i in range(1, 26))
-        self.assertEqual(names, expected)
+    def test_resolve_task_file_forms(self):
+        proj = lib.new_project(self.repo, self.conn)
+        lib.new_task(proj, self.conn, 1)
+        for ref in ("1", "TASK-1", "TASK-0001.md"):
+            self.assertEqual(
+                lib.resolve_task_file(proj, ref), proj / "TASK-0001.md"
+            )
+        self.assertIsNone(lib.resolve_task_file(proj, "2"))
+        self.assertIsNone(lib.resolve_task_file(proj, "banana"))
 
 
-class ListTaskFilesTest(unittest.TestCase):
+class ArchiveTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
-        self.dir = pathlib.Path(self._tmp.name)
+        self.repo = pathlib.Path(self._tmp.name)
         self.addCleanup(self._tmp.cleanup)
+        self.conn = db.connect(self.repo)
+        self.addCleanup(self.conn.close)
+        self.proj = lib.new_project(self.repo, self.conn)
+        self.task = lib.new_task(self.proj, self.conn, 1)
 
-    def test_empty_directory_returns_empty_list(self):
-        self.assertEqual(lib.list_task_files(self.dir), [])
+    def test_archive_moves_dir_and_contents(self):
+        dest = lib.archive_project(self.repo, 1)
+        self.assertEqual(dest, self.repo / "ARCHIVE" / "PROJECT-0001")
+        self.assertFalse((self.repo / "PROJECT-0001").exists())
+        self.assertTrue((dest / "TASK-0001.md").exists())
 
-    def test_returns_basenames_in_numeric_order(self):
-        # Create out of order to prove sorting is numeric, not lexical.
-        for n in (3, 1, 10, 2):
-            (self.dir / f"TASK-{n:03d}.md").write_text("")
+    def test_project_dir_resolves_archived(self):
+        lib.archive_project(self.repo, 1)
         self.assertEqual(
-            lib.list_task_files(self.dir),
-            ["TASK-001.md", "TASK-002.md", "TASK-003.md", "TASK-010.md"],
+            lib.project_dir(self.repo, 1),
+            self.repo / "ARCHIVE" / "PROJECT-0001",
         )
 
-    def test_ignores_non_task_files(self):
-        (self.dir / "TICKET.md").write_text("")
-        (self.dir / "TASK-notes.md").write_text("")
-        (self.dir / "TASK-001.md").write_text("")
-        self.assertEqual(lib.list_task_files(self.dir), ["TASK-001.md"])
+    def test_round_trip(self):
+        lib.archive_project(self.repo, 1)
+        dest = lib.unarchive_project(self.repo, 1)
+        self.assertEqual(dest, self.repo / "PROJECT-0001")
+        self.assertFalse((self.repo / "ARCHIVE" / "PROJECT-0001").exists())
 
+    def test_archive_missing_raises(self):
+        with self.assertRaises(FileNotFoundError):
+            lib.archive_project(self.repo, 99)
 
-class ResolveTaskFileTest(unittest.TestCase):
-    def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.dir = pathlib.Path(self._tmp.name)
-        self.addCleanup(self._tmp.cleanup)
-        (self.dir / "TASK-007.md").write_text("")
+    def test_double_archive_raises(self):
+        lib.archive_project(self.repo, 1)
+        # A second active dir reappears, then archiving must refuse to clobber.
+        (self.repo / "PROJECT-0001").mkdir()
+        with self.assertRaises(FileExistsError):
+            lib.archive_project(self.repo, 1)
 
-    def test_resolves_bare_number(self):
-        path = lib.resolve_task_file(self.dir, "7")
-        self.assertEqual(path, self.dir / "TASK-007.md")
+    def test_unarchive_missing_raises(self):
+        with self.assertRaises(FileNotFoundError):
+            lib.unarchive_project(self.repo, 1)
 
-    def test_resolves_stem(self):
-        self.assertEqual(
-            lib.resolve_task_file(self.dir, "TASK-7"), self.dir / "TASK-007.md"
-        )
-
-    def test_resolves_full_filename(self):
-        self.assertEqual(
-            lib.resolve_task_file(self.dir, "TASK-007.md"), self.dir / "TASK-007.md"
-        )
-
-    def test_missing_task_returns_none(self):
-        self.assertIsNone(lib.resolve_task_file(self.dir, "8"))
-
-    def test_unparseable_ref_returns_none(self):
-        self.assertIsNone(lib.resolve_task_file(self.dir, "banana"))
+    def test_archived_ids_are_not_reused(self):
+        # Archiving frees no number: the next project is 2, never a reused 1.
+        lib.archive_project(self.repo, 1)
+        nxt = lib.new_project(self.repo, self.conn)
+        self.assertEqual(nxt.name, "PROJECT-0002")
 
 
 if __name__ == "__main__":
