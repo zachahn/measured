@@ -10,6 +10,10 @@ Most targets act within a single project, named with --project REF (a number,
 PROJECT-7, etc.). --task-get is the exception: a task ID is globally unique, so
 it resolves on its own.
 
+Pass --plans-root DIR to use DIR as the state dir verbatim (it holds the db,
+projects, and ARCHIVE/). Omit it to derive the dir from Claude's working
+directory, as before.
+
   --repo-dir          this repo's state dir (holds the db, projects, ARCHIVE/)
   --root-dir          the state root (holds every repo's dir)
   --project-new       allocate the next PROJECT-NNNN and print its dir
@@ -43,7 +47,8 @@ FILE_TARGETS = {
 
 
 USAGE_TEXT = """\
-usage: measured-notes (--repo-dir | --root-dir | --project-new |
+usage: measured-notes [--plans-root DIR]
+                      (--repo-dir | --root-dir | --project-new |
                        --project-dir REF | --project-archive REF |
                        --project-unarchive REF | --ticket REF |
                        --architecture REF | --implementation REF |
@@ -58,6 +63,10 @@ Print a path inside this repo's persistent ticketing directory.
 State is shared across every Claude session in the repo. It holds one
 `state.sqlite3` plus a PROJECT-NNNN directory per planning effort (one
 ARCHITECTURE.md and its tasks); completed projects move under ARCHIVE/.
+
+State location:
+  --plans-root DIR  use DIR as the state dir verbatim, rather than deriving
+                    it from Claude's working directory (the default)
 
 Debugging (each prints a directory):
   --repo-dir        this repo's state dir (holds the db, projects, ARCHIVE/)
@@ -108,6 +117,7 @@ def _resolve_project_dir(parser, repo, project_id: int) -> pathlib.Path:
 def main(argv: list[str]) -> int:
     parser = _Parser(prog="measured-notes", add_help=False)
     parser.add_argument("-h", "--help", action="help")
+    parser.add_argument("--plans-root", dest="plans_root", metavar="DIR")
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--repo-dir", dest="action", action="store_const", const="repo-dir")
@@ -131,7 +141,10 @@ def main(argv: list[str]) -> int:
         print(session_lib.state_root())
         return 0
 
-    repo = session_lib.repo_dir()
+    if args.plans_root is not None:
+        repo = session_lib.repo_dir_at(args.plans_root)
+    else:
+        repo = session_lib.repo_dir()
 
     if args.action == "repo-dir":
         print(repo)

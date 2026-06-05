@@ -44,6 +44,28 @@ class StateRootTest(unittest.TestCase):
                 os.environ["XDG_STATE_HOME"] = original
 
 
+class RepoDirAtTest(unittest.TestCase):
+    def test_uses_path_verbatim(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "plans"
+            self.assertEqual(lib.repo_dir_at(root), root)
+            self.assertTrue(root.is_dir(), "expected the dir to be created")
+
+    def test_creates_nested_parents(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "a" / "b" / "c"
+            lib.repo_dir_at(root)
+            self.assertTrue(root.is_dir())
+
+    def test_expands_user(self):
+        home = pathlib.Path.home()
+        self.assertEqual(lib.repo_dir_at("~"), home)
+
+    def test_existing_dir_is_fine(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(lib.repo_dir_at(tmp), pathlib.Path(tmp))
+
+
 class ProcInfoTest(unittest.TestCase):
     def test_returns_real_parent_for_current_pid(self):
         ppid, comm = lib.proc_info(os.getpid())

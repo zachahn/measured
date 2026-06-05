@@ -181,6 +181,18 @@ def repo_dir() -> pathlib.Path:
     return path
 
 
+def repo_dir_at(root: str | os.PathLike) -> pathlib.Path:
+    """Return a caller-supplied state dir, used verbatim as the repo dir.
+
+    Holds `state.sqlite3`, the PROJECT-NNNN directories, and ARCHIVE/ — the
+    same layout `repo_dir()` produces, but at an explicit path rather than one
+    derived from Claude's working directory. Creates the directory if needed.
+    """
+    path = pathlib.Path(root).expanduser()
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 ARCHIVE_DIRNAME = "ARCHIVE"
 PROJECT_DIRNAME = "PROJECT-{:04d}"
 _PROJECT_PATTERN = re.compile(r"\APROJECT-(\d+)\Z")
