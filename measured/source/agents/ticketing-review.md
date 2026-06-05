@@ -14,6 +14,7 @@ Ensure it has all of the required information.
 
 - **Title of Feature:** This must be in imperative mood.
 - **Problem / Why:** A few sentences on the problem being solved.
+- **Definitions:** Every term specific to this feature, each with a one-line meaning. Flag undefined jargon and terms the ticket uses inconsistently with this section.
 - **User Stories:** User stories in "Given, When, Then" format.
 - **Acceptance Criteria:** Bullet list of observable, testable conditions.
 - **Scope:** List of items in and out of scope.

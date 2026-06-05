@@ -28,7 +28,7 @@ Claude must collaborate with the user to create the optimal solution. Always sto
 
 ## Workflow
 
-1. Explore the codebase. Understand the current behavior and how this new ticket might affect it.
+1. Explore the codebase. Understand the current behavior and how this new ticket might affect it. The ticket should already hold a `# Definitions` section written by the main agent. Read it first; reuse those terms verbatim, and flag any term you find that it misses or defines wrongly. If the section is missing or empty, stop and request it from the main agent before drafting — do not write it yourself.
 2. Clarify unknowns with `AskUserQuestion`. Do not guess.
 3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. Do not assume.
 4. Confirm and verify the problem statement with the user before delving into the other sections.
@@ -82,7 +82,7 @@ Tasks (global):
 
 ## Output
 
-See example below for required fields. Name the feature in imperative mood, as if giving a command.
+See example below for required fields. Name the feature in imperative mood, as if giving a command. The `# Definitions` section arrives pre-written from the main agent — keep it; do not drop or rewrite it.
 
 ---
 
@@ -91,6 +91,10 @@ See example below for required fields. Name the feature in imperative mood, as i
 ## Problem / Why
 
 One or two sentences on the user problem being solved. This is the most skipped and most valuable field. It lets engineers make good judgment calls when implementation surprises arise.
+
+# Definitions
+
+- **Term:** One-sentence meaning of every term specific to this feature, in this ticket's context. Written by the main agent before drafting; reuse these terms verbatim throughout the ticket.
 
 ## User Stories
 
