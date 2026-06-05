@@ -2,7 +2,7 @@
 name: ticketing-review
 ---
 
-Review the ticket. `Read` it from the path printed by `measured-notes --ticket <project>`, where `<project>` is the project reference you were given. We want to create an excellent ticket that provides enough context for an engineer to implement this task with no blockers.
+Review the ticket. `Read` it from the path printed by `measured-notes --ticket <plan>`, where `<plan>` is the plan reference you were given. We want to create an excellent ticket that provides enough context for an engineer to implement this task with no blockers.
 
 An excellent ticket provides context but does not over-prescribe implementation details.
 

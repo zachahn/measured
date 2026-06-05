@@ -104,7 +104,7 @@ class ParseRefTest(unittest.TestCase):
 
     def test_prefixed_stem(self):
         self.assertEqual(lib.parse_ref("TASK-7", "TASK"), 7)
-        self.assertEqual(lib.parse_ref("PROJECT-3", "PROJECT"), 3)
+        self.assertEqual(lib.parse_ref("PLAN-3", "PLAN"), 3)
 
     def test_filename_form(self):
         self.assertEqual(lib.parse_ref("TASK-0007.md", "TASK"), 7)
@@ -114,11 +114,11 @@ class ParseRefTest(unittest.TestCase):
 
     def test_unparseable_is_none(self):
         self.assertIsNone(lib.parse_ref("banana", "TASK"))
-        # A project ref must not accept the wrong prefix.
-        self.assertIsNone(lib.parse_ref("TASK-7", "PROJECT"))
+        # A plan ref must not accept the wrong prefix.
+        self.assertIsNone(lib.parse_ref("TASK-7", "PLAN"))
 
 
-class ProjectAndTaskTest(unittest.TestCase):
+class PlanAndTaskTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.repo = pathlib.Path(self._tmp.name)
@@ -126,56 +126,56 @@ class ProjectAndTaskTest(unittest.TestCase):
         self.conn = db.connect(self.repo)
         self.addCleanup(self.conn.close)
 
-    def test_new_project_creates_padded_dir(self):
-        path = lib.new_project(self.repo, self.conn)
-        self.assertEqual(path.name, "PROJECT-0001")
+    def test_new_plan_creates_padded_dir(self):
+        path = lib.new_plan(self.repo, self.conn)
+        self.assertEqual(path.name, "PLAN-0001")
         self.assertTrue(path.is_dir())
 
-    def test_project_dir_resolves_active(self):
-        lib.new_project(self.repo, self.conn)
+    def test_plan_dir_resolves_active(self):
+        lib.new_plan(self.repo, self.conn)
         self.assertEqual(
-            lib.project_dir(self.repo, 1), self.repo / "PROJECT-0001"
+            lib.plan_dir(self.repo, 1), self.repo / "PLAN-0001"
         )
 
-    def test_project_dir_missing_is_none(self):
-        self.assertIsNone(lib.project_dir(self.repo, 99))
+    def test_plan_dir_missing_is_none(self):
+        self.assertIsNone(lib.plan_dir(self.repo, 99))
 
     def test_new_task_uses_global_id_and_creates_file(self):
-        p1 = lib.new_project(self.repo, self.conn)
-        p2 = lib.new_project(self.repo, self.conn)
-        # Task IDs are global, so the file numbers continue across projects.
+        p1 = lib.new_plan(self.repo, self.conn)
+        p2 = lib.new_plan(self.repo, self.conn)
+        # Task IDs are global, so the file numbers continue across plans.
         t1 = lib.new_task(p1, self.conn, 1)
         t2 = lib.new_task(p2, self.conn, 2)
         self.assertEqual(t1.name, "TASK-0001.md")
         self.assertEqual(t2.name, "TASK-0002.md")
-        self.assertEqual(t1.parent.name, "PROJECT-0001")
-        self.assertEqual(t2.parent.name, "PROJECT-0002")
+        self.assertEqual(t1.parent.name, "PLAN-0001")
+        self.assertEqual(t2.parent.name, "PLAN-0002")
         self.assertTrue(t1.exists() and t2.exists())
 
     def test_list_task_files_numeric_order(self):
-        proj = lib.new_project(self.repo, self.conn)
+        plan = lib.new_plan(self.repo, self.conn)
         for _ in range(3):
-            lib.new_task(proj, self.conn, 1)
+            lib.new_task(plan, self.conn, 1)
         # Drop a non-task file to prove it's ignored.
-        (proj / "TICKET.md").write_text("")
+        (plan / "TICKET.md").write_text("")
         self.assertEqual(
-            lib.list_task_files(proj),
+            lib.list_task_files(plan),
             ["TASK-0001.md", "TASK-0002.md", "TASK-0003.md"],
         )
 
-    def test_list_empty_project(self):
-        proj = lib.new_project(self.repo, self.conn)
-        self.assertEqual(lib.list_task_files(proj), [])
+    def test_list_empty_plan(self):
+        plan = lib.new_plan(self.repo, self.conn)
+        self.assertEqual(lib.list_task_files(plan), [])
 
     def test_resolve_task_file_forms(self):
-        proj = lib.new_project(self.repo, self.conn)
-        lib.new_task(proj, self.conn, 1)
+        plan = lib.new_plan(self.repo, self.conn)
+        lib.new_task(plan, self.conn, 1)
         for ref in ("1", "TASK-1", "TASK-0001.md"):
             self.assertEqual(
-                lib.resolve_task_file(proj, ref), proj / "TASK-0001.md"
+                lib.resolve_task_file(plan, ref), plan / "TASK-0001.md"
             )
-        self.assertIsNone(lib.resolve_task_file(proj, "2"))
-        self.assertIsNone(lib.resolve_task_file(proj, "banana"))
+        self.assertIsNone(lib.resolve_task_file(plan, "2"))
+        self.assertIsNone(lib.resolve_task_file(plan, "banana"))
 
 
 class ArchiveTest(unittest.TestCase):
@@ -185,48 +185,48 @@ class ArchiveTest(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         self.conn = db.connect(self.repo)
         self.addCleanup(self.conn.close)
-        self.proj = lib.new_project(self.repo, self.conn)
-        self.task = lib.new_task(self.proj, self.conn, 1)
+        self.plan = lib.new_plan(self.repo, self.conn)
+        self.task = lib.new_task(self.plan, self.conn, 1)
 
     def test_archive_moves_dir_and_contents(self):
-        dest = lib.archive_project(self.repo, 1)
-        self.assertEqual(dest, self.repo / "ARCHIVE" / "PROJECT-0001")
-        self.assertFalse((self.repo / "PROJECT-0001").exists())
+        dest = lib.archive_plan(self.repo, 1)
+        self.assertEqual(dest, self.repo / "ARCHIVE" / "PLAN-0001")
+        self.assertFalse((self.repo / "PLAN-0001").exists())
         self.assertTrue((dest / "TASK-0001.md").exists())
 
-    def test_project_dir_resolves_archived(self):
-        lib.archive_project(self.repo, 1)
+    def test_plan_dir_resolves_archived(self):
+        lib.archive_plan(self.repo, 1)
         self.assertEqual(
-            lib.project_dir(self.repo, 1),
-            self.repo / "ARCHIVE" / "PROJECT-0001",
+            lib.plan_dir(self.repo, 1),
+            self.repo / "ARCHIVE" / "PLAN-0001",
         )
 
     def test_round_trip(self):
-        lib.archive_project(self.repo, 1)
-        dest = lib.unarchive_project(self.repo, 1)
-        self.assertEqual(dest, self.repo / "PROJECT-0001")
-        self.assertFalse((self.repo / "ARCHIVE" / "PROJECT-0001").exists())
+        lib.archive_plan(self.repo, 1)
+        dest = lib.unarchive_plan(self.repo, 1)
+        self.assertEqual(dest, self.repo / "PLAN-0001")
+        self.assertFalse((self.repo / "ARCHIVE" / "PLAN-0001").exists())
 
     def test_archive_missing_raises(self):
         with self.assertRaises(FileNotFoundError):
-            lib.archive_project(self.repo, 99)
+            lib.archive_plan(self.repo, 99)
 
     def test_double_archive_raises(self):
-        lib.archive_project(self.repo, 1)
+        lib.archive_plan(self.repo, 1)
         # A second active dir reappears, then archiving must refuse to clobber.
-        (self.repo / "PROJECT-0001").mkdir()
+        (self.repo / "PLAN-0001").mkdir()
         with self.assertRaises(FileExistsError):
-            lib.archive_project(self.repo, 1)
+            lib.archive_plan(self.repo, 1)
 
     def test_unarchive_missing_raises(self):
         with self.assertRaises(FileNotFoundError):
-            lib.unarchive_project(self.repo, 1)
+            lib.unarchive_plan(self.repo, 1)
 
     def test_archived_ids_are_not_reused(self):
-        # Archiving frees no number: the next project is 2, never a reused 1.
-        lib.archive_project(self.repo, 1)
-        nxt = lib.new_project(self.repo, self.conn)
-        self.assertEqual(nxt.name, "PROJECT-0002")
+        # Archiving frees no number: the next plan is 2, never a reused 1.
+        lib.archive_plan(self.repo, 1)
+        nxt = lib.new_plan(self.repo, self.conn)
+        self.assertEqual(nxt.name, "PLAN-0002")
 
 
 if __name__ == "__main__":

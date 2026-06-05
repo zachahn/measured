@@ -26,7 +26,7 @@ Too little product context is the more common failure. Engineers end up making p
 3. Use `AskUserQuestion` to propose 2+ approaches with tradeoffs. Do not assume.
 4. Confirm and verify the problem statement with the user before delving into the other sections.
 5. Draft and revise the ticket. The ticket lives at the path printed by
-   `measured-notes --ticket <project>`, where `<project>` is the project
+   `measured-notes --ticket <plan>`, where `<plan>` is the plan
    reference you were given. Use the standard `Write`, `Read`, and `Edit`
    tools on that file.
 6. Self review the ticket

@@ -31,8 +31,8 @@ Claude must collaborate with the user to create the optimal solution. Always sto
     - Cover: architecture, key libraries or patterns, how it integrates with existing code
 4. Expand chosen approach
 5. Draft and revise the plan. The architecture plan lives at the path printed
-   by `measured-notes --architecture <project>`, where `<project>` is the
-   project reference you were given. Use the standard `Write`, `Read`, and
+   by `measured-notes --architecture <plan>`, where `<plan>` is the
+   plan reference you were given. Use the standard `Write`, `Read`, and
    `Edit` tools on that file.
 6. Self review the plan
     - `Read` the architecture plan.
@@ -42,38 +42,43 @@ Claude must collaborate with the user to create the optimal solution. Always sto
 
 ## Usage: `measured-notes`
 
-usage: measured-notes (--repo-dir | --root-dir | --project-new |
-                       --project-dir REF | --project-archive REF |
-                       --project-unarchive REF | --ticket REF |
+usage: measured-notes [--plans-root DIR]
+                      (--repo-dir | --root-dir | --plan-new |
+                       --plan-dir REF | --plan-archive REF |
+                       --plan-unarchive REF | --ticket REF |
                        --architecture REF | --implementation REF |
                        --task-new REF | --task-list REF | --task-get REF)
 
 Print a path inside this repo's persistent ticketing directory.
 
 State is shared across every Claude session in the repo. It holds one
-`state.sqlite3` plus a PROJECT-NNNN directory per planning effort (one
-ARCHITECTURE.md and its tasks); completed projects move under ARCHIVE/.
+`state.sqlite3` plus a PLAN-NNNN directory per planning effort (one
+ARCHITECTURE.md and its tasks); completed plans move under ARCHIVE/.
+
+State location:
+  --plans-root DIR  use DIR as the state dir verbatim, rather than deriving
+                    it from Claude's working directory (the default)
 
 Debugging (each prints a directory):
-  --repo-dir        this repo's state dir (holds the db, projects, ARCHIVE/)
+  --repo-dir        this repo's state dir (holds the db, plans, ARCHIVE/)
   --root-dir        the state root (holds every repo's dir)
 
-Projects:
-  --project-new            allocate the next PROJECT-NNNN, print its dir
-  --project-dir REF        print a project's dir (active or archived)
-  --project-archive REF    move a project under ARCHIVE/, print its new dir
-  --project-unarchive REF  move it back out of ARCHIVE/, print its new dir
+Plans:
+  --plan-new            allocate the next PLAN-NNNN, print its dir
+  --plan-dir REF        print a plan's dir (active or archived)
+  --plan-archive REF    move a plan under ARCHIVE/, print its new dir
+  --plan-unarchive REF  move it back out of ARCHIVE/, print its new dir
 
-Within a project (REF names the project: a number, PROJECT-7, ...):
-  --ticket REF             <project>/TICKET.md
-  --architecture REF       <project>/ARCHITECTURE.md
-  --implementation REF     <project>/IMPLEMENTATION.md
+Within a plan (REF names the plan: a number, PLAN-7, ...):
+  --ticket REF             <plan>/TICKET.md
+  --architecture REF       <plan>/ARCHITECTURE.md
+  --implementation REF     <plan>/IMPLEMENTATION.md
   --task-new REF           create and print the next TASK-NNNN.md
   --task-list REF          print the basename of every TASK-NNNN.md, in order
 
 Tasks (global):
   --task-get REF           print the full path of a task by its global ID,
-                           wherever its project lives, or exit 1 if missing
+                           wherever its plan lives, or exit 1 if missing
 
 
 ## Template

@@ -8,11 +8,11 @@ disable-model-invocation: true
 
 ## Find the tasks
 
-You are given a project reference (a number like `7`). Resolve its files with `measured-notes`:
+You are given a plan reference (a number like `7`). Resolve its files with `measured-notes`:
 
-- `measured-notes --task-list <project>` — task files, in dependency order.
+- `measured-notes --task-list <plan>` — task files, in dependency order.
 - `measured-notes --task-get <ref>` — a task's path by its global ID.
-- `measured-notes --architecture <project>` — the architecture plan.
+- `measured-notes --architecture <plan>` — the architecture plan.
 
 Read each task yourself and paste its full text into the implementer's prompt. Run `measured-notes --help` for all flags.
 
@@ -58,7 +58,7 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 ## Example Workflow
 
 ```
-You: I'm using Subagent-Driven Development to execute project 7.
+You: I'm using Subagent-Driven Development to execute plan 7.
 
 [List tasks once: measured-notes --task-list 7]
 [Read the architecture plan: measured-notes --architecture 7]

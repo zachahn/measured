@@ -6,8 +6,8 @@ Claude Code names its own `projects/<encoded-cwd>/` dirs. Every Claude session
 in a given repo lands in the same place, so the ticketing state persists across
 sessions and is shared between them.
 
-That repo dir holds one `state.sqlite3` (see db.py) plus a PROJECT-NNNN
-directory per planning effort; completed projects move under ARCHIVE/. Task
+That repo dir holds one `state.sqlite3` (see db.py) plus a PLAN-NNNN
+directory per planning effort; completed plans move under ARCHIVE/. Task
 content lives in the `.md` files; the database only hands out IDs.
 
 Kept stdlib-only so the scripts can be invoked from a fresh checkout without
@@ -173,7 +173,7 @@ def repo_dir() -> pathlib.Path:
 
     Namespaced by Claude's working directory the same way Claude Code names
     its own `projects/<encoded-cwd>/` dirs, so one repo maps to one stable
-    location across every session. Holds `state.sqlite3`, the PROJECT-NNNN
+    location across every session. Holds `state.sqlite3`, the PLAN-NNNN
     directories, and ARCHIVE/.
     """
     path = _repo_dir_for(find_claude_pid(os.getppid()))
@@ -184,7 +184,7 @@ def repo_dir() -> pathlib.Path:
 def repo_dir_at(root: str | os.PathLike) -> pathlib.Path:
     """Return a caller-supplied state dir, used verbatim as the repo dir.
 
-    Holds `state.sqlite3`, the PROJECT-NNNN directories, and ARCHIVE/ — the
+    Holds `state.sqlite3`, the PLAN-NNNN directories, and ARCHIVE/ — the
     same layout `repo_dir()` produces, but at an explicit path rather than one
     derived from Claude's working directory. Creates the directory if needed.
     """
@@ -194,17 +194,17 @@ def repo_dir_at(root: str | os.PathLike) -> pathlib.Path:
 
 
 ARCHIVE_DIRNAME = "ARCHIVE"
-PROJECT_DIRNAME = "PROJECT-{:04d}"
-_PROJECT_PATTERN = re.compile(r"\APROJECT-(\d+)\Z")
+PLAN_DIRNAME = "PLAN-{:04d}"
+_PLAN_PATTERN = re.compile(r"\APLAN-(\d+)\Z")
 TASK_FILENAME = "TASK-{:04d}.md"
 _TASK_PATTERN = re.compile(r"\ATASK-(\d+)\.md\Z")
 
 
 def parse_ref(ref: str, prefix: str) -> int | None:
-    """Parse a project/task ref to its integer ID, or None if unparseable.
+    """Parse a plan/task ref to its integer ID, or None if unparseable.
 
     Accepts the forms a caller naturally has on hand: a bare number ("7"),
-    the prefixed stem ("PROJECT-7" / "TASK-7"), or a task filename
+    the prefixed stem ("PLAN-7" / "TASK-7"), or a task filename
     ("TASK-7.md"). Case-insensitive on the prefix.
     """
     match = re.fullmatch(
@@ -213,14 +213,14 @@ def parse_ref(ref: str, prefix: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
-def project_dir(repo: pathlib.Path, project_id: int) -> pathlib.Path | None:
-    """Resolve a project's directory, active or archived, or None if missing.
+def plan_dir(repo: pathlib.Path, plan_id: int) -> pathlib.Path | None:
+    """Resolve a plan's directory, active or archived, or None if missing.
 
     Checks the active location first, then ARCHIVE/ — the folder's location is
-    the sole record of whether a project is archived (the database doesn't
+    the sole record of whether a plan is archived (the database doesn't
     track it).
     """
-    name = PROJECT_DIRNAME.format(project_id)
+    name = PLAN_DIRNAME.format(plan_id)
     active = repo / name
     if active.is_dir():
         return active
@@ -230,21 +230,21 @@ def project_dir(repo: pathlib.Path, project_id: int) -> pathlib.Path | None:
     return None
 
 
-def new_project(repo: pathlib.Path, conn) -> pathlib.Path:
-    """Allocate the next project ID and create its (active) directory."""
-    project_id = db.allocate_project(conn)
-    path = repo / PROJECT_DIRNAME.format(project_id)
+def new_plan(repo: pathlib.Path, conn) -> pathlib.Path:
+    """Allocate the next plan ID and create its (active) directory."""
+    plan_id = db.allocate_plan(conn)
+    path = repo / PLAN_DIRNAME.format(plan_id)
     path.mkdir(parents=True, exist_ok=False)
     return path
 
 
-def new_task(directory: pathlib.Path, conn, project_id: int) -> pathlib.Path:
+def new_task(directory: pathlib.Path, conn, plan_id: int) -> pathlib.Path:
     """Allocate the next global task ID and create its TASK-NNNN.md file.
 
-    The ID comes from the shared database, so it is unique across every project
+    The ID comes from the shared database, so it is unique across every plan
     in the repo. The file is created empty for the caller to Write into.
     """
-    task_id = db.allocate_task(conn, project_id)
+    task_id = db.allocate_task(conn, plan_id)
     path = directory / TASK_FILENAME.format(task_id)
     fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
     os.close(fd)
@@ -273,16 +273,16 @@ def resolve_task_file(directory: pathlib.Path, ref: str) -> pathlib.Path | None:
     return path if path.is_file() else None
 
 
-def archive_project(repo: pathlib.Path, project_id: int) -> pathlib.Path:
-    """Move a project's directory under ARCHIVE/. Returns the new path.
+def archive_plan(repo: pathlib.Path, plan_id: int) -> pathlib.Path:
+    """Move a plan's directory under ARCHIVE/. Returns the new path.
 
-    Raises if the project isn't active (already archived or never existed) or
+    Raises if the plan isn't active (already archived or never existed) or
     an archived copy already sits in the way.
     """
-    name = PROJECT_DIRNAME.format(project_id)
+    name = PLAN_DIRNAME.format(plan_id)
     src = repo / name
     if not src.is_dir():
-        raise FileNotFoundError(f"no active project {name}")
+        raise FileNotFoundError(f"no active plan {name}")
     dest_parent = repo / ARCHIVE_DIRNAME
     dest_parent.mkdir(parents=True, exist_ok=True)
     dest = dest_parent / name
@@ -292,15 +292,15 @@ def archive_project(repo: pathlib.Path, project_id: int) -> pathlib.Path:
     return dest
 
 
-def unarchive_project(repo: pathlib.Path, project_id: int) -> pathlib.Path:
-    """Move a project's directory back out of ARCHIVE/. Returns the new path.
+def unarchive_plan(repo: pathlib.Path, plan_id: int) -> pathlib.Path:
+    """Move a plan's directory back out of ARCHIVE/. Returns the new path.
 
     Raises if no archived copy exists or an active one already sits in the way.
     """
-    name = PROJECT_DIRNAME.format(project_id)
+    name = PLAN_DIRNAME.format(plan_id)
     src = repo / ARCHIVE_DIRNAME / name
     if not src.is_dir():
-        raise FileNotFoundError(f"no archived project {name}")
+        raise FileNotFoundError(f"no archived plan {name}")
     dest = repo / name
     if dest.exists():
         raise FileExistsError(f"active {name} already exists")

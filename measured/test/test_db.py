@@ -26,38 +26,38 @@ class DbTest(unittest.TestCase):
     def test_connect_creates_database_file(self):
         self.assertTrue((self.repo / db.DB_FILENAME).exists())
 
-    def test_project_ids_start_at_one_and_increment(self):
-        self.assertEqual(db.allocate_project(self.conn), 1)
-        self.assertEqual(db.allocate_project(self.conn), 2)
+    def test_plan_ids_start_at_one_and_increment(self):
+        self.assertEqual(db.allocate_plan(self.conn), 1)
+        self.assertEqual(db.allocate_plan(self.conn), 2)
 
-    def test_task_ids_are_global_not_per_project(self):
-        p1 = db.allocate_project(self.conn)
-        p2 = db.allocate_project(self.conn)
-        # Tasks numbered across projects share one sequence.
+    def test_task_ids_are_global_not_per_plan(self):
+        p1 = db.allocate_plan(self.conn)
+        p2 = db.allocate_plan(self.conn)
+        # Tasks numbered across plans share one sequence.
         self.assertEqual(db.allocate_task(self.conn, p1), 1)
         self.assertEqual(db.allocate_task(self.conn, p2), 2)
         self.assertEqual(db.allocate_task(self.conn, p1), 3)
 
-    def test_task_project_maps_back(self):
-        p1 = db.allocate_project(self.conn)
-        p2 = db.allocate_project(self.conn)
+    def test_task_plan_maps_back(self):
+        p1 = db.allocate_plan(self.conn)
+        p2 = db.allocate_plan(self.conn)
         t = db.allocate_task(self.conn, p2)
-        self.assertEqual(db.task_project(self.conn, t), p2)
-        self.assertNotEqual(db.task_project(self.conn, t), p1)
+        self.assertEqual(db.task_plan(self.conn, t), p2)
+        self.assertNotEqual(db.task_plan(self.conn, t), p1)
 
-    def test_task_project_unknown_is_none(self):
-        self.assertIsNone(db.task_project(self.conn, 999))
+    def test_task_plan_unknown_is_none(self):
+        self.assertIsNone(db.task_plan(self.conn, 999))
 
     def test_ids_survive_reconnect(self):
-        db.allocate_project(self.conn)
+        db.allocate_plan(self.conn)
         self.conn.close()
         conn2 = db.connect(self.repo)
         self.addCleanup(conn2.close)
-        # The counter persists; the next project is 2, never a reused 1.
-        self.assertEqual(db.allocate_project(conn2), 2)
+        # The counter persists; the next plan is 2, never a reused 1.
+        self.assertEqual(db.allocate_plan(conn2), 2)
 
     def test_concurrent_task_allocation_never_collides(self):
-        project_id = db.allocate_project(self.conn)
+        plan_id = db.allocate_plan(self.conn)
         results = []
         lock = threading.Lock()
 
@@ -66,7 +66,7 @@ class DbTest(unittest.TestCase):
             # safe to share across threads) and races to allocate.
             conn = db.connect(self.repo)
             try:
-                tid = db.allocate_task(conn, project_id)
+                tid = db.allocate_task(conn, plan_id)
             finally:
                 conn.close()
             with lock:

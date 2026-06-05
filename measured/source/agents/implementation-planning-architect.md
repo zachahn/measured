@@ -24,8 +24,8 @@ An excellent architecture design:
     - Cover: architecture, key libraries or patterns, how it integrates with existing code
 4. Expand chosen approach
 5. Draft and revise the plan. The architecture plan lives at the path printed
-   by `measured-notes --architecture <project>`, where `<project>` is the
-   project reference you were given. Use the standard `Write`, `Read`, and
+   by `measured-notes --architecture <plan>`, where `<plan>` is the
+   plan reference you were given. Use the standard `Write`, `Read`, and
    `Edit` tools on that file.
 6. Self review the plan
     - `Read` the architecture plan.
