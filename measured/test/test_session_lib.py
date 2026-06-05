@@ -91,6 +91,34 @@ class EncodeProjectPathTest(unittest.TestCase):
         self.assertEqual(lib.encode_project_path("a/b/c"), "a-b-c")
 
 
+class RepoDirForProjectTest(unittest.TestCase):
+    def test_encodes_absolute_path_under_projects(self):
+        original = os.environ.get("XDG_STATE_HOME")
+        try:
+            os.environ["XDG_STATE_HOME"] = "/tmp/xdg-rdp-test"
+            self.assertEqual(
+                lib.repo_dir_for_project("/Users/zach/Projects/measured"),
+                pathlib.Path(
+                    "/tmp/xdg-rdp-test/measured-claude-plugin/projects"
+                    "/-Users-zach-Projects-measured"
+                ),
+            )
+        finally:
+            if original is None:
+                del os.environ["XDG_STATE_HOME"]
+            else:
+                os.environ["XDG_STATE_HOME"] = original
+
+    def test_resolves_relative_path_to_cwd(self):
+        # "." encodes the current working directory's absolute path.
+        expected = lib.repo_dir_for_project(os.getcwd())
+        self.assertEqual(lib.repo_dir_for_project("."), expected)
+
+    def test_does_not_create_the_dir(self):
+        path = lib.repo_dir_for_project("/no/such/place/xyz")
+        self.assertFalse(path.exists())
+
+
 class ClaudePwdTest(unittest.TestCase):
     def test_returns_pwd_of_current_process(self):
         # The current process necessarily has a PWD; the helper should find

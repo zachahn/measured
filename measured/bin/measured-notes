@@ -12,9 +12,11 @@ it resolves on its own.
 
 Pass --set-plans-root DIR (or -R DIR) to use DIR as the plans root verbatim
 (it holds the db, the plans, and ARCHIVE/). Omit it to derive the root from
-Claude's working directory, as before. --plans-root prints the resolved root.
+Claude's working directory, as before.
 
-  --plans-root        print the resolved plans root (the db, plans, ARCHIVE/)
+  --plans-root [DIR]  print the plans root; with DIR, the root for that project
+                      dir (`--plans-root .` = the current project), without
+                      walking the process tree
   --plan-new          allocate the next PLAN-NNNN and print its dir
   --plan-dir REF      print a plan's dir (active or archived)
   --plan-archive REF    move a plan under ARCHIVE/, print its new dir
@@ -43,10 +45,13 @@ FILE_TARGETS = {
     "implementation": "IMPLEMENTATION.md",
 }
 
+# Marks `--plans-root` given without a DIR argument (vs. absent, which is None).
+NO_DIR = object()
+
 
 USAGE_TEXT = """\
 usage: measured-notes [--set-plans-root DIR | -R DIR]
-                      (--plans-root | --plan-new | --plan-dir REF |
+                      (--plans-root [DIR] | --plan-new | --plan-dir REF |
                        --plan-archive REF | --plan-unarchive REF |
                        --ticket REF | --architecture REF |
                        --implementation REF | --task-new REF | --task-get REF)
@@ -64,7 +69,9 @@ ARCHITECTURE.md and its tasks); completed plans move under ARCHIVE/.
 Plans root:
   -R, --set-plans-root DIR  use DIR as the plans root verbatim, rather than
                             deriving it from Claude's working directory
-  --plans-root              print the resolved plans root
+  --plans-root [DIR]        print the plans root; with DIR, the root for that
+                            project dir (`--plans-root .` = the current
+                            project), without walking the process tree
 
 Plans:
   --plan-new            allocate the next PLAN-NNNN, print its dir
@@ -115,8 +122,11 @@ def main(argv: list[str]) -> int:
     )
 
     group = parser.add_mutually_exclusive_group(required=True)
+    # Optional DIR: `--plans-root .` prints the root for that project dir;
+    # bare `--plans-root` prints the resolved root (honoring -R / process walk).
+    # NO_DIR distinguishes "flag absent" (None) from "flag present, no arg".
     group.add_argument(
-        "--plans-root", dest="action", action="store_const", const="plans-root"
+        "--plans-root", dest="plans_root", nargs="?", const=NO_DIR, metavar="DIR"
     )
     group.add_argument(
         "--plan-new", dest="action", action="store_const", const="plan-new"
@@ -132,12 +142,18 @@ def main(argv: list[str]) -> int:
 
     args = parser.parse_args(argv)
 
+    # `--plans-root DIR` prints the root for that project dir, standalone.
+    if args.plans_root is not None and args.plans_root is not NO_DIR:
+        print(session_lib.repo_dir_for_project(args.plans_root))
+        return 0
+
     if args.set_plans_root is not None:
         repo = session_lib.repo_dir_at(args.set_plans_root)
     else:
         repo = session_lib.repo_dir()
 
-    if args.action == "plans-root":
+    # Bare `--plans-root` prints the resolved root.
+    if args.plans_root is NO_DIR:
         print(repo)
         return 0
 

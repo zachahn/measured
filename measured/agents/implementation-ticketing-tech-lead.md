@@ -58,7 +58,7 @@ You are given a **plan reference** (a number like `7`); it names the plan direct
 ## Usage: `measured-notes`
 
 usage: measured-notes [--set-plans-root DIR | -R DIR]
-                      (--plans-root | --plan-new | --plan-dir REF |
+                      (--plans-root [DIR] | --plan-new | --plan-dir REF |
                        --plan-archive REF | --plan-unarchive REF |
                        --ticket REF | --architecture REF |
                        --implementation REF | --task-new REF | --task-get REF)
@@ -72,7 +72,9 @@ ARCHITECTURE.md and its tasks); completed plans move under ARCHIVE/.
 Plans root:
   -R, --set-plans-root DIR  use DIR as the plans root verbatim, rather than
                             deriving it from Claude's working directory
-  --plans-root              print the resolved plans root
+  --plans-root [DIR]        print the plans root; with DIR, the root for that
+                            project dir (`--plans-root .` = the current
+                            project), without walking the process tree
 
 Plans:
   --plan-new            allocate the next PLAN-NNNN, print its dir

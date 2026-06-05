@@ -162,10 +162,20 @@ def state_root() -> pathlib.Path:
     ) / "measured-claude-plugin"
 
 
+def repo_dir_for_project(project_path: str | os.PathLike) -> pathlib.Path:
+    """The repo dir for a project working directory (does not create it).
+
+    Encodes the project's *absolute* path the way Claude Code names its own
+    `projects/<encoded-cwd>/` dirs, so `repo_dir_for_project(".")` yields the
+    current project's root without walking the process tree.
+    """
+    abspath = os.path.abspath(os.path.expanduser(os.fspath(project_path)))
+    return state_root() / "projects" / encode_project_path(abspath)
+
+
 def _repo_dir_for(claude_pid: int) -> pathlib.Path:
     """The repo dir for an already-resolved Claude pid (does not create it)."""
-    project = encode_project_path(claude_pwd(claude_pid))
-    return state_root() / "projects" / project
+    return repo_dir_for_project(claude_pwd(claude_pid))
 
 
 def repo_dir() -> pathlib.Path:
