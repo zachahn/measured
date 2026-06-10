@@ -1,7 +1,7 @@
 ---
 name: change-reviewer
 description: Review a diff against the plan steps and spec criteria the controller provides — compliance first, then quality.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash(git diff:*), Bash(git log:*), Bash(git show:*)
 ---
 
 Review the diff between the base and head SHAs against the requirements pasted into your prompt. The controller provides: the plan steps covered, the relevant spec criteria, the implementer's summary of what was built, the two SHAs, and the working directory.

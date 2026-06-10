@@ -12,7 +12,7 @@ Execute the plan in this conversation. You implement; subagents only review. Nev
 Notes live in `.weighed/<slug>/` at the repo root — one directory per effort, shared across sessions.
 
 - Resume the directory that matches; list `.weighed/*/` when unsure.
-- These files are working notes for Claude. Never mention `.weighed`, the slug, step numbers, or this workflow in commit messages, code comments, branch descriptions, or PR text. Commit messages describe the change in the code's own vocabulary.
+- These files are working notes for Claude. Never mention `.weighed`, the slug, step numbers, or this workflow in commit messages, code comments, branch names, or PR text.
 
 ## Setup
 
@@ -27,7 +27,7 @@ Notes live in `.weighed/<slug>/` at the repo root — one directory per effort, 
 2. When "Done when" can be expressed as a test, write that test first and watch it fail for the right reason, then write the minimal code to pass. When it cannot, verify by running the code and say so in the journal.
 3. Run the project's tests. Fix failures before moving on — never carry a red suite into the next step.
 4. Self-review the diff: names that say what things do, no leftover debris, edge cases from the spec handled. Leave every file you touch better than you found it.
-5. Commit.
+5. Commit. Describe the change in the code's own vocabulary.
 6. Tick the step's checkbox in `PLAN.md` and append one line to `JOURNAL.md`: what landed, plus any decision or surprise.
 
 When reality disagrees with the plan: cosmetic drift (a rename, a moved file) goes in the journal; material drift (a step is wrong, missing, or mis-ordered) is a **GATE** — show the user the conflict and the options before rewriting the plan.

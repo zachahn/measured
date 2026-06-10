@@ -14,7 +14,7 @@ Notes live in `.weighed/<slug>/` at the repo root — one directory per effort, 
 - Pick the slug with the user: short, kebab-case, named after the effort (e.g. `csv-export`). Resume an existing directory when one matches; list `.weighed/*/` when unsure.
 - Before the first write, keep the directory out of git:
   `git check-ignore -q .weighed || echo '.weighed/' >> "$(git rev-parse --git-path info/exclude)"`
-- These files are working notes for Claude. Never mention `.weighed`, the slug, or step numbers in commit messages, code comments, or PR text.
+- These files are working notes for Claude. Never mention `.weighed`, the slug, step numbers, or this workflow in commit messages, code comments, branch names, or PR text.
 
 ## Steps
 

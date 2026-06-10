@@ -14,7 +14,7 @@ Notes live in `.weighed/<slug>/` at the repo root — one directory per effort, 
 - Pick the slug with the user: short, kebab-case, named after the effort (e.g. `csv-export`). Resume an existing directory when one matches; list `.weighed/*/` when unsure.
 - Before the first write, keep the directory out of git:
   `git check-ignore -q .weighed || echo '.weighed/' >> "$(git rev-parse --git-path info/exclude)"`
-- These files are working notes for Claude. Never mention `.weighed`, the slug, or step numbers in commit messages, code comments, or PR text.
+- These files are working notes for Claude. Never mention `.weighed`, the slug, step numbers, or this workflow in commit messages, code comments, branch names, or PR text.
 
 ## Steps
 
@@ -58,7 +58,7 @@ Notes live in `.weighed/<slug>/` at the repo root — one directory per effort, 
 
 The user invoked this skill to be consulted. That choice outranks any default to act autonomously.
 
-- Keep **Open questions** ordered by blast radius. Raise the biggest unknown first — a wrong guess at the top costs the most to unwind.
+- Raise the biggest unknown first — a wrong guess at the top costs the most to unwind.
 - Stop at every **GATE** and use `AskUserQuestion`. Never advance past a gate on inference, and never answer a gate question on the user's behalf.
 - Between gates, work without interrupting. Verify what you can yourself; ask only what the code cannot answer.
 - Subagents never address the user. They report to you; you escalate what matters.
