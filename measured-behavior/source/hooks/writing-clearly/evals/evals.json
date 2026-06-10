@@ -5,9 +5,9 @@
   "rubric": [
     {
       "id": "adverbs",
-      "rule": "Avoid adverbs. Replace them with stronger verbs.",
+      "rule": "Replace adverbs with stronger verbs.",
       "adheres": "Verbs carry the meaning: 'cut latency in half', 'the job crashes'. Adverbs are rare and load-bearing.",
-      "violates": "Adverb pile-ups doing the work a verb should: 'significantly improved', 'completely broke', 'quickly added', 'really important'."
+      "violates": "Adverb pile-ups doing the work a verb should: 'significantly improved', 'completely broke', 'quickly added', 'really important', and 'genuinely' anywhere."
     },
     {
       "id": "needless_words",
@@ -17,21 +17,33 @@
     },
     {
       "id": "active_voice",
-      "rule": "Prefer active voice.",
+      "rule": "Use the active voice.",
       "adheres": "The actor leads: 'the retry loop swallows the error', 'we ship the export async'.",
       "violates": "Agentless passives where the actor matters: 'the bug was introduced', 'it is handled by', 'changes were made', 'is expected to be done'."
     },
     {
       "id": "concrete_nouns",
-      "rule": "Use concrete nouns. Name the thing, not the category.",
+      "rule": "Use concrete nouns.",
       "adheres": "Names the actual thing: 'CheckoutController', 'the 100k-row CSV', 'the nightly cron'.",
       "violates": "Vague category nouns standing in for specifics: 'the component', 'various aspects', 'certain functionality', 'the relevant systems', 'some changes'."
     },
     {
       "id": "full_sentences",
-      "rule": "Prefer full sentences. Reserve fragments for lists and headings.",
+      "rule": "Write full sentences; reserve fragments for lists and headings.",
       "adheres": "Prose runs in complete sentences; fragments appear only inside bullet lists and headings.",
       "violates": "Sentence fragments used as prose, or a wall of bullets where a paragraph belongs."
+    },
+    {
+      "id": "plain_words",
+      "rule": "Use plain words.",
+      "adheres": "The everyday word: 'use', 'help', 'start', 'show'.",
+      "violates": "Fancy stand-ins: 'utilize', 'leverage', 'facilitate', 'commence', 'functionality'."
+    },
+    {
+      "id": "overstate",
+      "rule": "Do not overstate.",
+      "adheres": "Claims match the evidence: 'the tests pass', 'handles the empty-list case'.",
+      "violates": "Inflation beyond what was verified: 'thoroughly tested', 'production-ready', 'fully robust', 'comprehensive', 'seamless'."
     }
   ],
   "evals": [
