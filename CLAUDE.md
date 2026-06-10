@@ -1,4 +1,4 @@
-- Never edit `skills/` or `agents/`. Edit `source/` and run `rake build`
+- In `measured/` and `measured-behavior/`, never edit `skills/` or `agents/`. Edit `source/` and run `rake build`. The `weighed/` plugin is standard format with no build step — edit its `skills/` and `agents/` directly.
 - Write skill and agent text as imperative commands, not declarative description ("Read the ticket", not "The information is in the ticket").
 - Always opt to use the standard library. Never install any libraries.
 - Write shipped and tested code — hooks, the `measured-notes` CLI, libs, tests, eval scripts — in Python; it runs on users' machines and needs no Ruby. Keep Ruby to the `Rakefile`, which drives the build, tests, and version bumps and depends on ERB for templating.

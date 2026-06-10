@@ -32,8 +32,10 @@ module TestTasks
 
   namespace :test do
     task :skills do
-      puts "[test] */source/skills"
-      Dir.glob("*/source/skills/**/SKILL.md").each do |path|
+      puts "[test] */source/skills + weighed/skills"
+      # weighed is a standard-format plugin with no source/ dir; its skills are
+      # edited in place, so check them directly.
+      Dir.glob(["*/source/skills/**/SKILL.md", "weighed/skills/**/SKILL.md"]).each do |path|
         check_name("test", path, File.basename(File.dirname(path)))
       rescue => e
         RakeTaskFailure.create("test", path, e.message)
@@ -42,8 +44,8 @@ module TestTasks
     end
 
     task :agents do
-      puts "[test] */source/agents"
-      Dir.glob("*/source/agents/*.md").each do |path|
+      puts "[test] */source/agents + weighed/agents"
+      Dir.glob(["*/source/agents/*.md", "weighed/agents/*.md"]).each do |path|
         check_name("test", path, File.basename(path, ".md"))
       rescue => e
         RakeTaskFailure.create("test", path, e.message)
@@ -61,6 +63,7 @@ module TestTasks
     task :validate do
       sh "claude plugin validate ./measured-behavior"
       sh "claude plugin validate ./measured"
+      sh "claude plugin validate ./weighed"
       sh "claude plugin validate ."
       puts "[test] validate done"
     end

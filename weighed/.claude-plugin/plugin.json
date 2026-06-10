@@ -1,0 +1,18 @@
+{
+  "name": "weighed",
+  "description": "Staged development workflow: orient, define, plan, build. Single-threaded, file-backed, with the user consulted at every fork.",
+  "version": "1.2.3",
+  "author": {
+    "name": "Zach Ahn",
+    "email": "measured-dev@zachahn.com"
+  },
+  "homepage": "https://github.com/zachahn/measured",
+  "repository": "https://github.com/zachahn/measured",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "planning",
+    "collaboration",
+    "best-practices"
+  ]
+}
