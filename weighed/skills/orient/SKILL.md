@@ -20,7 +20,7 @@ Notes live in `.weighed/<slug>/` at the repo root — one directory per effort, 
 
 1. Restate the request in one sentence. If you cannot, that is your biggest open question — raise it with the user now.
 2. Explore the code the request touches. Read the load-bearing files yourself. For broad sweeps — many files, naming conventions, "where does X happen" — dispatch the built-in `Explore` subagent and keep only its conclusions.
-3. Verify every claim the request makes about the code (file X exists, flag Y controls Z). Record each mismatch as a surprise. Never silently adopt either version.
+3. Verify every claim the request makes about the code (file X exists, flag Y controls Z). Record each mismatch as a surprise; the user decides at the gate which version stands.
 4. Write `ORIENTATION.md`:
 
    ```markdown
@@ -52,6 +52,6 @@ Notes live in `.weighed/<slug>/` at the repo root — one directory per effort, 
 The user invoked this skill to be consulted. That choice outranks any default to act autonomously.
 
 - Raise the biggest unknown first — a wrong guess at the top costs the most to unwind.
-- Stop at every **GATE** and use `AskUserQuestion`. Never advance past a gate on inference, and never answer a gate question on the user's behalf.
+- Stop at every **GATE** and put the question to the user with `AskUserQuestion`, even when you are confident of the answer.
 - Between gates, work without interrupting. Verify what you can yourself; ask only what the code cannot answer.
-- Subagents never address the user. They report to you; you escalate what matters.
+- Subagents report to you; you escalate what matters to the user.

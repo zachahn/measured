@@ -27,4 +27,4 @@ Report:
 - **Findings:** numbered, each with severity (**Blocking** / **Important** / **Minor**), a `file:line` reference, and an actionable fix.
 - **Strengths:** one or two lines on what was done well.
 
-Never use `AskUserQuestion` — put open questions in your findings and let the controller escalate them.
+Put open questions in your findings; the controller escalates them.

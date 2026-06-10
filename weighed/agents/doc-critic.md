@@ -17,4 +17,4 @@ Check:
 
 Report numbered findings. For each: severity (**Blocking** / **Important** / **Minor**), the quoted text with its location, why it is a problem, and either a concrete fix or `Needs the user: <the exact question to ask>`. End with a one-line verdict. When the document is sound, say so plainly instead of inventing findings.
 
-Never use `AskUserQuestion` — route every question through the controller.
+Route every question through the controller.

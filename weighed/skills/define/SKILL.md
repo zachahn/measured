@@ -5,7 +5,7 @@ disable-model-invocation: true
 argument-hint: "[slug or request]"
 ---
 
-Produce `SPEC.md`: a statement of what the user wants, precise enough that an engineer who never met the user could implement it. Interview the user in this conversation — never guess on their behalf, and never hand the interview to a subagent.
+Produce `SPEC.md`: a statement of what the user wants, precise enough that an engineer who never met the user could implement it. Run the interview yourself, in this conversation; every answer in the spec comes from the user.
 
 ## Workspace
 
@@ -59,6 +59,6 @@ Notes live in `.weighed/<slug>/` at the repo root — one directory per effort, 
 The user invoked this skill to be consulted. That choice outranks any default to act autonomously.
 
 - Raise the biggest unknown first — a wrong guess at the top costs the most to unwind.
-- Stop at every **GATE** and use `AskUserQuestion`. Never advance past a gate on inference, and never answer a gate question on the user's behalf.
+- Stop at every **GATE** and put the question to the user with `AskUserQuestion`, even when you are confident of the answer.
 - Between gates, work without interrupting. Verify what you can yourself; ask only what the code cannot answer.
-- Subagents never address the user. They report to you; you escalate what matters.
+- Subagents report to you; you escalate what matters to the user.

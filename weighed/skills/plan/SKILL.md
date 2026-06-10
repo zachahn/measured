@@ -46,6 +46,6 @@ Notes live in `.weighed/<slug>/` at the repo root — one directory per effort, 
 The user invoked this skill to be consulted. That choice outranks any default to act autonomously.
 
 - Raise the biggest unknown first — a wrong guess at the top costs the most to unwind.
-- Stop at every **GATE** and use `AskUserQuestion`. Never advance past a gate on inference, and never answer a gate question on the user's behalf.
+- Stop at every **GATE** and put the question to the user with `AskUserQuestion`, even when you are confident of the answer.
 - Between gates, work without interrupting. Verify what you can yourself; ask only what the code cannot answer.
-- Subagents never address the user. They report to you; you escalate what matters.
+- Subagents report to you; you escalate what matters to the user.
