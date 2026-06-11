@@ -58,6 +58,7 @@ module TestTasks
       sh "python3 measured/test/test_db.py"
       sh "python3 measured-behavior/test/test_writing_clearly.py"
       sh "python3 weighed/test/test_auto_approve_plugin_reads.py"
+      sh "python3 weighed/test/test_worktree_guard.py"
       puts "[test] done"
     end
 
