@@ -8,9 +8,9 @@ file tool whose target resolves into the *main* worktree's working tree is
 denied, so the session can neither read nor overwrite the primary checkout.
 
 Scope: the structured file tools only — Read, Edit, Write, NotebookEdit, Grep,
-Glob — where the target path is explicit and resolves exactly. Bash is out of
-scope; a hook can only scan its command string, which both over- and
-under-blocks. Restrict Bash with the OS sandbox or `permissions.deny` instead.
+Glob — where the target path is explicit and resolves exactly. Bash stays out
+of scope: a hook can only scan its command string, which both over- and
+under-blocks.
 
 Detection comes from git, not environment variables:
   - A linked worktree has `--git-dir` (`…/.git/worktrees/<name>`) different from
