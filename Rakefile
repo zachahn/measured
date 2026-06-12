@@ -32,10 +32,8 @@ module TestTasks
 
   namespace :test do
     task :skills do
-      puts "[test] */source/skills + weighed/skills"
-      # weighed is a standard-format plugin with no source/ dir; its skills are
-      # edited in place, so check them directly.
-      Dir.glob(["*/source/skills/**/SKILL.md", "weighed/skills/**/SKILL.md"]).each do |path|
+      puts "[test] skills"
+      Dir.glob(["*/skills/**/SKILL.md"]).each do |path|
         check_name("test", path, File.basename(File.dirname(path)))
       rescue => e
         RakeTaskFailure.create("test", path, e.message)
@@ -44,8 +42,8 @@ module TestTasks
     end
 
     task :agents do
-      puts "[test] */source/agents + weighed/agents"
-      Dir.glob(["*/source/agents/*.md", "weighed/agents/*.md"]).each do |path|
+      puts "[test] agents"
+      Dir.glob(["*/agents/*.md"]).each do |path|
         check_name("test", path, File.basename(path, ".md"))
       rescue => e
         RakeTaskFailure.create("test", path, e.message)
@@ -106,117 +104,6 @@ module TestTasks
 
     if actual_description.nil?
       RakeTaskFailure.create(task_name, path, "Missing `description`")
-    end
-  end
-end
-
-module BuildTasks
-  extend Rake::DSL
-
-  # Source files live inside each plugin at <plugin>/source/<rest> and build
-  # to <plugin>/<rest>. Partials are shared helpers under <plugin>/source/_*
-  # and are never built or pruned on their own.
-  SOURCE_GLOB = "*/source/**/*".freeze
-
-  # Inline a shared partial. The partial is itself rendered as ERB so a partial
-  # may nest other partials or embed command output, just like a source file.
-  # Rendering happens in this module's binding, where `partials`, `root`, and
-  # backtick command substitution all resolve.
-  def self.partials(path)
-    @partials ||= {}
-    @partials[path] ||= begin
-      raw = File.read(Dir.glob("*/source/_partials/#{path}").first)
-      ERB.new(raw).result(binding)
-    end
-  end
-
-  def self.root
-    Pathname.new(__dir__)
-  end
-
-  # Map a source path (<plugin>/source/<rest>) to its built destination
-  # (<plugin>/<rest>), or nil if it is a partial, eval tooling, or otherwise
-  # not part of the shipped output. Returning nil here makes the build skip
-  # the file and the orphan sweep prune any stale built copy of it.
-  def self.dest_for(source)
-    plugin, rest = source.split("/source/", 2)
-    return nil if rest.nil? || rest.empty?
-    segments = rest.split("/")
-    return nil if rest.start_with?("_") || segments.include?("_partials")
-    # evals/ holds the eval set and is tooling input, not shipped with the skill.
-    return nil if segments.include?("evals")
-    # *-workspace/ dirs are gitignored scratch (eval runs). Skipping them keeps
-    # that scratch out of the shipped tree and out of the orphan sweep's build
-    # dirs, so a stray workspace can't make prune delete a real committed file.
-    return nil if segments.any? { |s| s.end_with?("-workspace") }
-    File.join(plugin, rest)
-  end
-
-  task :build do
-    require "erb"
-    require "fileutils"
-    require "pathname"
-
-    Dir.glob(SOURCE_GLOB).each do |source|
-      next if File.directory?(source)
-      dest = dest_for(source)
-      next if dest.nil?
-
-      original = File.read(source)
-      erb = ERB.new(original)
-      built = erb.result(binding)
-
-      FileUtils.mkdir_p(File.dirname(dest))
-      File.write(dest, built)
-    rescue => e
-      RakeTaskFailure.create(:build, source, e.message)
-      next
-    end
-
-    prune_orphans
-
-    puts "[build] done"
-  end
-
-  # Delete built files whose source no longer exists. Every built file came
-  # from <plugin>/source/<rest>, so for each source we recompute its
-  # destination and collect the set of files the build owns. Any file already
-  # present in a built directory but absent from that set is an orphan and is
-  # removed. Partials and source files are never touched.
-  def self.prune_orphans
-    require "set"
-
-    owned = Dir.glob(SOURCE_GLOB)
-      .reject { |s| File.directory?(s) }
-      .map { |s| dest_for(s) }
-      .compact
-      .to_set
-
-    # Built directories are the plugin-relative parents of every owned file
-    # (e.g. measured/skills, measured/agents). Sweep them for stragglers.
-    build_dirs = owned.map { |dest| dest[%r{\A[^/]+/[^/]+}] }.compact.to_set
-
-    build_dirs.each do |dir|
-      Dir.glob("#{dir}/**/*").each do |dest|
-        next if File.directory?(dest)
-        next if owned.include?(dest)
-
-        File.delete(dest)
-        puts "[build] pruned #{dest}"
-      end
-    end
-
-    # Pruning a file (e.g. the only file in an excluded evals/ dir) can leave
-    # an empty directory behind. Sweep those away too, deepest-first so a
-    # parent that becomes empty once its children go is also removed.
-    build_dirs.each do |dir|
-      Dir.glob("#{dir}/**/*").select { |d| File.directory?(d) }
-        .sort_by { |d| -d.count("/") }
-        .each do |d|
-          next unless (Dir.entries(d) - %w[. ..]).empty?
-          Dir.rmdir(d)
-          puts "[build] pruned empty dir #{d}"
-        end
     end
   end
 end
@@ -439,4 +326,4 @@ module VersionTasks
   end
 end
 
-task default: [:test, :build]
+task default: [:test]
