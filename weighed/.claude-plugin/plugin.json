@@ -1,7 +1,7 @@
 {
   "name": "weighed",
   "description": "Staged development workflow: orient, define, plan, build. Single-threaded, file-backed, with the user consulted at every fork.",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "author": {
     "name": "Zach Ahn",
     "email": "measured-dev@zachahn.com"
