@@ -4,61 +4,59 @@ description: Draft an excellent ticket for feature development or bugfix
 disable-model-invocation: true
 ---
 
-Two constraints shape how this skill divides the work:
+Draft the ticket and talk to the user yourself; delegate reading to subagents. Two rules drive this split:
 
-- Subagents cannot ask the user questions. The dialogue — clarifying the problem, proposing options, confirming each stage — must happen in this conversation.
-- The main conversation's context is precious. Push the context-heavy work — codebase research, the fresh-eyes review — into subagents that return conclusions, not file dumps.
+- Subagents cannot ask the user questions. Every clarification, option, and confirmation happens in this conversation.
+- Codebase research and the fresh-eyes review go into subagents that return conclusions, not file dumps.
 
-So: draft the ticket and talk to the user yourself; delegate reading. Bad assumptions and miscommunication are expensive — research freely through subagents, but bring every open question and concern to the user with `AskUserQuestion`. Never infer an answer or pick on the user's behalf.
+Never infer an answer or pick on the user's behalf. Bring every open question to the user with `AskUserQuestion`.
 
 ## What makes a ticket excellent
 
-- Describes the outcome in full detail
-- Describes the constraints (performance targets, backward compatibility, accessibility)
-- Suggests the approach only when context lives outside this ticket — a specific API contract, a known footgun, an architectural decision already made
-- Leaves the implementation to the engineer
-- Leaves nothing ambiguous
+- Describes the outcome and its constraints (performance targets, backward compatibility, accessibility) in full detail.
+- Leaves nothing ambiguous.
+- Leaves the implementation to the engineer. Suggest an approach only when the context lives outside the ticket — a specific API contract, a known footgun, an architectural decision already made.
 
-Too much implementation detail is a smell. It means either the ticket author doesn't trust the engineers, or someone already mentally solved the problem and is transcribing their solution. This kills ownership and often produces worse outcomes — the engineer follows a prescribed solution written before they understood the problem.
+Too much implementation detail kills the engineer's ownership and transcribes a solution written before anyone understood the problem. Too little product context forces the engineer to make product decisions mid-sprint. Aim between the two.
 
-Too little product context is the more common failure. Engineers end up making product decisions mid-sprint because no one wrote down why the feature matters or what the edge cases are. This leads to technically correct but wrong-feeling outcomes.
+## Set up the plan
 
-## Where the ticket lives
+The ticket lives in a **plan** — a directory that persists across sessions.
 
-The ticket lives in a **plan** — a directory that persists across sessions:
+1. Run `measured-notes --plan-new` to allocate one. It prints the directory, e.g. `.../PLAN-0007`; the plan's reference is its number (`7`).
+2. Run `measured-notes --ticket <plan>` to get the ticket file's path. Use `Read`, `Write`, and `Edit` on that file.
 
-- `measured-notes --plan-new` allocates one and prints its directory, e.g. `.../PLAN-0007`. The plan's reference is its number (`7`).
-- `measured-notes --ticket <plan>` prints the ticket's path. Use the standard `Read`, `Write`, and `Edit` tools on that file.
+`measured-notes --help` lists the rest.
 
-Those two commands are all this skill needs; `measured-notes --help` lists the rest.
+## Draft in three stages
 
-## Draft in stages, confirm the foundation
-
-The template's sections build on each other: a wrong problem statement or a fuzzy definition quietly corrupts everything written after it. So draft in three stages, write each stage into the ticket file as it firms up, and get the user's explicit confirmation before building on it. Confirming early is cheap; rewriting a finished ticket because the problem statement was wrong is not.
+The template's sections build on each other: a wrong problem statement corrupts everything after it. Draft one stage at a time, write each into the ticket file as it firms up, and get the user's explicit confirmation before starting the next. Do not proceed on silence.
 
 **Stage 1 — Foundation: Title, Problem / Why, Definitions.**
 
-Spawn an `Explore` subagent to research the codebase: the current behavior this ticket would change, the terms and jargon the code already uses, and the code areas, APIs, and data models a future implementer would start from (collect these now — they become Stage 3's technical-context section). Have it return conclusions with file references, not file contents.
-
-From its findings, draft the title (imperative mood, as if giving a command), the problem statement, and the definitions. Define every term specific to this feature — domain jargon, internal names, acronyms, any word an outside engineer could read two ways — each as a term plus a one-line meaning in this ticket's context. Ask the user about anything ambiguous rather than guessing.
-
-Present this stage with `AskUserQuestion` and wait for confirmation. Do not proceed on silence.
+1. Spawn an `Explore` subagent to research the codebase and return conclusions with file references (not file contents): the current behavior this ticket would change, the terms and jargon the code already uses, and the code areas, APIs, and data models an implementer would start from. Keep the last group — it becomes Stage 3.
+2. Draft the title (imperative mood), the problem statement, and the definitions. Define every term specific to this feature — domain jargon, internal names, acronyms, any word an outside engineer could read two ways — each as a term plus a one-line meaning in this ticket's context.
+3. Write the stage into the ticket file.
+4. Present it with `AskUserQuestion` and wait for confirmation.
 
 **Stage 2 — Behavior: User Stories, Acceptance Criteria, Scope.**
 
-Where a real choice exists — competing behaviors, scope boundaries, tradeoffs — use `AskUserQuestion` to propose two or more options with their consequences. Reuse the confirmed definitions verbatim throughout. Confirm this stage with the user before moving on.
+1. Draft the three sections. Reuse the confirmed definitions verbatim.
+2. Where a real choice exists — competing behaviors, scope boundaries, tradeoffs — use `AskUserQuestion` to propose two or more options with their consequences.
+3. Write the stage into the ticket file and confirm it with the user.
 
 **Stage 3 — Details: Edge cases and Error states, Technical and design context.**
 
-These follow from the confirmed foundation and the Stage 1 exploration, so draft them directly and fold them into the ticket. If a gap surfaces — an error path the exploration didn't cover — spawn another targeted `Explore` rather than reading the code yourself.
+1. Draft both sections from the confirmed foundation and the Stage 1 exploration, and write them into the ticket file.
+2. If a gap surfaces — an error path the exploration missed — spawn another targeted `Explore` rather than reading the code yourself.
 
 ## Review before sign-off
 
-The finished ticket must stand alone: an engineer who never saw this conversation will implement from the page. You cannot test that property yourself — everything the user told you is in your context, so a gap on the page still reads as covered. Spawn the `ticketing-review` subagent instead.
+The finished ticket must stand alone: an engineer who never saw this conversation implements from the page. You cannot test that yourself — everything the user told you is in your context, so a gap on the page still reads as covered.
 
-Give it the ticket's path (from `measured-notes --ticket <plan>`) and nothing else — no summary of the conversation. It checks for contradictions, ambiguity, inconsistent or undefined terms, missing sections, and whether an engineer could plan the work with no blockers, then returns findings rather than edits.
-
-Fix what it finds; take anything you cannot resolve to the user. Then present the full ticket and iterate until the user is satisfied.
+1. Spawn the `ticketing-review` subagent. Give it the ticket's path (from `measured-notes --ticket <plan>`) and nothing else — no summary of the conversation.
+2. Fix what it finds. Take anything you cannot resolve to the user.
+3. Present the full ticket and iterate until the user is satisfied.
 
 ## Ticket template
 
