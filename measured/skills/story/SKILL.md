@@ -14,6 +14,14 @@ Too much implementation detail kills the engineer's ownership and transcribes a 
 
 Never infer an answer or pick on the user's behalf. Bring every open question and unexpected find to the user with `AskUserQuestion`.
 
+## How to interview
+
+- Raise the biggest unknown first — a wrong guess at the top costs the most to unwind.
+- Stop at every **GATE** and put the question to the user with `AskUserQuestion`, even when you are confident of the answer. Do not proceed on silence.
+- Between gates, work without interrupting. Verify what you can yourself; ask only what the code cannot answer.
+- When the request supports more than one reading, offer each as an option with its consequences.
+- Subagents report to you; you escalate what matters to the user.
+
 ## Set up the plan
 
 The ticket lives in a **plan** — a directory that persists across sessions.
@@ -28,9 +36,10 @@ The template's sections build on each other: a wrong problem statement corrupts 
 **Stage 1 — Foundation: Title, Problem / Why, Definitions.**
 
 1. Spawn an `Explore` subagent to research the codebase and return conclusions with file references (not file contents): the current behavior this ticket would change, the terms and jargon the code already uses, and the code areas, APIs, and data models an implementer would start from. Keep the last group — it becomes Stage 3.
-2. Draft the title (imperative mood), the problem statement, and the definitions. Define every term specific to this feature — domain jargon, internal names, acronyms, any word an outside engineer could read two ways — each as a term plus a one-line meaning in this ticket's context.
-3. Write the stage into the ticket file.
-4. **GATE:** Present it with `AskUserQuestion` and wait for confirmation.
+2. **GATE:** Confirm the problem first — who hurts, when, and why solving it matters. Settle this with the user before any solution talk.
+3. Draft the title (imperative mood), the problem statement, and the definitions. Define every term specific to this feature — domain jargon, internal names, acronyms, any word an outside engineer could read two ways — each as a term plus a one-line meaning in this ticket's context.
+4. Write the stage into the ticket file.
+5. **GATE:** Present it with `AskUserQuestion` and wait for confirmation.
 
 **Stage 2 — Behavior: User Stories, Acceptance Criteria, Scope.**
 
