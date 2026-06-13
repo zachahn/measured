@@ -1,5 +1,5 @@
 ---
-name: ticketing
+name: story
 description: Draft an excellent ticket for feature development or bugfix
 disable-model-invocation: true
 ---
@@ -49,7 +49,7 @@ The template's sections build on each other: a wrong problem statement corrupts 
 
 The finished ticket must stand alone: an engineer who never saw this conversation implements from the page. You cannot test that yourself — everything the user told you is in your context, so a gap on the page still reads as covered.
 
-1. Spawn the `ticketing-review` subagent. Give it the ticket's path (`<plan-dir>/TICKET.md`) and nothing else — no summary of the conversation.
+1. Spawn the `story-review` subagent. Give it the ticket's path (`<plan-dir>/TICKET.md`) and nothing else — no summary of the conversation.
 2. Fix what it finds. Take anything you cannot resolve to the user.
 3. Present the full ticket and iterate until the user is satisfied.
 

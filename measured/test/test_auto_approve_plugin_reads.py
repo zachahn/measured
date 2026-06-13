@@ -16,7 +16,7 @@ import unittest
 
 PLUGIN_ROOT = pathlib.Path(__file__).resolve().parent.parent
 HOOK = PLUGIN_ROOT / "hooks" / "auto-approve-plugin-reads.py"
-SKILL_INSIDE = PLUGIN_ROOT / "skills" / "ticketing" / "SKILL.md"
+SKILL_INSIDE = PLUGIN_ROOT / "skills" / "story" / "SKILL.md"
 
 
 def run_hook(stdin_text):

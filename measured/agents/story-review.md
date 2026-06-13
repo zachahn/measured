@@ -1,6 +1,6 @@
 ---
-name: ticketing-review
-description: Fresh-eyes review of a drafted ticket against its own page, with no conversation context. Use only when directed to by the ticketing skill.
+name: story-review
+description: Fresh-eyes review of a drafted ticket against its own page, with no conversation context. Use only when directed to by the story skill.
 model: inherit
 ---
 
