@@ -4,13 +4,6 @@ description: Draft an excellent ticket for feature development or bugfix
 disable-model-invocation: true
 ---
 
-Draft the ticket and talk to the user yourself; delegate reading to subagents. Two rules drive this split:
-
-- Subagents cannot ask the user questions. Every clarification, option, and confirmation happens in this conversation.
-- Codebase research and the fresh-eyes review go into subagents that return conclusions, not file dumps.
-
-Never infer an answer or pick on the user's behalf. Bring every open question to the user with `AskUserQuestion`.
-
 ## What makes a ticket excellent
 
 - Describes the outcome and its constraints (performance targets, backward compatibility, accessibility) in full detail.
@@ -18,6 +11,8 @@ Never infer an answer or pick on the user's behalf. Bring every open question to
 - Leaves the implementation to the engineer. Suggest an approach only when the context lives outside the ticket — a specific API contract, a known footgun, an architectural decision already made.
 
 Too much implementation detail kills the engineer's ownership and transcribes a solution written before anyone understood the problem. Too little product context forces the engineer to make product decisions mid-sprint. Aim between the two.
+
+Never infer an answer or pick on the user's behalf. Bring every open question and unexpected find to the user with `AskUserQuestion`.
 
 ## Set up the plan
 
@@ -35,18 +30,20 @@ The template's sections build on each other: a wrong problem statement corrupts 
 1. Spawn an `Explore` subagent to research the codebase and return conclusions with file references (not file contents): the current behavior this ticket would change, the terms and jargon the code already uses, and the code areas, APIs, and data models an implementer would start from. Keep the last group — it becomes Stage 3.
 2. Draft the title (imperative mood), the problem statement, and the definitions. Define every term specific to this feature — domain jargon, internal names, acronyms, any word an outside engineer could read two ways — each as a term plus a one-line meaning in this ticket's context.
 3. Write the stage into the ticket file.
-4. Present it with `AskUserQuestion` and wait for confirmation.
+4. **GATE:** Present it with `AskUserQuestion` and wait for confirmation.
 
 **Stage 2 — Behavior: User Stories, Acceptance Criteria, Scope.**
 
 1. Draft the three sections. Reuse the confirmed definitions verbatim.
 2. Where a real choice exists — competing behaviors, scope boundaries, tradeoffs — use `AskUserQuestion` to propose two or more options with their consequences.
-3. Write the stage into the ticket file and confirm it with the user.
+3. Write the stage into the ticket file.
+4. **GATE:** Present it with `AskUserQuestion` and wait for confirmation.
 
 **Stage 3 — Details: Edge cases and Error states, Technical and design context.**
 
-1. Draft both sections from the confirmed foundation and the Stage 1 exploration, and write them into the ticket file.
+1. Draft both sections from the confirmed foundation and the Stage 1 exploration, and write them into the ticket file. Avoid listing too much technical context.
 2. If a gap surfaces — an error path the exploration missed — spawn another targeted `Explore` rather than reading the code yourself.
+3. **GATE:** Present it with `AskUserQuestion` and wait for confirmation.
 
 ## Review before sign-off
 
@@ -65,14 +62,11 @@ ALWAYS use this exact structure:
 
 ## Problem / Why
 
-One or two sentences on the user problem being solved. This is the most
-skipped and most valuable section. It lets engineers make good judgment
-calls when implementation surprises arise.
+One or two sentences on the user problem being solved. This is the most skipped and most valuable section. It lets engineers make good judgment calls when implementation surprises arise.
 
 ## Definitions
 
-- **Term:** One-sentence meaning in this ticket's context. Reuse these
-  terms verbatim throughout the ticket.
+- **Term:** One-sentence meaning in this ticket's context. Reuse these terms verbatim throughout the ticket.
 
 ## User Stories
 
@@ -98,6 +92,5 @@ calls when implementation surprises arise.
 
 ## Technical and design context
 
-- List of code areas, APIs, data models that are a good starting point.
 - Link to design / mockups if provided.
 ```
