@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: auto-approve Read within the weighed plugin's own files.
+"""PreToolUse hook: auto-approve Read within the measured plugin's own files.
 
-`/weighed:one-shot` runs the other stages by reading their `SKILL.md` files,
+`measured:building` runs the other stages by reading their `SKILL.md` files,
 which live in the versioned plugin cache (`~/.claude/plugins/cache/...`) —
 outside the project directory, so each read prompts the user. The plugin
 reading its own shipped files is safe and the prompt is noise; this hook
@@ -74,7 +74,7 @@ def main() -> None:
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "allow",
                 "permissionDecisionReason": (
-                    "Read target is one of the weighed plugin's own files."
+                    "Read target is one of the measured plugin's own files."
                 ),
             }
         },

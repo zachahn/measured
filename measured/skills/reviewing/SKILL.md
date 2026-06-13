@@ -18,7 +18,7 @@ If given a link to a GitHub Pull Request, skim through the changes and determine
 
 ## Steps
 
-First, use the skill `measured:using-git-worktrees` and use the `EnterWorktree` tool.
+First, Read `../using-git-worktrees/SKILL.md` — the sibling skill beside this file under the base directory the harness announced — and follow it, using the `EnterWorktree` tool. Use the `Read` tool, not `cat`; only `Read` is pre-approved for plugin files. The `Skill` tool refuses it because it sets `disable-model-invocation`.
 
 To do this, follow these steps precisely:
 

@@ -54,7 +54,7 @@ module TestTasks
     task :scripts do
       sh "python3 measured/test/test_session_lib.py"
       sh "python3 measured-behavior/test/test_writing_clearly.py"
-      sh "python3 weighed/test/test_auto_approve_plugin_reads.py"
+      sh "python3 measured/test/test_auto_approve_plugin_reads.py"
       sh "python3 measured/test/test_worktree_guard.py"
       puts "[test] done"
     end

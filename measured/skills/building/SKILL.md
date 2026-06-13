@@ -12,15 +12,16 @@ Claude must collaborate with the user to create the optimal solution. Always sto
 
 "Auto Mode" does not override this. "Auto Mode" will try to stop Claude from breaking the user's computer. "Auto Mode" still means Claude must collaborate.
 
+Each phase below sits in a sibling skill beside this file under the base directory the harness announced. Load each phase's `SKILL.md` with the `Read` tool — not `cat` or another shell command; only `Read` is pre-approved for plugin files — and follow it as if the user had invoked it. The `Skill` tool refuses these skills because they set `disable-model-invocation`.
 
 ## Phase 1 — Understand the request
 
-Use `Skill(measured:ticketing)` to fully understand the user's original request.
+Read `../ticketing/SKILL.md` and follow it to fully understand the user's original request.
 
 ## Phase 2 — Build the implementation plan
 
-Use `Skill(measured:implementation-planning)` to design the architecture and break it into tickets.
+Read `../implementation-planning/SKILL.md` and follow it to design the architecture and break it into tickets.
 
 ## Phase 3 — Implement
 
-Use `Skill(measured:implementing-with-subagents)` to implement what we've planned.
+Read `../implementing-with-subagents/SKILL.md` and follow it to implement what we've planned.

@@ -1,4 +1,4 @@
-"""Tests for hooks/auto-approve-plugin-reads.py — the weighed read-approval hook.
+"""Tests for hooks/auto-approve-plugin-reads.py — the measured read-approval hook.
 
 Run directly or via `rake test`. Stdlib unittest only.
 
@@ -16,7 +16,7 @@ import unittest
 
 PLUGIN_ROOT = pathlib.Path(__file__).resolve().parent.parent
 HOOK = PLUGIN_ROOT / "hooks" / "auto-approve-plugin-reads.py"
-SKILL_INSIDE = PLUGIN_ROOT / "skills" / "orient" / "SKILL.md"
+SKILL_INSIDE = PLUGIN_ROOT / "skills" / "ticketing" / "SKILL.md"
 
 
 def run_hook(stdin_text):
@@ -48,8 +48,8 @@ class AutoApprovePluginReadsTest(unittest.TestCase):
         self.assertEqual(out["permissionDecision"], "allow")
 
     def test_allows_relative_sibling_read(self):
-        # The path shape one-shot produces: ../<stage>/SKILL.md from a skill dir.
-        path = PLUGIN_ROOT / "skills" / "one-shot" / ".." / "plan" / "SKILL.md"
+        # The path shape building produces: ../<phase>/SKILL.md from a skill dir.
+        path = PLUGIN_ROOT / "skills" / "building" / ".." / "implementation-planning" / "SKILL.md"
         proc = run_hook(payload("Read", str(path)))
         out = json.loads(proc.stdout)["hookSpecificOutput"]
         self.assertEqual(out["permissionDecision"], "allow")
@@ -58,7 +58,7 @@ class AutoApprovePluginReadsTest(unittest.TestCase):
         self.assert_no_decision(run_hook(payload("Read", "/etc/hosts")))
 
     def test_silent_on_traversal_out_of_plugin(self):
-        escaped = PLUGIN_ROOT / "skills" / ".." / ".." / "measured" / "README.md"
+        escaped = PLUGIN_ROOT / "skills" / ".." / ".." / "weighed" / "README.md"
         self.assert_no_decision(run_hook(payload("Read", str(escaped))))
 
     def test_silent_on_other_tools(self):

@@ -14,18 +14,5 @@
     "planning",
     "collaboration",
     "best-practices"
-  ],
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/auto-approve-plugin-reads.py"
-          }
-        ]
-      }
-    ]
-  }
+  ]
 }
