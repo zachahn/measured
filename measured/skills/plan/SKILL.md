@@ -1,5 +1,5 @@
 ---
-name: implementation-planning
+name: plan
 description: Design an architecture plan for a feature or bugfix, then break it into well-scoped, implementation-ready tickets.
 disable-model-invocation: true
 ---
@@ -13,9 +13,9 @@ Both phases write into one **plan** — a directory holding the architecture pla
 
 ## Phase 1 — Architecture plan
 
-1. Spawn a teammate using the subagent: `measured:implementation-planning-architect`. Tell it the plan dir path.
+1. Spawn a teammate using the subagent: `measured:plan-architect`. Tell it the plan dir path.
 2. Wait for the draft. Then review it:
-    - Spawn a teammate using the subagent: `measured:implementation-planning-architecture-reviewer`.
+    - Spawn a teammate using the subagent: `measured:plan-architecture-reviewer`.
 3. Ensure feedback is incorporated. Iterate until the architecture plan is sound.
 
 ## Phase 2 — Tickets

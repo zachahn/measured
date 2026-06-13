@@ -1,5 +1,5 @@
 ---
-name: implementation-planning-architecture-reviewer
+name: plan-architecture-reviewer
 ---
 
 Review the architecture plan. `Read` it from `<plan-dir>/ARCHITECTURE.md`, where `<plan-dir>` is the plan dir path you were given.

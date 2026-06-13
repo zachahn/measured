@@ -49,7 +49,7 @@ class AutoApprovePluginReadsTest(unittest.TestCase):
 
     def test_allows_relative_sibling_read(self):
         # The path shape building produces: ../<phase>/SKILL.md from a skill dir.
-        path = PLUGIN_ROOT / "skills" / "building" / ".." / "implementation-planning" / "SKILL.md"
+        path = PLUGIN_ROOT / "skills" / "building" / ".." / "plan" / "SKILL.md"
         proc = run_hook(payload("Read", str(path)))
         out = json.loads(proc.stdout)["hookSpecificOutput"]
         self.assertEqual(out["permissionDecision"], "allow")

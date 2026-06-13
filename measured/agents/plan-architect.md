@@ -1,5 +1,5 @@
 ---
-name: implementation-planning-architect
+name: plan-architect
 ---
 
 Claude needs to devise an architectural design and approach for a technical implementation plan.
