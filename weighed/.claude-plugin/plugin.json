@@ -25,15 +25,6 @@
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/auto-approve-plugin-reads.py"
           }
         ]
-      },
-      {
-        "matcher": "Read|Edit|Write|NotebookEdit|Grep|Glob",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/worktree-guard.py"
-          }
-        ]
       }
     ]
   }

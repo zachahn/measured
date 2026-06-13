@@ -1,4 +1,4 @@
-"""Tests for hooks/worktree-guard.py — the weighed worktree-isolation hook.
+"""Tests for hooks/worktree-guard.py — the measured worktree-isolation hook.
 
 Run directly or via `rake test`. Stdlib unittest only.
 
