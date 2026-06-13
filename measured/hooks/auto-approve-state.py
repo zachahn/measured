@@ -13,8 +13,8 @@ Rules (paths resolved via ../lib/session_lib.py):
 
 `repo_dir()` is itself a subtree of `state_root()`, so any editable file is
 also readable, which keeps the two rules consistent. Edit approval covers every
-PROJECT-NNNN directory and ARCHIVE/ for this repo, but stays bounded to the
-plugin's own state — it can never approve an edit to the actual source tree.
+plan directory for this repo, but stays bounded to the plugin's own state — it
+can never approve an edit to the actual source tree.
 
 Anything else - other tools, paths outside the state dirs, or a target we can't
 resolve - produces no decision, so Claude Code falls back to asking the user.

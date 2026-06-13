@@ -3,17 +3,16 @@
 Run directly or via `rake test`. Stdlib unittest only.
 """
 
+import datetime
 import os
 import pathlib
 import sys
 import tempfile
-import threading
 import unittest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "lib"))
 
-import db  # noqa: E402
 import session_lib as lib  # noqa: E402
 
 
@@ -42,28 +41,6 @@ class StateRootTest(unittest.TestCase):
         finally:
             if original is not None:
                 os.environ["XDG_STATE_HOME"] = original
-
-
-class RepoDirAtTest(unittest.TestCase):
-    def test_uses_path_verbatim(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "plans"
-            self.assertEqual(lib.repo_dir_at(root), root)
-            self.assertTrue(root.is_dir(), "expected the dir to be created")
-
-    def test_creates_nested_parents(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "a" / "b" / "c"
-            lib.repo_dir_at(root)
-            self.assertTrue(root.is_dir())
-
-    def test_expands_user(self):
-        home = pathlib.Path.home()
-        self.assertEqual(lib.repo_dir_at("~"), home)
-
-    def test_existing_dir_is_fine(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual(lib.repo_dir_at(tmp), pathlib.Path(tmp))
 
 
 class ProcInfoTest(unittest.TestCase):
@@ -126,120 +103,50 @@ class ClaudePwdTest(unittest.TestCase):
         self.assertEqual(lib.claude_pwd(os.getpid()), os.getcwd())
 
 
-class ParseRefTest(unittest.TestCase):
-    def test_bare_number(self):
-        self.assertEqual(lib.parse_ref("7", "TASK"), 7)
+class SanitizeSlugTest(unittest.TestCase):
+    def test_lowercases_and_kebabs(self):
+        self.assertEqual(
+            lib.sanitize_slug("Simplify measured-notes"),
+            "simplify-measured-notes",
+        )
 
-    def test_prefixed_stem(self):
-        self.assertEqual(lib.parse_ref("TASK-7", "TASK"), 7)
-        self.assertEqual(lib.parse_ref("PLAN-3", "PLAN"), 3)
+    def test_collapses_runs_of_non_alphanumeric(self):
+        self.assertEqual(lib.sanitize_slug("a -- b __ c"), "a-b-c")
 
-    def test_filename_form(self):
-        self.assertEqual(lib.parse_ref("TASK-0007.md", "TASK"), 7)
+    def test_trims_leading_and_trailing_hyphens(self):
+        self.assertEqual(lib.sanitize_slug("  hello!  "), "hello")
 
-    def test_case_insensitive_prefix(self):
-        self.assertEqual(lib.parse_ref("task-7", "TASK"), 7)
-
-    def test_unparseable_is_none(self):
-        self.assertIsNone(lib.parse_ref("banana", "TASK"))
-        # A plan ref must not accept the wrong prefix.
-        self.assertIsNone(lib.parse_ref("TASK-7", "PLAN"))
+    def test_empty_when_nothing_alphanumeric(self):
+        self.assertEqual(lib.sanitize_slug("!!!"), "")
+        self.assertEqual(lib.sanitize_slug("   "), "")
 
 
-class PlanAndTaskTest(unittest.TestCase):
+class NewPlanDirTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.repo = pathlib.Path(self._tmp.name)
         self.addCleanup(self._tmp.cleanup)
-        self.conn = db.connect(self.repo)
-        self.addCleanup(self.conn.close)
 
-    def test_new_plan_creates_padded_dir(self):
-        path = lib.new_plan(self.repo, self.conn)
-        self.assertEqual(path.name, "PLAN-0001")
+    def test_creates_dated_dir(self):
+        path = lib.new_plan_dir(self.repo, "Simplify measured-notes")
+        today = datetime.date.today().isoformat()
+        self.assertEqual(path.name, f"{today}-simplify-measured-notes")
+        self.assertEqual(path.parent, self.repo)
         self.assertTrue(path.is_dir())
 
-    def test_plan_dir_resolves_active(self):
-        lib.new_plan(self.repo, self.conn)
-        self.assertEqual(
-            lib.plan_dir(self.repo, 1), self.repo / "PLAN-0001"
-        )
+    def test_empty_slug_raises_and_creates_nothing(self):
+        with self.assertRaises(ValueError):
+            lib.new_plan_dir(self.repo, "!!!")
+        self.assertEqual(list(self.repo.iterdir()), [])
 
-    def test_plan_dir_missing_is_none(self):
-        self.assertIsNone(lib.plan_dir(self.repo, 99))
-
-    def test_new_task_uses_global_id_and_creates_file(self):
-        p1 = lib.new_plan(self.repo, self.conn)
-        p2 = lib.new_plan(self.repo, self.conn)
-        # Task IDs are global, so the file numbers continue across plans.
-        t1 = lib.new_task(p1, self.conn, 1)
-        t2 = lib.new_task(p2, self.conn, 2)
-        self.assertEqual(t1.name, "TASK-0001.md")
-        self.assertEqual(t2.name, "TASK-0002.md")
-        self.assertEqual(t1.parent.name, "PLAN-0001")
-        self.assertEqual(t2.parent.name, "PLAN-0002")
-        self.assertTrue(t1.exists() and t2.exists())
-
-    def test_resolve_task_file_forms(self):
-        plan = lib.new_plan(self.repo, self.conn)
-        lib.new_task(plan, self.conn, 1)
-        for ref in ("1", "TASK-1", "TASK-0001.md"):
-            self.assertEqual(
-                lib.resolve_task_file(plan, ref), plan / "TASK-0001.md"
-            )
-        self.assertIsNone(lib.resolve_task_file(plan, "2"))
-        self.assertIsNone(lib.resolve_task_file(plan, "banana"))
-
-
-class ArchiveTest(unittest.TestCase):
-    def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.repo = pathlib.Path(self._tmp.name)
-        self.addCleanup(self._tmp.cleanup)
-        self.conn = db.connect(self.repo)
-        self.addCleanup(self.conn.close)
-        self.plan = lib.new_plan(self.repo, self.conn)
-        self.task = lib.new_task(self.plan, self.conn, 1)
-
-    def test_archive_moves_dir_and_contents(self):
-        dest = lib.archive_plan(self.repo, 1)
-        self.assertEqual(dest, self.repo / "ARCHIVE" / "PLAN-0001")
-        self.assertFalse((self.repo / "PLAN-0001").exists())
-        self.assertTrue((dest / "TASK-0001.md").exists())
-
-    def test_plan_dir_resolves_archived(self):
-        lib.archive_plan(self.repo, 1)
-        self.assertEqual(
-            lib.plan_dir(self.repo, 1),
-            self.repo / "ARCHIVE" / "PLAN-0001",
-        )
-
-    def test_round_trip(self):
-        lib.archive_plan(self.repo, 1)
-        dest = lib.unarchive_plan(self.repo, 1)
-        self.assertEqual(dest, self.repo / "PLAN-0001")
-        self.assertFalse((self.repo / "ARCHIVE" / "PLAN-0001").exists())
-
-    def test_archive_missing_raises(self):
-        with self.assertRaises(FileNotFoundError):
-            lib.archive_plan(self.repo, 99)
-
-    def test_double_archive_raises(self):
-        lib.archive_plan(self.repo, 1)
-        # A second active dir reappears, then archiving must refuse to clobber.
-        (self.repo / "PLAN-0001").mkdir()
+    def test_collision_raises_and_leaves_existing(self):
+        first = lib.new_plan_dir(self.repo, "same slug")
+        (first / "TICKET.md").write_text("keep me")
         with self.assertRaises(FileExistsError):
-            lib.archive_plan(self.repo, 1)
-
-    def test_unarchive_missing_raises(self):
-        with self.assertRaises(FileNotFoundError):
-            lib.unarchive_plan(self.repo, 1)
-
-    def test_archived_ids_are_not_reused(self):
-        # Archiving frees no number: the next plan is 2, never a reused 1.
-        lib.archive_plan(self.repo, 1)
-        nxt = lib.new_plan(self.repo, self.conn)
-        self.assertEqual(nxt.name, "PLAN-0002")
+            lib.new_plan_dir(self.repo, "same slug")
+        # The existing dir and its contents are untouched.
+        self.assertEqual((first / "TICKET.md").read_text(), "keep me")
+        self.assertEqual(len(list(self.repo.iterdir())), 1)
 
 
 if __name__ == "__main__":

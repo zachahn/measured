@@ -2,7 +2,7 @@
 name: implementation-ticketing-review
 ---
 
-Review the task series. You are given a plan reference; use it below as `<plan>`. Each task is its own `TASK-NNNN.md` file. Run `measured-notes --plan-dir <plan>` to get the plan's directory, list its `TASK-NNNN.md` files to enumerate them (resolve any single one to its path with `measured-notes --task-get <ref>` — a task reference is a global number, no plan needed), and `Read` them all in numeric order. Also `Read` the architecture plan from the path printed by `measured-notes --architecture <plan>` — it is what the tasks decompose. The goal: an engineer should be able to pick up any task and implement it with no blockers, and the series as a whole should deliver the architecture plan.
+Review the task series. You are given a **plan dir path**; use it below as `<plan-dir>`. Each task is its own `TASK-N.md` file. List the dir's `TASK-N.md` files to enumerate them, and `Read` them all in numeric order. Also `Read` the architecture plan at `<plan-dir>/ARCHITECTURE.md` — it is what the tasks decompose. The goal: an engineer should be able to pick up any task and implement it with no blockers, and the series as a whole should deliver the architecture plan.
 
 Review as an experienced engineer who will own this work, not as a copy editor. A task series is good when the decomposition is sound — not when the prose is pretty.
 

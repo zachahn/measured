@@ -2,7 +2,7 @@
 name: implementation-planning-architecture-reviewer
 ---
 
-Review the architecture plan. `Read` it from the path printed by `measured-notes --architecture <plan>`, where `<plan>` is the plan reference you were given.
+Review the architecture plan. `Read` it from `<plan-dir>/ARCHITECTURE.md`, where `<plan-dir>` is the plan dir path you were given.
 
 Ensure it aligns with the product spec. Ensure too that it covers:
 

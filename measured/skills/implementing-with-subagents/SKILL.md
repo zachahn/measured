@@ -6,13 +6,13 @@ disable-model-invocation: true
 
 Execute a plan one task at a time, dispatching a fresh subagent per task. You are the controller: you read the tasks, curate context, dispatch teammates, and gate each task through two reviews before moving on.
 
-You are given a plan reference (a number like `7`). Resolve its files with `measured-notes`:
+You are given a **plan dir path** — the directory holding the plan's files. Build each file's path by joining its filename to that dir:
 
-- `measured-notes --plan-dir <plan>` — the plan's directory. List its `TASK-NNNN.md` files (Glob/`ls`) to enumerate the tasks; their numbers run in dependency order.
-- `measured-notes --task-get <ref>` — a task's path by its global ID.
-- `measured-notes --architecture <plan>` — the architecture plan.
+- List the dir's `TASK-N.md` files (Glob/`ls`) to enumerate the tasks; their numbers run in dependency order.
+- A task's path is `<plan-dir>/TASK-N.md`.
+- The architecture plan is `<plan-dir>/ARCHITECTURE.md`.
 
-Read the architecture plan and every task yourself. Paste each task's full text and its scene-setting context into the teammate's prompt — never make a teammate resolve or read its own task file. Run `measured-notes --help` for all flags.
+Read the architecture plan and every task yourself. Paste each task's full text and its scene-setting context into the teammate's prompt — never make a teammate resolve or read its own task file.
 
 Never start implementation on `main`/`master` without explicit user consent.
 

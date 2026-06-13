@@ -23,10 +23,8 @@ Too much implementation detail kills the engineer's ownership and transcribes a 
 
 The ticket lives in a **plan** — a directory that persists across sessions.
 
-1. Run `measured-notes --plan-new` to allocate one. It prints the directory, e.g. `.../PLAN-0007`; the plan's reference is its number (`7`).
-2. Run `measured-notes --ticket <plan>` to get the ticket file's path. Use `Read`, `Write`, and `Edit` on that file.
-
-`measured-notes --help` lists the rest.
+1. Run `measured-notes --new-plan-dir "<short description>"` to create one. It prints the plan dir's absolute path, e.g. `.../2026-06-13-add-rate-limiting`.
+2. The ticket file is `<plan-dir>/TICKET.md` — join that filename to the plan dir path. Use `Read`, `Write`, and `Edit` on that file.
 
 ## Draft in three stages
 
@@ -54,7 +52,7 @@ The template's sections build on each other: a wrong problem statement corrupts 
 
 The finished ticket must stand alone: an engineer who never saw this conversation implements from the page. You cannot test that yourself — everything the user told you is in your context, so a gap on the page still reads as covered.
 
-1. Spawn the `ticketing-review` subagent. Give it the ticket's path (from `measured-notes --ticket <plan>`) and nothing else — no summary of the conversation.
+1. Spawn the `ticketing-review` subagent. Give it the ticket's path (`<plan-dir>/TICKET.md`) and nothing else — no summary of the conversation.
 2. Fix what it finds. Take anything you cannot resolve to the user.
 3. Present the full ticket and iterate until the user is satisfied.
 

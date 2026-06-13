@@ -30,53 +30,14 @@ Claude must collaborate with the user to create the optimal solution. Always sto
     - Lead with your recommended approach and explain why
     - Cover: architecture, key libraries or patterns, how it integrates with existing code
 4. Expand chosen approach
-5. Draft and revise the plan. The architecture plan lives at the path printed
-   by `measured-notes --architecture <plan>`, where `<plan>` is the
-   plan reference you were given. Use the standard `Write`, `Read`, and
-   `Edit` tools on that file.
+5. Draft and revise the plan. The architecture plan lives at
+   `<plan-dir>/ARCHITECTURE.md`, where `<plan-dir>` is the plan dir path you
+   were given. Use the standard `Write`, `Read`, and `Edit` tools on that file.
 6. Self review the plan
     - `Read` the architecture plan.
     - Consistency: Do any sections contradict each other?
     - Ambiguity: Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 7. Request reviews and incorporate feedback.
-
-## Usage: `measured-notes`
-
-usage: measured-notes [--set-plans-root DIR | -R DIR]
-                      (--plans-root [DIR] | --plan-new | --plan-dir REF |
-                       --plan-archive REF | --plan-unarchive REF |
-                       --ticket REF | --architecture REF |
-                       --implementation REF | --task-new REF | --task-get REF)
-
-Print a path inside this repo's persistent ticketing directory.
-
-State is shared across every Claude session in the repo. It holds one
-`state.sqlite3` plus a PLAN-NNNN directory per planning effort (one
-ARCHITECTURE.md and its tasks); completed plans move under ARCHIVE/.
-
-Plans root:
-  -R, --set-plans-root DIR  use DIR as the plans root verbatim, rather than
-                            deriving it from Claude's working directory
-  --plans-root [DIR]        print the plans root; with DIR, the root for that
-                            project dir (`--plans-root .` = the current
-                            project), without walking the process tree
-
-Plans:
-  --plan-new            allocate the next PLAN-NNNN, print its dir
-  --plan-dir REF        print a plan's dir (active or archived)
-  --plan-archive REF    move a plan under ARCHIVE/, print its new dir
-  --plan-unarchive REF  move it back out of ARCHIVE/, print its new dir
-
-Within a plan (REF names the plan: a number, PLAN-7, ...):
-  --ticket REF             <plan>/TICKET.md
-  --architecture REF       <plan>/ARCHITECTURE.md
-  --implementation REF     <plan>/IMPLEMENTATION.md
-  --task-new REF           create and print the next TASK-NNNN.md
-
-Tasks (global):
-  --task-get REF           print the full path of a task by its global ID,
-                           wherever its plan lives, or exit 1 if missing
-
 
 ## Template
 

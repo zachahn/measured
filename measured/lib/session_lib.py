@@ -6,21 +6,20 @@ Claude Code names its own `projects/<encoded-cwd>/` dirs. Every Claude session
 in a given repo lands in the same place, so the ticketing state persists across
 sessions and is shared between them.
 
-That repo dir holds one `state.sqlite3` (see db.py) plus a PLAN-NNNN
-directory per planning effort; completed plans move under ARCHIVE/. Task
-content lives in the `.md` files; the database only hands out IDs.
+That state dir holds one plan directory per planning effort, named
+`YYYY-MM-DD-slug`. The caller joins filenames (TICKET.md, ARCHITECTURE.md,
+TASK-1.md) to a plan dir itself.
 
 Kept stdlib-only so the scripts can be invoked from a fresh checkout without
 any install step.
 """
 
+import datetime
 import os
 import pathlib
 import re
 import subprocess
 import sys
-
-import db
 
 CLAUDE_PROCESS_NAME = "claude"
 MAX_ANCESTOR_DEPTH = 64
@@ -179,131 +178,38 @@ def _repo_dir_for(claude_pid: int) -> pathlib.Path:
 
 
 def repo_dir() -> pathlib.Path:
-    """Return this repo's state dir — the root of its ticketing layout.
+    """Return this repo's state dir — the root of its plan directories.
 
     Namespaced by Claude's working directory the same way Claude Code names
     its own `projects/<encoded-cwd>/` dirs, so one repo maps to one stable
-    location across every session. Holds `state.sqlite3`, the PLAN-NNNN
-    directories, and ARCHIVE/.
+    location across every session. Holds the `YYYY-MM-DD-slug` plan dirs.
     """
     path = _repo_dir_for(find_claude_pid(os.getppid()))
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def repo_dir_at(root: str | os.PathLike) -> pathlib.Path:
-    """Return a caller-supplied state dir, used verbatim as the repo dir.
+def sanitize_slug(slug: str) -> str:
+    """Reduce a free-form slug argument to a kebab-case sanitized slug.
 
-    Holds `state.sqlite3`, the PLAN-NNNN directories, and ARCHIVE/ — the
-    same layout `repo_dir()` produces, but at an explicit path rather than one
-    derived from Claude's working directory. Creates the directory if needed.
+    Lowercases, replaces each run of non-alphanumeric characters with a single
+    hyphen, and trims leading and trailing hyphens. Returns "" when nothing
+    alphanumeric survives (e.g. "!!!" or "   ").
     """
-    path = pathlib.Path(root).expanduser()
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    return re.sub(r"[^a-z0-9]+", "-", slug.lower()).strip("-")
 
 
-ARCHIVE_DIRNAME = "ARCHIVE"
-PLAN_DIRNAME = "PLAN-{:04d}"
-_PLAN_PATTERN = re.compile(r"\APLAN-(\d+)\Z")
-TASK_FILENAME = "TASK-{:04d}.md"
-_TASK_PATTERN = re.compile(r"\ATASK-(\d+)\.md\Z")
+def new_plan_dir(repo: pathlib.Path, slug: str) -> pathlib.Path:
+    """Create and return a `YYYY-MM-DD-slug` plan dir under the state dir.
 
-
-def parse_ref(ref: str, prefix: str) -> int | None:
-    """Parse a plan/task ref to its integer ID, or None if unparseable.
-
-    Accepts the forms a caller naturally has on hand: a bare number ("7"),
-    the prefixed stem ("PLAN-7" / "TASK-7"), or a task filename
-    ("TASK-7.md"). Case-insensitive on the prefix.
+    Sanitizes the slug, prefixes today's local date, and creates the directory.
+    Raises ValueError if the slug sanitizes to empty, and FileExistsError if a
+    dir of that exact name already exists (same slug twice in one day).
     """
-    match = re.fullmatch(
-        rf"(?:{prefix}-)?(\d+)(?:\.md)?", ref.strip(), re.IGNORECASE
-    )
-    return int(match.group(1)) if match else None
-
-
-def plan_dir(repo: pathlib.Path, plan_id: int) -> pathlib.Path | None:
-    """Resolve a plan's directory, active or archived, or None if missing.
-
-    Checks the active location first, then ARCHIVE/ — the folder's location is
-    the sole record of whether a plan is archived (the database doesn't
-    track it).
-    """
-    name = PLAN_DIRNAME.format(plan_id)
-    active = repo / name
-    if active.is_dir():
-        return active
-    archived = repo / ARCHIVE_DIRNAME / name
-    if archived.is_dir():
-        return archived
-    return None
-
-
-def new_plan(repo: pathlib.Path, conn) -> pathlib.Path:
-    """Allocate the next plan ID and create its (active) directory."""
-    plan_id = db.allocate_plan(conn)
-    path = repo / PLAN_DIRNAME.format(plan_id)
+    sanitized = sanitize_slug(slug)
+    if not sanitized:
+        raise ValueError(f"slug sanitizes to empty: {slug!r}")
+    today = datetime.date.today().isoformat()
+    path = repo / f"{today}-{sanitized}"
     path.mkdir(parents=True, exist_ok=False)
     return path
-
-
-def new_task(directory: pathlib.Path, conn, plan_id: int) -> pathlib.Path:
-    """Allocate the next global task ID and create its TASK-NNNN.md file.
-
-    The ID comes from the shared database, so it is unique across every plan
-    in the repo. The file is created empty for the caller to Write into.
-    """
-    task_id = db.allocate_task(conn, plan_id)
-    path = directory / TASK_FILENAME.format(task_id)
-    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-    os.close(fd)
-    return path
-
-
-def resolve_task_file(directory: pathlib.Path, ref: str) -> pathlib.Path | None:
-    """Resolve a task ref to its full path within a project dir, or None.
-
-    Normalizes the ref to the canonical zero-padded filename so that "7",
-    "TASK-7", and "TASK-0007.md" all resolve to the same file.
-    """
-    task_id = parse_ref(ref, "TASK")
-    if task_id is None:
-        return None
-    path = directory / TASK_FILENAME.format(task_id)
-    return path if path.is_file() else None
-
-
-def archive_plan(repo: pathlib.Path, plan_id: int) -> pathlib.Path:
-    """Move a plan's directory under ARCHIVE/. Returns the new path.
-
-    Raises if the plan isn't active (already archived or never existed) or
-    an archived copy already sits in the way.
-    """
-    name = PLAN_DIRNAME.format(plan_id)
-    src = repo / name
-    if not src.is_dir():
-        raise FileNotFoundError(f"no active plan {name}")
-    dest_parent = repo / ARCHIVE_DIRNAME
-    dest_parent.mkdir(parents=True, exist_ok=True)
-    dest = dest_parent / name
-    if dest.exists():
-        raise FileExistsError(f"{name} already exists under {ARCHIVE_DIRNAME}/")
-    src.rename(dest)
-    return dest
-
-
-def unarchive_plan(repo: pathlib.Path, plan_id: int) -> pathlib.Path:
-    """Move a plan's directory back out of ARCHIVE/. Returns the new path.
-
-    Raises if no archived copy exists or an active one already sits in the way.
-    """
-    name = PLAN_DIRNAME.format(plan_id)
-    src = repo / ARCHIVE_DIRNAME / name
-    if not src.is_dir():
-        raise FileNotFoundError(f"no archived plan {name}")
-    dest = repo / name
-    if dest.exists():
-        raise FileExistsError(f"active {name} already exists")
-    src.rename(dest)
-    return dest
