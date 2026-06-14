@@ -1,5 +1,7 @@
 ---
 name: implementation-ticketing-review
+description: Fresh-eyes review of a ticket series against the architecture plan, with no conversation context. Use only when directed to by the plan skill.
+model: inherit
 ---
 
 Review the task series. You are given a **plan dir path**; use it below as `<plan-dir>`. Each task is its own `TASK-N.md` file. List the dir's `TASK-N.md` files to enumerate them, and `Read` them all in numeric order. Also `Read` the architecture plan at `<plan-dir>/ARCHITECTURE.md` — it is what the tasks decompose. The goal: an engineer should be able to pick up any task and implement it with no blockers, and the series as a whole should deliver the architecture plan.

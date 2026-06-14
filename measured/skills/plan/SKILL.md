@@ -1,31 +1,131 @@
 ---
 name: plan
-description: Design an architecture plan for a feature or bugfix, then break it into well-scoped, implementation-ready tickets.
+description: Turn a story into an architecture plan and a set of implementation-ready tickets.
 disable-model-invocation: true
 ---
 
-Create an agent team. The work runs in two phases: first design the architecture, then decompose it into tickets that reference the plan.
+You are given an input — usually a ticket from `measured:story`, sometimes a looser
+description. Your job is to understand it, design an architecture, and break that
+architecture into well-scoped tickets. You do this inline, yourself. No agent team.
 
-Both phases write into one **plan** — a directory holding the architecture plan and its tickets, persisted across sessions. Create it once, up front, and pass its path to every teammate:
+## What a good plan does
 
-- Run `measured-notes --new-plan-dir "<short description>"`. It prints the plan dir's absolute path, e.g. `.../2026-06-13-add-rate-limiting`.
-- Give that full path to each subagent you spawn. They build their own files by joining filenames to it — `<plan-dir>/ARCHITECTURE.md`, `<plan-dir>/TASK-1.md`, and so on. Without it they cannot find the plan.
+- Restates the product goal in engineering terms.
+- Follows the patterns the codebase already uses.
+- Refactors to make the change easy, then makes the easy change.
+- Stays reasonably DRY, considers WET, avoids YAGNI.
+- Leaves no vestigial systems and punts no problems.
 
-## Phase 1 — Architecture plan
+## What good tickets do
 
-1. Spawn a teammate using the subagent: `measured:plan-architect`. Tell it the plan dir path.
-2. Wait for the draft. Then review it:
-    - Spawn a teammate using the subagent: `measured:plan-architecture-reviewer`.
-3. Ensure feedback is incorporated. Iterate until the architecture plan is sound.
+- **Slice along seams, not layers.** Each ticket ships a thin vertical slice that leaves the system working and mergeable — not "all the models, then all the controllers."
+- **Run in dependency order.** A reader starts at ticket 1 and goes; every dependency points backward.
+- **Right-size the work.** Roughly a half-day to two days each. Split a ticket whose acceptance criteria span unrelated concerns; merge two that always touch the same lines.
+- **Trust the implementer.** Give pointers — files, patterns, gotchas — not a line-by-line spec. If you are prescribing every line, write the code instead.
+- **Name what NOT to do.** One "Out of Scope" line written up front is the cheapest scope-creep prevention.
+
+## Escalate, don't infer
+
+Bad assumptions and miscommunication are expensive. Research what you can yourself, but
+never infer an answer or pick on the user's behalf. Bring every open question and
+unexpected find to the user with `AskUserQuestion`.
+
+- Raise the biggest unknown first — a wrong guess at the top costs the most to unwind.
+- Stop at every **GATE** and put the question to the user with `AskUserQuestion`, even when you are confident. Do not proceed on silence.
+- Between gates, work without interrupting. Verify what the code can answer; ask only what it cannot.
+
+## Find the plan
+
+The plan is a directory that persists across sessions. The story already created one.
+
+1. If you were given a plan dir path or a `TICKET.md` path, use that dir. Read `<plan-dir>/TICKET.md` — it is the input you are planning from.
+2. If you have no plan dir (the input is a loose description, not a story), run `measured-notes --new-plan-dir "<short description>"`. It prints the dir's absolute path, e.g. `.../2026-06-13-add-rate-limiting`. Write the input you were given into `<plan-dir>/TICKET.md` so the rest of the work has a source of truth.
+
+Build every other file's path by joining its filename to the plan dir: `<plan-dir>/ARCHITECTURE.md`, `<plan-dir>/TASK-1.md`, and so on.
+
+## Phase 1 — Architecture
+
+The architecture plan lives at `<plan-dir>/ARCHITECTURE.md`.
+
+1. Spawn an `Explore` subagent to research the codebase and return conclusions with file references (not file contents): the current behavior this change touches, the patterns and modules an implementer would build on, and where the work will land.
+2. **GATE:** Confirm the engineering goal — restate the story in engineering terms and check that restatement with the user before any solution talk.
+3. **GATE:** Use `AskUserQuestion` to propose two or more approaches with their tradeoffs. Lead with your recommendation and say why. Cover architecture, key libraries or patterns, and how it integrates with existing code.
+4. Draft the architecture into `<plan-dir>/ARCHITECTURE.md` using the template below. Write it as you settle each section.
+5. Self-review: `Read` the file back. Do any sections contradict each other? Could any requirement be read two ways? If so, pick one and make it explicit.
+6. Spawn the `measured:plan-architecture-reviewer` subagent. Give it the plan dir path and nothing else — no summary of the conversation. Fix what it finds; take anything you can't resolve to the user.
+7. **GATE:** Present the plan with `AskUserQuestion` and iterate until the user confirms it.
 
 ## Phase 2 — Tickets
 
-4. Spawn a teammate using the subagent: `measured:implementation-ticketing-tech-lead`. Tell it the plan dir path and that the architecture plan is done; it reads the plan and breaks it into tickets that reference it.
-5. Wait for the draft. Then review it:
-    - Spawn a teammate using the subagent: `measured:implementation-ticketing-review`.
-    - Ask the architect to review the tickets against the architecture plan for cohesiveness — every ticket should trace back to the plan, and the tickets together should deliver it with no gaps.
-6. Ensure feedback is incorporated. Iterate as necessary.
+Each ticket is its own file at `<plan-dir>/TASK-N.md`, numbered from 1 in dependency order.
 
-All sub-agents can and should ask the user for clarity.
+1. Re-read `<plan-dir>/ARCHITECTURE.md`. It is the source of truth; the tickets decompose it. Every ticket traces back to a part of the plan, and the tickets together deliver it with no gaps.
+2. **GATE:** When there is a real fork in how to slice the work (one ticket behind a flag vs. three incremental tickets), use `AskUserQuestion` to propose two or more decompositions with tradeoffs. The decomposition is the deliverable — don't pick silently.
+3. **GATE:** Confirm the overall shape with the user — how many tickets, their titles, the dependency order — before fleshing out every section. Re-slicing an outline is cheap; rewriting seven full tickets is not.
+4. Write each ticket into its own `<plan-dir>/TASK-N.md` using the template below. List the dir's `TASK-N.md` files to track what you've created. Don't reuse a filename.
+5. Self-review: `Read` every ticket back.
+    - **Ordering:** Does every dependency point backward? Can someone start at ticket 1 and proceed?
+    - **Sizing:** Is any ticket secretly three? Is any too thin to stand alone?
+    - **Testability:** Could two engineers disagree about whether a ticket's acceptance criteria are met? Tighten it.
+    - **Coverage:** Do the tickets together deliver the architecture plan? What falls in the gaps?
+6. Spawn the `measured:implementation-ticketing-review` subagent. Give it the plan dir path and nothing else — no summary of the conversation. Fix what it finds; take anything you can't resolve to the user.
+7. **GATE:** Present the ticket series with `AskUserQuestion` and iterate until the user confirms it.
 
-Bad assumptions and miscommunication are expensive. Self-research, but escalate all questions and concerns to the user.
+## Architecture template
+
+```markdown
+# Implementation Plan
+
+## Problem Statement
+
+What needs to change, written for an engineer who wasn't in the meetings. One paragraph max.
+
+## Goals and Non-Goals
+
+The 2–4 outcomes that define success, and what this explicitly does not do.
+
+## Approach
+
+Walk through what gets built at a high level: architecture and components, data flow, data models, schema changes, API contracts, interface changes, error handling, testing approach, and how it fits existing systems.
+
+## Alternatives Considered
+
+Other options, each with a sentence or two on why it falls short.
+```
+
+## Ticket template
+
+Title in imperative mood. Use the file's number so the title matches its filename (`Task 3`). Omit a field only when it doesn't apply — say so rather than leaving it blank.
+
+```markdown
+# Task N: Imperative, specific title
+
+Action-oriented — "Add rate limiting to /api/auth endpoints", not "Rate limiting".
+
+## Context / Background
+
+One to three sentences: why this ticket exists and which section of `<plan-dir>/ARCHITECTURE.md` it implements. The implementer shouldn't need to go digging.
+
+## Acceptance Criteria
+
+The most important section. Testable conditions, not vague goals — a checklist or Given/When/Then. This defines done.
+
+- Given <context>, when <action>, then <observable result>.
+- [ ] <objectively verifiable item>
+
+## Technical Guidance
+
+Pointers, not a spec. Relevant files, services, or patterns; known gotchas; a preferred approach if one exists — but leave room for the implementer to decide.
+
+## Out of Scope
+
+Adjacent things someone might reasonably do here but shouldn't.
+
+## Dependencies
+
+Other tickets that must land first, or that this one blocks. External APIs, infra, or team dependencies. Write "None" if it stands alone.
+
+## Definition of Done / Testing Notes
+
+How to test it — unit, integration, manual — and edge cases worth covering. Call out anything operational: a migration, a feature flag, a rollback plan.
+```
