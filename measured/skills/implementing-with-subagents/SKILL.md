@@ -6,7 +6,12 @@ disable-model-invocation: true
 
 Execute a plan one task at a time, dispatching a fresh subagent per task. You are the controller: you read the tasks, curate context, dispatch teammates, and gate each task through two reviews before moving on.
 
-You are given a **plan dir path** — the directory holding the plan's files. Build each file's path by joining its filename to that dir:
+You work from a **plan dir** — the directory holding the plan's files, which persists across sessions.
+
+- If you were given a plan dir path or a `TICKET.md` path, use that dir.
+- Otherwise, run `measured-notes` (no arguments) to print this repo's state dir, then list its `YYYY-MM-DD-slug` plan dirs and pick the one the user means.
+
+Build each file's path by joining its filename to the plan dir:
 
 - List the dir's `TASK-N.md` files (Glob/`ls`) to enumerate the tasks; their numbers run in dependency order.
 - A task's path is `<plan-dir>/TASK-N.md`.
