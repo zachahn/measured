@@ -44,15 +44,13 @@ The template's sections build on each other: a wrong problem statement corrupts 
 **Stage 2 — Behavior: User Stories, Acceptance Criteria, Scope.**
 
 1. Draft the three sections. Reuse the confirmed definitions verbatim.
-2. Where a real choice exists — competing behaviors, scope boundaries, tradeoffs — use `AskUserQuestion` to propose two or more options with their consequences.
+2. **GATE:** Where a real choice exists — competing behaviors, scope boundaries, tradeoffs — use `AskUserQuestion` to propose two or more options with their consequences.
 3. Write the stage into the ticket file.
-4. **GATE:** Present it with `AskUserQuestion` and wait for confirmation.
 
 **Stage 3 — Details: Edge cases and Error states, Technical and design context.**
 
-1. Draft both sections from the confirmed foundation and the Stage 1 exploration, and write them into the ticket file. Avoid listing too much technical context.
+1. Draft both sections from the confirmed foundation and the Stage 1 exploration, and write them into the ticket file.
 2. If a gap surfaces — an error path the exploration missed — spawn another targeted `Explore` rather than reading the code yourself.
-3. **GATE:** Present it with `AskUserQuestion` and wait for confirmation.
 
 ## Review before sign-off
 
@@ -96,10 +94,10 @@ One or two sentences on the user problem being solved. This is the most skipped 
 
 ## Edge cases and Error states
 
-- What happens when things go wrong? Empty states, failed API calls,
-  permission errors. These get forgotten until QA.
+- What happens when things go wrong? Empty states, failed API calls, permission errors. These get forgotten until QA.
 
 ## Technical and design context
 
 - Link to design / mockups if provided.
+- Up to three full filepaths that might be a useful starting point when starting to implement.
 ```
