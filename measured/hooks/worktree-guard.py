@@ -7,13 +7,10 @@ tree. This hook hardens that boundary: while the session is in a worktree, any
 file tool whose target resolves into the *main* worktree's working tree is
 denied, so the session can neither read nor overwrite the primary checkout.
 
-Scope: the structured file tools — Read, Edit, Write, NotebookEdit, Grep, Glob
-— where the target path is explicit and resolves exactly, plus a narrow Bash
-rule. A hook can only scan a Bash command string, not understand it, so the
-rule is limited to the obvious shell escape: `cd`/`pushd` into the main tree.
-It catches the absolute (`cd /main/checkout/sub`) and relative (`cd ../checkout`)
-forms but not every spelling — `git -C`, output redirects, subshells, and
-variable expansion slip past — so it raises the bar without sealing Bash.
+Scope: the structured file tools only — Read, Edit, Write, NotebookEdit, Grep,
+Glob — where the target path is explicit and resolves exactly. Bash stays out
+of scope: a hook can only scan its command string, which both over- and
+under-blocks.
 
 Detection comes from git, not environment variables:
   - A linked worktree has `--git-dir` (`…/.git/worktrees/<name>`) different from
@@ -32,7 +29,6 @@ legitimate work or wedge a session. It only ever *denies*; it never approves.
 import json
 import os
 import pathlib
-import re
 import subprocess
 import sys
 
@@ -47,20 +43,6 @@ TARGET_FIELD = {
     "Grep": "path",
     "Glob": "path",
 }
-
-# Find each `cd`/`pushd` invoked as a command word — at the string start or
-# right after a shell separator that begins a new simple command — and capture
-# its first argument (a simple or single-/double-quoted token). Conservative by
-# design: it skips flags and other spellings rather than risk over-blocking.
-_CD_RE = re.compile(
-    r"""(?:^|[\n;&|(){}])                   # command boundary
-        \s*
-        (?P<cmd>cd|pushd)                   # directory-changing builtin
-        \s+
-        (?P<arg>"[^"]*"|'[^']*'|[^\s;&|()<>]+)  # its first argument
-    """,
-    re.VERBOSE,
-)
 
 
 def _git(cwd, *args):
@@ -125,51 +107,8 @@ def _worktree_trees(cwd):
     return common.parent, toplevel, common
 
 
-def _blocked_target(target, trees):
-    """True when target sits in the main tree but outside the worktree and .git.
-
-    The worktree's own tree and the shared .git can be nested under the main
-    root depending on layout; keep both reachable.
-    """
-    main_root, toplevel, common = trees
-    if not _is_within(target, main_root):
-        return False
-    if _is_within(target, toplevel) or _is_within(target, common):
-        return False
-    return True
-
-
-def _decide_bash(command, cwd):
-    """Deny a Bash command that `cd`/`pushd`-es into the main checkout.
-
-    Each `cd`/`pushd` target is resolved (absolute, or relative to cwd) and
-    checked with the same containment rule the file tools use. Returns the first
-    offending command's deny reason, else None.
-    """
-    if not command:
-        return None
-    trees = _worktree_trees(cwd)
-    if trees is None:
-        return None
-    for match in _CD_RE.finditer(command):
-        arg = match.group("arg").strip("\"'")
-        target = _resolve(cwd, arg)
-        if target is None or not _blocked_target(target, trees):
-            continue
-        toplevel = trees[1]
-        return (
-            f"Bash blocked: `{match.group('cmd')} {arg}` enters the main checkout "
-            f"at {target}, but this session is isolated to the git worktree at "
-            f"{toplevel}. Work inside the worktree instead."
-        )
-    return None
-
-
 def decide(tool_name, tool_input, cwd):
     """Return a deny-reason string for a blocked call, else None (no decision)."""
-    if tool_name == "Bash":
-        return _decide_bash(tool_input.get("command", ""), cwd)
-
     field = TARGET_FIELD.get(tool_name)
     if field is None:
         return None
@@ -180,9 +119,14 @@ def decide(tool_name, tool_input, cwd):
     trees = _worktree_trees(cwd)
     if trees is None:
         return None
-    if not _blocked_target(target, trees):
-        return None
     main_root, toplevel, common = trees
+
+    if not _is_within(target, main_root):
+        return None
+    # The worktree's own tree and the shared .git can be nested under the main
+    # root depending on layout; keep both reachable.
+    if _is_within(target, toplevel) or _is_within(target, common):
+        return None
     # Point at the equivalent file inside the worktree: the same repo-relative
     # path, rooted at the worktree instead of the main checkout, so the model
     # can re-target instead of retrying blindly.
