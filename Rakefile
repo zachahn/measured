@@ -39,6 +39,12 @@ module TestTasks
         RakeTaskFailure.create("test", path, e.message)
         next
       end
+      Dir.glob(["*/skills/*.md"]).each do |path|
+        check_name("test", path, File.basename(path, ".md"))
+      rescue => e
+        RakeTaskFailure.create("test", path, e.message)
+        next
+      end
     end
 
     task :agents do
