@@ -40,12 +40,13 @@ A git worktree gives this work its own working directory while sharing the repos
    workspace-git-ignored --check
    ```
 
-   If it reports "not ignored", ask the user which fix they want, then run it before continuing. This keeps worktree contents out of the repo.
+   If it reports "not ignored", use `AskUserQuestion` to ask how to handle it, listing the recommended default first:
 
-   - `workspace-git-ignored --fix-gitignore` adds it to `.gitignore` (committed, shared with the team).
-   - `workspace-git-ignored --fix-git-info-exclude` adds it to `.git/info/exclude` (local to this clone, not committed).
+   - **`.git/info/exclude`** (recommended) — run `workspace-git-ignored --fix-git-info-exclude`. Local to this clone, not committed.
+   - **`.gitignore`** — run `workspace-git-ignored --fix-gitignore`. Committed, shared with the team.
+   - **Move on** — leave it untracked-but-not-ignored and proceed.
 
-   Run `workspace-git-ignored --help` for the full usage.
+   Run the chosen fix (if any) before continuing. Run `workspace-git-ignored --help` for the full usage.
 
 2. **Create the worktree.** Call `EnterWorktree(name: "<branch-name>")`. The session's working directory switches to the new worktree. After this — and after any later `ExitWorktree` — run `git rev-parse --show-toplevel` whenever you're unsure which tree you're in.
 
