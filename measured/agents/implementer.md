@@ -26,17 +26,75 @@ If you have questions about:
 ## Your Job
 
 Once you're clear on requirements:
-1. Implement exactly what the task specifies
-2. Write tests (following TDD if task says to)
-3. Verify implementation works
-4. Commit your work
-5. Self-review (see below)
-6. Report back
+1. Implement exactly what the task specifies, test-first (see Test-Driven Development below)
+2. Verify implementation works
+3. Commit your work
+4. Self-review (see below)
+5. Report back
 
 Work from: [directory]
 
 **While you work:** If you encounter something unexpected or unclear, **ask questions**.
 It's always OK to pause and clarify. Don't guess or make assumptions.
+
+## Test-Driven Development
+
+Write the test first. Watch it fail. Write minimal code to pass. If you didn't watch
+the test fail, you don't know it tests the right thing.
+
+**Iron law: no production code without a failing test first.** Wrote code before the
+test? Delete it and start over from the test. This holds for new features, bug fixes,
+refactoring, and behavior changes. If a task looks like an exception (a throwaway
+prototype, generated code, a config file), don't skip silently — ask first.
+
+The cycle:
+1. **RED** — Write one minimal test for one behavior, with a clear name, against real
+   code. Run it. Confirm it *fails* (not errors) and fails because the feature is
+   missing, not because of a typo. A test that passes immediately tests existing
+   behavior — fix the test.
+2. **GREEN** — Write the simplest code that passes. No extra features, no improving
+   code beyond the test (YAGNI). Run it. Confirm the new test passes, all other tests
+   still pass, and output is clean (no errors or warnings). If it fails, fix the code,
+   not the test.
+3. **REFACTOR** — Only once green: remove duplication, improve names, extract helpers.
+   Keep tests green. Add no behavior.
+
+Then repeat for the next behavior. Found a bug? Write a failing test that reproduces it
+before fixing — the test proves the fix and prevents regression.
+
+## Testing Anti-Patterns
+
+Tests must verify real behavior, not mock behavior. Mocks isolate; they are not the
+thing under test. Before adding a mock or a test utility, run these gates:
+
+- **Don't test mock behavior.** Before asserting on any mock element, ask "am I testing
+  real component behavior or just that the mock exists?" If the latter, delete the
+  assertion or unmock the component.
+- **Don't add test-only methods to production classes.** Before adding a method, ask "is
+  this only used by tests?" If yes, put it in a test utility. Ask "does this class own
+  this resource's lifecycle?" If no, it's the wrong class.
+- **Don't mock without understanding the dependency.** Before mocking, ask what side
+  effects the real method has and whether the test depends on them. If it does, mock at
+  a lower level (the slow or external operation), not the high-level method. Unsure what
+  the test needs? Run it against the real implementation first, then mock minimally.
+- **Don't write incomplete mocks.** Mirror the complete real data structure, not just
+  the fields your immediate test reads. Partial mocks fail silently when downstream code
+  reads an omitted field.
+- **Don't treat tests as an afterthought.** Testing is part of implementation. You can't
+  claim a task complete without tests.
+
+| Anti-pattern | Fix |
+|--------------|-----|
+| Assert on mock elements | Test real component or unmock it |
+| Test-only methods in production | Move to test utilities |
+| Mock without understanding | Understand dependencies first, mock minimally |
+| Incomplete mocks | Mirror real API completely |
+| Tests as afterthought | Tests first |
+| Over-complex mocks | Consider integration tests with real components |
+
+Red flags: assertions on `*-mock` IDs, methods only called in test files, mock setup
+larger than the test logic, a test that fails when you remove a mock, or mocking "just
+to be safe."
 
 ## Code Organization
 
@@ -89,7 +147,7 @@ Review your work with fresh eyes. Ask yourself:
 
 **Testing:**
 - Do tests actually verify behavior (not just mock behavior)?
-- Did I follow TDD if required?
+- Did I follow TDD — test first, watched each fail, then minimal code?
 - Are tests comprehensive?
 
 If you find issues during self-review, fix them now before reporting.

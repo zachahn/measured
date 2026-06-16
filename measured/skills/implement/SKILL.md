@@ -66,7 +66,7 @@ Use the least powerful model that can do the job.
 
 Run tasks in dependency order. Never dispatch implementer teammates in parallel — they conflict.
 
-1. Spawn a teammate using the subagent: `measured:implementer`. Give it the full task text, scene-setting context, and the working directory. Answer any questions it asks before it proceeds.
+1. Spawn a teammate using the subagent: `measured:implementer`. Give it the full task text, scene-setting context, and the working directory. The implementer works test-first (TDD) by default — expect test-first work, and hold that line in the reviews below. Answer any questions it asks before it proceeds.
 2. Handle its reported status:
     - **DONE:** proceed to review.
     - **DONE_WITH_CONCERNS:** read the concerns. Address those about correctness or scope before review; note observations and proceed.
