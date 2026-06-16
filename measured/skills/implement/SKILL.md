@@ -37,7 +37,7 @@ A git worktree gives this work its own working directory while sharing the repos
 1. **Confirm the worktree directory is gitignored.** Run the bundled script:
 
    ```bash
-   ./skills/implement/scripts/check-ignore
+   workspace-git-ignored
    ```
 
    If it reports "not ignored", add the directory to `.gitignore` and commit before continuing. This keeps worktree contents out of the repo.
