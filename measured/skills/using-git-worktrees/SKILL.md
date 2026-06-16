@@ -47,4 +47,4 @@ Git worktrees give each branch its own working directory while sharing one repos
 
 **Pairs with:**
 - **finishing-a-development-branch** - REQUIRED for cleanup after work is complete
-- **measured-config** - stores the `worktree-setup` commands this skill runs
+- **measured:config** - stores the `worktree-setup` commands this skill runs
