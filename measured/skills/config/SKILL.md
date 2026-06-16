@@ -12,7 +12,7 @@ Measured keeps a few per-repo settings outside the repo, shared across every Cla
 
 | Key | Holds |
 |-----|-------|
-| `worktree-setup` | Shell commands that prepare a fresh worktree to work in (install deps, build, etc.). The **using-git-worktrees** skill runs these after creating a worktree. |
+| `worktree-setup` | Shell commands that prepare a fresh worktree to work in (install deps, build, etc.). The **implement** skill runs these after creating a worktree. |
 
 ## Steps
 

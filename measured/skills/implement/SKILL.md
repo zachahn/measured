@@ -23,12 +23,30 @@ Read the architecture plan and every task yourself. Paste each task's full text 
 
 Before dispatching any task, use `AskUserQuestion` to ask the user where the work should happen. Offer these options:
 
-- **EnterWorktree** — call `EnterWorktree` to create and switch into an isolated worktree, then proceed.
+- **Worktree** — set up an isolated git worktree (see below), then proceed.
 - **New branch** — create a new branch off the current branch, then proceed.
 - **Current branch** — continue on the current branch.
 - **main / master** — continue on the default branch. Only offer this option when it differs from the current branch, and treat choosing it as the explicit consent required to implement on `main`/`master`.
 
 Wait for the answer, act on it, then proceed.
+
+### Setting up a worktree
+
+A git worktree gives this work its own working directory while sharing the repository, so it stays isolated from the current checkout.
+
+1. **Confirm the worktree directory is gitignored.** Run the bundled script:
+
+   ```bash
+   ./skills/implement/scripts/check-ignore
+   ```
+
+   If it reports "not ignored", add the directory to `.gitignore` and commit before continuing. This keeps worktree contents out of the repo.
+
+2. **Create the worktree.** Call `EnterWorktree(name: "<branch-name>")`. The session's working directory switches to the new worktree. After this — and after any later `ExitWorktree` — run `git rev-parse --show-toplevel` whenever you're unsure which tree you're in.
+
+3. **Run setup.** Read the repo's setup commands with `measured-config --get worktree-setup` and run what it prints. If it prints nothing, ask the user what commands prepare a fresh checkout (install deps, build), store them with `measured-config --set worktree-setup "<commands>"` so the next worktree skips this question, then run them.
+
+4. **Verify a clean baseline.** Run the project's test command. Don't proceed past failing baseline tests without explicit permission — otherwise you can't tell new bugs from pre-existing ones. If tests pass, report the worktree path and the passing count, then proceed.
 
 ## Choose a model per task
 

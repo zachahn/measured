@@ -18,9 +18,9 @@ If given a link to a GitHub Pull Request, skim through the changes and determine
 
 ## Steps
 
-First, Read `../using-git-worktrees/SKILL.md` — the sibling skill beside this file under the base directory the harness announced — and follow it, using the `EnterWorktree` tool. Use the `Read` tool, not `cat`; only `Read` is pre-approved for plugin files. The `Skill` tool refuses it because it sets `disable-model-invocation`.
+First, get into an isolated worktree with the `EnterWorktree` tool. You make no changes during a review, so this worktree is disposable — no dependency install or baseline test is needed.
 
-To do this, follow these steps precisely:
+Then follow these steps precisely:
 
 1. Make sure we are within a worktree.
 2. Inside that worktree, fetch the branch under review (`git fetch origin <branch>`) and then `git reset --hard <branch>` the worktree to that branch so the working tree matches the change exactly.
