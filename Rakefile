@@ -62,7 +62,6 @@ module TestTasks
     task :validate do
       sh "claude plugin validate ./measured-behavior"
       sh "claude plugin validate ./measured"
-      sh "claude plugin validate ./weighed"
       sh "claude plugin validate ."
       puts "[test] validate done"
     end

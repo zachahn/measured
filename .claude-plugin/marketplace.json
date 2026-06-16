@@ -16,12 +16,6 @@
       "version": "1.2.12",
       "source": "./measured-behavior",
       "homepage": "https://github.com/zachahn/measured"
-    },
-    {
-      "name": "weighed",
-      "version": "1.2.12",
-      "source": "./weighed",
-      "homepage": "https://github.com/zachahn/measured"
     }
   ]
 }

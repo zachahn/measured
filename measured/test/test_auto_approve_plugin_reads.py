@@ -58,7 +58,7 @@ class AutoApprovePluginReadsTest(unittest.TestCase):
         self.assert_no_decision(run_hook(payload("Read", "/etc/hosts")))
 
     def test_silent_on_traversal_out_of_plugin(self):
-        escaped = PLUGIN_ROOT / "skills" / ".." / ".." / "weighed" / "README.md"
+        escaped = PLUGIN_ROOT / "skills" / ".." / ".." / "measured-behavior" / "README.md"
         self.assert_no_decision(run_hook(payload("Read", str(escaped))))
 
     def test_silent_on_other_tools(self):
