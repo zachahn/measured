@@ -1,5 +1,5 @@
 ---
-name: implementing-with-subagents
+name: implement
 description: Use when executing implementation plans with independent tasks in the current session
 disable-model-invocation: true
 ---

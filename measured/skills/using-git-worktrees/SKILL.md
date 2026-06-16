@@ -131,7 +131,7 @@ Ready to implement auth feature
 
 **Called by:**
 - **building** (Phase 4) - REQUIRED when design is approved and implementation follows
-- **implementing-with-subagents** - REQUIRED before executing any tasks
+- **implement** - REQUIRED before executing any tasks
 - Any skill needing isolated workspace
 
 **Pairs with:**
