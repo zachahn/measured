@@ -6,133 +6,45 @@ disable-model-invocation: true
 
 # Using Git Worktrees
 
-## Overview
+Git worktrees give each branch its own working directory while sharing one repository, so you can work without disturbing the current checkout.
 
-Git worktrees create isolated workspaces sharing the same repository, allowing work on multiple branches simultaneously without switching.
+## Steps
 
-**Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
+1. **Confirm the worktree directory is gitignored.** Run the bundled script:
 
-## Creation Steps
+   ```bash
+   ./skills/using-git-worktrees/scripts/check-ignore
+   ```
 
-### 1. Verify Worktree Directory Is Ignored
+   If it reports "not ignored", add the directory to `.gitignore` and commit before continuing. This keeps worktree contents out of the repo.
 
-Run the bundled script to confirm the worktree directory is gitignored:
+2. **Create the worktree.** Call `EnterWorktree(name: "<branch-name>")`. The session's working directory switches to the new worktree.
 
-```bash
-./skills/using-git-worktrees/scripts/check-ignore
-```
+3. **Run setup.** Read the repo's setup commands with `measured-config --get worktree-setup` and run what it prints.
 
-**If not ignored:** Add the directory to `.gitignore` and commit before proceeding. Prevents accidentally tracking worktree contents.
+   - If it prints nothing, no setup is configured. Ask the user what commands prepare a fresh checkout (install deps, build), then store them with `measured-config --set worktree-setup "<commands>"` so the next worktree skips this question. Run them.
 
-### 2. Create Worktree
+4. **Verify a clean baseline.** Run the project's test command. If tests fail, report the failures and ask whether to proceed or investigate. If they pass, report ready.
 
-```
-EnterWorktree(name: "<branch-name>")
-```
+5. **Report location.**
 
-### 3. Run Project Setup
+   ```
+   Worktree ready at <full-path>
+   Tests passing (<N> tests, 0 failures)
+   Ready to implement <feature-name>
+   ```
 
-Auto-detect and run appropriate setup:
+## Watch out
 
-```bash
-# Node.js
-if [ -f package.json ]; then npm install; fi
-
-# Rust
-if [ -f Cargo.toml ]; then cargo build; fi
-
-# Python
-if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-if [ -f pyproject.toml ]; then poetry install; fi
-
-# Go
-if [ -f go.mod ]; then go mod download; fi
-```
-
-### 4. Verify Clean Baseline
-
-Run tests to ensure worktree starts clean:
-
-```bash
-# Examples - use project-appropriate command
-npm test
-cargo test
-pytest
-go test ./...
-```
-
-**If tests fail:** Report failures, ask whether to proceed or investigate.
-
-**If tests pass:** Report ready.
-
-### 5. Report Location
-
-```
-Worktree ready at <full-path>
-Tests passing (<N> tests, 0 failures)
-Ready to implement <feature-name>
-```
-
-## Quick Reference
-
-| Situation | Action |
-|-----------|--------|
-| Starting isolated work | Run `check-ignore` then call `EnterWorktree` |
-| Worktree directory not ignored | Add to `.gitignore` + commit |
-| Tests fail during baseline | Report failures + ask |
-| No package.json/Cargo.toml | Skip dependency install |
-
-## Common Mistakes
-
-### Assuming directory location
-
-- **Problem:** After `EnterWorktree`, the session's working directory changes. Running commands as if you're still in the original repo (or vice versa after `ExitWorktree`) lands edits, tests, or git operations in the wrong tree
-- **Fix:** Confirm with `pwd` or `git rev-parse --show-toplevel` when in doubt, especially right after entering or exiting a worktree
-
-### Proceeding with failing tests
-
-- **Problem:** Can't distinguish new bugs from pre-existing issues
-- **Fix:** Report failures, get explicit permission to proceed
-
-### Hardcoding setup commands
-
-- **Problem:** Breaks on projects using different tools
-- **Fix:** Auto-detect from project files (package.json, etc.)
-
-## Example Workflow
-
-```
-You: I'm using the using-git-worktrees skill to set up an isolated workspace.
-
-[Run check-ignore - .claude/worktrees ignored]
-[EnterWorktree(name: "auth")]
-[Run npm install]
-[Run npm test - 47 passing]
-
-Worktree ready at .claude/worktrees/auth
-Tests passing (47 tests, 0 failures)
-Ready to implement auth feature
-```
-
-## Red Flags
-
-**Never:**
-- Create a worktree without running `check-ignore` first
-- Skip baseline test verification
-- Proceed with failing tests without asking
-
-**Always:**
-- Run `check-ignore` before creating the worktree
-- Use `EnterWorktree` to create the worktree
-- Auto-detect and run project setup
-- Verify clean test baseline
+- After `EnterWorktree` (and after `ExitWorktree`) the working directory changes. When unsure which tree you're in, run `git rev-parse --show-toplevel`.
+- Do not proceed past failing baseline tests without explicit permission — otherwise you can't tell new bugs from pre-existing ones.
 
 ## Integration
 
 **Called by:**
-- **building** (Phase 4) - REQUIRED when design is approved and implementation follows
 - **implement** - REQUIRED before executing any tasks
-- Any skill needing isolated workspace
+- Any skill needing an isolated workspace
 
 **Pairs with:**
-- **finishing-a-development-branch** - REQUIRED for cleanup after work complete
+- **finishing-a-development-branch** - REQUIRED for cleanup after work is complete
+- **measured-config** - stores the `worktree-setup` commands this skill runs

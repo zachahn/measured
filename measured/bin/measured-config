@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""Read and write this repo's measured settings.
+
+Settings live in one JSON file per repo, namespaced by working directory the
+same way `measured-notes` namespaces its plan dirs. They are shared across
+every Claude session in the repo and persist between them. The file is not
+committed to the repo.
+
+  (no arguments)        print every setting as JSON
+  --get KEY             print one setting's value (nothing if unset)
+  --set KEY VALUE       set one setting and print the new full settings
+  --unset KEY           remove one setting and print the new full settings
+
+Known settings:
+
+  worktree-setup        shell commands to run after creating a worktree to get
+                        it ready to work in (install deps, build, etc.)
+
+Path/state resolution lives in ../lib/session_lib.py.
+"""
+
+import argparse
+import json
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+import session_lib  # noqa: E402
+
+
+HELP_TEXT = """\
+usage: measured-config [--get KEY | --set KEY VALUE | --unset KEY]
+
+Read and write this repo's measured settings.
+
+Settings are shared across every Claude session in the repo and persist
+between them. They are stored outside the repo and are not committed.
+
+  (no arguments)        print every setting as a JSON object
+  --get KEY             print one setting's value (nothing if unset)
+  --set KEY VALUE       set one setting, then print the full settings object
+  --unset KEY           remove one setting, then print the full settings object
+
+Known settings:
+
+  worktree-setup        shell commands to run after creating a worktree to get
+                        it ready to work in (install deps, build, etc.)
+"""
+
+
+class _Parser(argparse.ArgumentParser):
+    def format_help(self) -> str:
+        return HELP_TEXT
+
+    def format_usage(self) -> str:
+        return "usage: measured-config [--get KEY | --set KEY VALUE | --unset KEY]\n"
+
+
+def main(argv: list[str]) -> int:
+    parser = _Parser(prog="measured-config", add_help=False)
+    parser.add_argument("-h", "--help", action="help")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--get", metavar="KEY")
+    group.add_argument("--set", nargs=2, metavar=("KEY", "VALUE"))
+    group.add_argument("--unset", metavar="KEY")
+
+    args = parser.parse_args(argv)
+
+    repo = session_lib.repo_dir()
+
+    try:
+        if args.get is not None:
+            value = session_lib.get_setting(repo, args.get)
+            if value is not None:
+                print(value)
+            return 0
+
+        if args.set is not None:
+            key, value = args.set
+            settings = session_lib.set_setting(repo, key, value)
+            print(json.dumps(settings, indent=2))
+            return 0
+
+        if args.unset is not None:
+            settings = session_lib.set_setting(repo, args.unset, None)
+            print(json.dumps(settings, indent=2))
+            return 0
+
+        print(json.dumps(session_lib.load_settings(repo), indent=2))
+        return 0
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

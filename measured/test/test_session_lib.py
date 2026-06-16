@@ -149,5 +149,43 @@ class NewPlanDirTest(unittest.TestCase):
         self.assertEqual(len(list(self.repo.iterdir())), 1)
 
 
+class SettingsTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = pathlib.Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_load_returns_empty_when_absent(self):
+        self.assertEqual(lib.load_settings(self.repo), {})
+
+    def test_set_then_get_roundtrips(self):
+        lib.set_setting(self.repo, "worktree-setup", "npm install")
+        self.assertEqual(lib.get_setting(self.repo, "worktree-setup"), "npm install")
+
+    def test_set_writes_pretty_json_with_trailing_newline(self):
+        lib.set_setting(self.repo, "worktree-setup", "npm install")
+        text = lib.settings_path(self.repo).read_text()
+        self.assertEqual(text, '{\n  "worktree-setup": "npm install"\n}\n')
+
+    def test_set_updates_existing_key(self):
+        lib.set_setting(self.repo, "worktree-setup", "npm install")
+        lib.set_setting(self.repo, "worktree-setup", "make")
+        self.assertEqual(lib.load_settings(self.repo), {"worktree-setup": "make"})
+
+    def test_set_none_deletes_key(self):
+        lib.set_setting(self.repo, "worktree-setup", "npm install")
+        lib.set_setting(self.repo, "other", "keep")
+        lib.set_setting(self.repo, "worktree-setup", None)
+        self.assertEqual(lib.load_settings(self.repo), {"other": "keep"})
+
+    def test_get_returns_none_for_unset_key(self):
+        self.assertIsNone(lib.get_setting(self.repo, "missing"))
+
+    def test_load_rejects_non_object_json(self):
+        lib.settings_path(self.repo).write_text("[1, 2, 3]")
+        with self.assertRaises(ValueError):
+            lib.load_settings(self.repo)
+
+
 if __name__ == "__main__":
     unittest.main()

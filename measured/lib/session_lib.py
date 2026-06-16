@@ -15,6 +15,7 @@ any install step.
 """
 
 import datetime
+import json
 import os
 import pathlib
 import re
@@ -213,3 +214,47 @@ def new_plan_dir(repo: pathlib.Path, slug: str) -> pathlib.Path:
     path = repo / f"{today}-{sanitized}"
     path.mkdir(parents=True, exist_ok=False)
     return path
+
+
+SETTINGS_FILENAME = "settings.json"
+
+
+def settings_path(repo: pathlib.Path) -> pathlib.Path:
+    """The settings file for a repo's state dir (does not create it)."""
+    return repo / SETTINGS_FILENAME
+
+
+def load_settings(repo: pathlib.Path) -> dict:
+    """Return the repo's settings as a dict, or {} if none are stored yet.
+
+    Raises ValueError if the file exists but does not hold a JSON object.
+    """
+    path = settings_path(repo)
+    try:
+        raw = path.read_text()
+    except FileNotFoundError:
+        return {}
+    data = json.loads(raw)
+    if not isinstance(data, dict):
+        raise ValueError(f"settings file is not a JSON object: {path}")
+    return data
+
+
+def get_setting(repo: pathlib.Path, key: str):
+    """Return one setting's value, or None when it is unset."""
+    return load_settings(repo).get(key)
+
+
+def set_setting(repo: pathlib.Path, key: str, value) -> dict:
+    """Set one setting, write the file, and return the full settings dict.
+
+    Passing value=None deletes the key. Writes the whole object back as
+    pretty-printed JSON with a trailing newline.
+    """
+    settings = load_settings(repo)
+    if value is None:
+        settings.pop(key, None)
+    else:
+        settings[key] = value
+    settings_path(repo).write_text(json.dumps(settings, indent=2) + "\n")
+    return settings
