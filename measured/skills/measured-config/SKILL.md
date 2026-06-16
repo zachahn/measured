@@ -1,7 +1,7 @@
 ---
 name: measured-config
 description: Use when the user wants to set, change, or view this repo's measured settings - such as the setup commands a new git worktree should run
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Configuring Measured
