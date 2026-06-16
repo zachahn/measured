@@ -1,20 +1,144 @@
-#!/usr/bin/env bash
-# Checks whether the worktree directory is gitignored.
-# Exits 0 if ignored, 1 if not ignored, 2 on error.
+#!/usr/bin/env python3
+"""Check whether the worktree directory is git-ignored, or make it ignored.
 
-set -euo pipefail
+A worktree created under `.claude/worktrees` must be git-ignored so its
+contents never get tracked. This checks that, and can fix it two ways:
+either by `.gitignore` (committed, shared with the team) or by
+`.git/info/exclude` (local to this clone, not committed).
 
-DIR="${1:-.claude/worktrees}"
+  (no arguments)            print this help
+  --help                    print this help
+  --check                   exit 0 if the directory is ignored, 1 if not
+  --fix-gitignore           add the directory to .gitignore
+  --fix-git-info-exclude    add the directory to .git/info/exclude
 
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "error: not inside a git repository" >&2
-  exit 2
-fi
+Pass DIR to target a directory other than the default `.claude/worktrees`.
+"""
 
-if git check-ignore -q "$DIR"; then
-  echo "ignored: $DIR"
-  exit 0
-else
-  echo "not ignored: $DIR"
-  exit 1
-fi
+import argparse
+import pathlib
+import subprocess
+import sys
+
+DEFAULT_DIR = ".claude/worktrees"
+
+HELP_TEXT = """\
+usage: workspace-git-ignored [--check | --fix-gitignore | --fix-git-info-exclude] [DIR]
+
+Check whether the worktree directory is git-ignored, or make it ignored.
+
+A worktree under `.claude/worktrees` must be git-ignored so its contents are
+never tracked. Fix it by `.gitignore` (committed, shared) or by
+`.git/info/exclude` (local to this clone, not committed).
+
+  (no arguments)            print this help
+  --help                    print this help
+  --check                   exit 0 if the directory is ignored, 1 if it is not
+  --fix-gitignore           append the directory to .gitignore
+  --fix-git-info-exclude    append the directory to .git/info/exclude
+
+DIR defaults to `.claude/worktrees`.
+"""
+
+
+class _Parser(argparse.ArgumentParser):
+    def format_help(self) -> str:
+        return HELP_TEXT
+
+    def format_usage(self) -> str:
+        return (
+            "usage: workspace-git-ignored "
+            "[--check | --fix-gitignore | --fix-git-info-exclude] [DIR]\n"
+        )
+
+
+def _git_toplevel() -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError("not inside a git repository")
+    return result.stdout.strip()
+
+
+def _is_ignored(directory: str) -> bool:
+    # A directory-only pattern (`foo/`) only matches a query path that ends in
+    # a slash or exists on disk as a directory. Query both forms so the check
+    # holds even before the worktree directory is created.
+    for candidate in (directory, directory.rstrip("/") + "/"):
+        result = subprocess.run(
+            ["git", "check-ignore", "-q", candidate],
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return True
+    return False
+
+
+def _append_pattern(path, pattern: str) -> bool:
+    """Append `pattern` as its own line to `path`, unless already present.
+
+    Returns True if the line was added, False if it was already there.
+    Ensures the file ends with a newline before appending.
+    """
+    try:
+        existing = path.read_text()
+    except FileNotFoundError:
+        existing = ""
+    if pattern in existing.splitlines():
+        return False
+    prefix = existing if existing.endswith("\n") or not existing else existing + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(prefix + pattern + "\n")
+    return True
+
+
+def main(argv: list[str]) -> int:
+    parser = _Parser(prog="workspace-git-ignored", add_help=False)
+    parser.add_argument("-h", "--help", action="help")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--check", action="store_true")
+    group.add_argument("--fix-gitignore", action="store_true")
+    group.add_argument("--fix-git-info-exclude", action="store_true")
+    parser.add_argument("dir", nargs="?", default=DEFAULT_DIR, metavar="DIR")
+
+    args = parser.parse_args(argv)
+
+    # Bare invocation behaves like --help.
+    if not (args.check or args.fix_gitignore or args.fix_git_info_exclude):
+        print(HELP_TEXT, end="")
+        return 0
+
+    try:
+        toplevel = pathlib.Path(_git_toplevel())
+    except RuntimeError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
+    pattern = args.dir.rstrip("/") + "/"
+
+    if args.check:
+        if _is_ignored(args.dir):
+            print(f"ignored: {args.dir}")
+            return 0
+        print(f"not ignored: {args.dir}")
+        return 1
+
+    if args.fix_gitignore:
+        target = toplevel / ".gitignore"
+        label = ".gitignore"
+    else:
+        target = toplevel / ".git" / "info" / "exclude"
+        label = ".git/info/exclude"
+
+    if _append_pattern(target, pattern):
+        print(f"added {pattern!r} to {label}")
+    else:
+        print(f"already present in {label}: {pattern!r}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
