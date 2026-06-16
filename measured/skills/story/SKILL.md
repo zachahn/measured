@@ -56,8 +56,8 @@ The template's sections build on each other: a wrong problem statement corrupts 
 
 The finished ticket must stand alone: an engineer who never saw this conversation implements from the page. You cannot test that yourself — everything the user told you is in your context, so a gap on the page still reads as covered.
 
-1. Spawn the `story-review` subagent. Give it the ticket's path (`<plan-dir>/TICKET.md`) and nothing else — no summary of the conversation.
-2. Fix what it finds. Take anything you cannot resolve to the user.
+1. Spawn the `story-review` and `story-product-review` subagents. Give each the ticket's path (`<plan-dir>/TICKET.md`) and nothing else — no summary of the conversation. `story-review` checks that the page stands alone; `story-product-review` checks that it stays product-focused and prescribes no implementation.
+2. Fix what they find. Take anything you cannot resolve to the user.
 3. Present the full ticket and iterate until the user is satisfied.
 
 ## Ticket template
