@@ -19,7 +19,16 @@ Build each file's path by joining its filename to the plan dir:
 
 Read the architecture plan and every task yourself. Paste each task's full text and its scene-setting context into the teammate's prompt — never make a teammate resolve or read its own task file.
 
-Never start implementation on `main`/`master` without explicit user consent.
+## GATE: where should this work happen?
+
+Before dispatching any task, use `AskUserQuestion` to ask the user where the work should happen. Offer these options:
+
+- **EnterWorktree** — call `EnterWorktree` to create and switch into an isolated worktree, then proceed.
+- **New branch** — create a new branch off the current branch, then proceed.
+- **Current branch** — continue on the current branch.
+- **main / master** — continue on the default branch. Only offer this option when it differs from the current branch, and treat choosing it as the explicit consent required to implement on `main`/`master`.
+
+Wait for the answer, act on it, then proceed.
 
 ## Choose a model per task
 
