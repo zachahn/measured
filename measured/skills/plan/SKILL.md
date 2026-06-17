@@ -46,9 +46,8 @@ The architecture plan lives at `<plan-dir>/ARCHITECTURE.md`.
 2. **GATE:** Confirm the engineering goal — restate the story in engineering terms and check that restatement with the user before any solution talk.
 3. **GATE:** Use `AskUserQuestion` to propose two or more approaches with their tradeoffs. Lead with your recommendation and say why. Cover architecture, key libraries or patterns, and how it integrates with existing code.
 4. Draft the architecture into `<plan-dir>/ARCHITECTURE.md` using the template below. Write it as you settle each section.
-5. Self-review: `Read` the file back. Do any sections contradict each other? Could any requirement be read two ways? If so, pick one and make it explicit.
-6. Spawn the `measured:plan-architecture-reviewer` subagent. Give it the plan dir path and nothing else — no summary of the conversation. Fix what it finds; take anything you can't resolve to the user.
-7. **GATE:** Present the plan with `AskUserQuestion` and iterate until the user confirms it.
+5. Spawn the `measured:plan-architecture-reviewer` subagent. Give it the plan dir path and nothing else — no summary of the conversation. Fix what it finds; take anything you can't resolve to the user.
+6. **GATE:** Present the plan with `AskUserQuestion` and iterate until the user confirms it.
 
 ## Phase 2 — Task breakdown
 
@@ -57,12 +56,7 @@ Each task is its own file at `<plan-dir>/TASK-N.md`, numbered from 1 in dependen
 1. Re-read `<plan-dir>/ARCHITECTURE.md`. It is the source of truth; the tasks decompose it. Every task traces back to a part of the plan, and the tasks together deliver it with no gaps.
 2. **GATE:** Confirm the overall shape with the user — titles, the dependency order — before fleshing out every section. Re-slicing an outline is cheap; rewriting seven full tasks is not.
 3. Write each task into its own `<plan-dir>/TASK-N.md` using the template below. List the dir's `TASK-N.md` files to track what you've created. Don't reuse a filename.
-4. Self-review: `Read` every task back.
-    - **Ordering:** Does every dependency point backward? Can someone start at task 1 and proceed?
-    - **Sizing:** Is any task secretly three? Is any too thin to stand alone?
-    - **Testability:** Could two engineers disagree about whether a task's acceptance criteria are met? Tighten it.
-    - **Coverage:** Do the tasks together deliver the architecture plan? What falls in the gaps?
-5. Spawn the `measured:implementation-ticketing-review` subagent. Give it the plan dir path and nothing else — no summary of the conversation. Fix what it finds; take anything you can't resolve to the user.
+4. Spawn the `measured:implementation-ticketing-review` subagent. Give it the plan dir path and nothing else — no summary of the conversation. Fix what it finds; take anything you can't resolve to the user.
 
 ## Architecture template
 
