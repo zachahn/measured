@@ -15,6 +15,9 @@ Known settings:
 
   worktree-setup        shell commands to run after creating a worktree to get
                         it ready to work in (install deps, build, etc.)
+  commit-after-task     whether the implement skill commits each task after it
+                        passes review. Prefer "true" or "false"; may also hold
+                        a free-text instruction passed to the implementer.
 
 Path/state resolution lives in ../lib/session_lib.py.
 """
@@ -45,6 +48,9 @@ Known settings:
 
   worktree-setup        shell commands to run after creating a worktree to get
                         it ready to work in (install deps, build, etc.)
+  commit-after-task     whether the implement skill commits each task after it
+                        passes review. Prefer "true" or "false"; may also hold
+                        a free-text instruction passed to the implementer.
 """
 
 

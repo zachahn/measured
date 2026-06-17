@@ -66,7 +66,7 @@ Use the least powerful model that can do the job.
 
 Run tasks in dependency order. Never dispatch implementer teammates in parallel — they conflict.
 
-1. Spawn a teammate using the subagent: `measured:implementer`. Give it the full task text, scene-setting context, and the working directory. The implementer works test-first (TDD) by default — expect test-first work, and hold that line in the reviews below. Answer any questions it asks before it proceeds.
+1. Spawn a teammate using the subagent: `measured:implementer`. Give it the full task text, scene-setting context, the working directory, and the commit instruction (see GATE below). The implementer works test-first (TDD) by default — expect test-first work, and hold that line in the reviews below. Answer any questions it asks before it proceeds.
 2. Handle its reported status:
     - **DONE:** proceed to review.
     - **DONE_WITH_CONCERNS:** read the concerns. Address those about correctness or scope before review; note observations and proceed.
@@ -78,7 +78,26 @@ Run tasks in dependency order. Never dispatch implementer teammates in parallel 
 4. Review code quality second — only after spec compliance is ✅:
     - Spawn a teammate using the subagent: `measured:code-quality-reviewer`. Give it the implementer's report, the task reference, the base and head SHAs, and a task summary.
     - If it finds issues, the same implementer fixes them, then the reviewer reviews again. Repeat until approved.
-5. Move to the next task only when both reviews are clear.
+5. Verify the commit rule was followed (see GATE below) before moving on.
+6. Move to the next task only when both reviews are clear and the commit rule held.
+
+## GATE: commit each task?
+
+The implementer commits its own work after self-review. Decide what commit instruction to pass it, based on the `commit-after-task` setting. Resolve this once at the start, then pass the resulting instruction to every implementer you dispatch.
+
+1. Read it with `measured-config --get commit-after-task`.
+2. **If it prints nothing (unset):** use `AskUserQuestion` to ask whether the implementer should commit each task after review. Store the answer with `measured-config --set commit-after-task true` (or `false`) so later tasks skip the question.
+3. **If `true`:** tell the implementer to commit its work.
+4. **If `false`:** tell the implementer not to commit; it leaves its work uncommitted.
+5. **If any other value:** pass it through verbatim as the commit instruction, so the user's rule (e.g. "commit only after the last task") governs whether and how the implementer commits.
+
+### Verify the rule was followed
+
+After each task's reviews pass, check that the implementer did what the commit instruction said. Run `git status --porcelain` and `git log --oneline -1` in the working directory and compare against the instruction:
+
+- **Commit expected:** the latest commit covers this task's work and the working tree is clean. If the tree still holds this task's changes, the implementer skipped the commit — send it back to commit, or commit yourself.
+- **No commit expected:** this task's changes sit uncommitted and no new commit was made. If the implementer committed anyway, flag it to the user before moving on; don't silently undo it.
+- **Custom rule:** check the outcome against the rule (e.g. "commit only after the last task" means no commit until the final task). If it diverges, correct it before moving on.
 
 After every task, spawn `measured:code-quality-reviewer` once more across the whole change to confirm the plan is delivered and ready to merge.
 

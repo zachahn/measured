@@ -13,6 +13,7 @@ Measured keeps a few per-repo settings outside the repo, shared across every Cla
 | Key | Holds |
 |-----|-------|
 | `worktree-setup` | Shell commands that prepare a fresh worktree to work in (install deps, build, etc.). The **implement** skill runs these after creating a worktree. |
+| `commit-after-task` | Whether the **implement** skill commits each task after it passes review. Prefer `true` or `false`; may also hold a free-text instruction (e.g. `commit only after the last task`) passed to the implementer. When unset, the skill asks once and stores the answer. |
 
 ## Steps
 

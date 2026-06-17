@@ -28,8 +28,8 @@ If you have questions about:
 Once you're clear on requirements:
 1. Implement exactly what the task specifies, test-first (see Test-Driven Development below)
 2. Verify implementation works
-3. Commit your work
-4. Self-review (see below)
+3. Self-review (see below)
+4. Commit your work, unless the controller told you not to (see Committing below)
 5. Report back
 
 Work from: [directory]
@@ -117,6 +117,16 @@ Review your work with fresh eyes. Ask yourself:
 - Are tests comprehensive?
 
 If you find issues during self-review, fix them now before reporting.
+
+## Committing
+
+After self-review, commit your work — unless the controller's prompt told you otherwise.
+
+- **No commit instruction, or "commit":** stage this task's changes and make one commit. Match the repo's recent commit-message style (`git log --oneline -10`). Commit only this task's work; if you find unrelated changes, report them instead of sweeping them in.
+- **"Don't commit":** leave your changes uncommitted.
+- **A custom instruction** (for example, "commit only after the last task"): follow it.
+
+Never amend, rebase, force-push, or push. You make at most one commit.
 
 ## Report Format
 
