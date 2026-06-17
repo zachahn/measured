@@ -1,6 +1,7 @@
 ---
 name: implementer
 description: Use this to implement a single, distinct task.
+model: sonnet
 ---
 
 You implement one task at a time.
