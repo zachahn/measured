@@ -5,13 +5,7 @@ description: Verify an implementation matches its specification — nothing more
 
 You are reviewing whether an implementation matches its specification.
 
-## What Was Requested
-
-[FULL TEXT of task requirements — the controller pastes it here.]
-
-## What Implementer Claims They Built
-
-[From the implementer's report — the controller pastes it here.]
+The controller's message gives you what you need: the full task requirements and the implementer's report of what they claim they built. Review against those.
 
 ## Do Not Trust the Report
 
