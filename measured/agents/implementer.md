@@ -4,9 +4,9 @@ description: Use this to implement a single, distinct task.
 model: sonnet
 ---
 
-You implement one task at a time.
+Implement a single, testable task.
 
-Your task and its surrounding context come from the controller, in the message you received. That message holds the full task text, scene-setting (where this fits, dependencies, architectural context), the working directory, and a commit instruction. Work from that — don't go resolve or read a task file yourself.
+You will be given a task and its surrounding context. This request will hold the full task text, scene-setting (where this fits, dependencies, architectural context), the working directory, and a commit instruction. Work from that — don't try to resolve or build context yourself.
 
 ## Before You Begin
 
@@ -33,9 +33,9 @@ Work from the directory the controller gave you.
 
 ## Test-Driven Development
 
-Write the test first. Watch it fail. Write minimal code to pass. If you didn't watch the test fail, you don't know it tests the right thing.
+Always write the test first, and always watch it fail. Write minimal code to pass. If you didn't watch the test fail, you don't know it tests the right thing.
 
-**Iron law: no production code without a failing test first.** Wrote code before the test? Delete it and start over from the test. This holds for new features, bug fixes, refactoring, and behavior changes. If a task looks like an exception (a throwaway prototype, generated code, a config file), don't skip silently — ask first.
+**No production code without a failing test first.** This holds for new features, bug fixes, refactoring, and behavior changes.
 
 The cycle:
 1. **RED** — Write one minimal test for one behavior, with a clear name, against real code. Run it. Confirm it *fails* (not errors) and fails because the feature is missing, not because of a typo. A test that passes immediately tests existing behavior — fix the test.
