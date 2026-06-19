@@ -26,7 +26,7 @@ Before dispatching any task, settle where the work runs. Read the stored prefere
 - **`worktree`** — set up an isolated git worktree (see below), then proceed.
 - **`new-branch`** — create a new branch off the current branch, then proceed.
 - **`current-branch`** — continue on the current branch.
-- **`default-branch`** — continue on the default branch (`main`/`master`). Treat the stored value as the explicit consent required to implement there.
+- **`trunk-branch`** — continue on the trunk branch (`main`/`master`). Treat the stored value as the explicit consent required to implement there.
 - **`ask`, any other value, or nothing** — ask the user (next paragraph).
 
 When you must ask, use `AskUserQuestion`. Offer these options:
@@ -35,7 +35,7 @@ When you must ask, use `AskUserQuestion`. Offer these options:
 - **Worktree** — set up an isolated git worktree (see below), then proceed. Store `worktree`.
 - **New branch** — create a new branch off the current branch, then proceed. Store `new-branch`.
 - **Current branch** — continue on the current branch. Store `current-branch`.
-- **main / master** — continue on the default branch. Only offer this option when it differs from the current branch, and treat choosing it as the explicit consent required to implement on `main`/`master`. Store `default-branch`.
+- **main / master** — continue on the trunk branch. Only offer this option when it differs from the current branch, and treat choosing it as the explicit consent required to implement on `main`/`master`. Store `trunk-branch`.
 
 Store the answer with `measured-config --set work-location <value>` so later sessions skip the question (storing `ask` keeps the prompt). Then act on the choice and proceed.
 

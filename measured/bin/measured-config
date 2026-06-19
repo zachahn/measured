@@ -20,7 +20,7 @@ Known settings:
                         a free-text instruction passed to the implementer.
   work-location         where the implement skill runs its work: "ask",
                         "worktree", "new-branch", "current-branch", or
-                        "default-branch".
+                        "trunk-branch".
 
 Path/state resolution lives in ../lib/session_lib.py.
 """
@@ -56,7 +56,7 @@ Known settings:
                         a free-text instruction passed to the implementer.
   work-location         where the implement skill runs its work: "ask",
                         "worktree", "new-branch", "current-branch", or
-                        "default-branch".
+                        "trunk-branch".
 """
 
 

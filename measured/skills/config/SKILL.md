@@ -16,7 +16,7 @@ A stored setting is the source of truth. When you read a value with `measured-co
 |-----|-------|
 | `worktree-setup` | Shell commands that prepare a fresh worktree to work in (install deps, build, etc.). The **implement** skill runs these after creating a worktree. |
 | `commit-after-task` | Whether the **implement** skill commits each task after it passes review. Prefer `true` or `false`; may also hold a free-text instruction (e.g. `commit only after the last task`) passed to the implementer. When unset, the skill asks once and stores the answer. |
-| `work-location` | Where the **implement** skill runs its work. One of `ask` (ask every time), `worktree`, `new-branch`, `current-branch`, or `default-branch`. When unset, the skill asks once and stores the answer. |
+| `work-location` | Where the **implement** skill runs its work. One of `ask` (ask every time), `worktree`, `new-branch`, `current-branch`, or `trunk-branch`. When unset, the skill asks once and stores the answer. |
 
 ## Steps
 
