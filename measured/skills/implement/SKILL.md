@@ -50,7 +50,7 @@ A git worktree gives this work its own working directory while sharing the repos
 
 2. **Create the worktree.** Call `EnterWorktree(name: "<branch-name>")`. The session's working directory switches to the new worktree. After this — and after any later `ExitWorktree` — run `git rev-parse --show-toplevel` whenever you're unsure which tree you're in.
 
-3. **Run setup.** Read the repo's setup commands with `measured-config --get worktree-setup` and run what it prints. If it prints nothing, ask the user what commands prepare a fresh checkout (install deps, build), store them with `measured-config --set worktree-setup "<commands>"` so the next worktree skips this question, then run them.
+3. **Run setup.** Read the repo's setup commands with `measured-config --get worktree-setup` and run exactly what it prints — the stored value is the source of truth; run it even if the prompt suggests other setup commands. If it prints nothing, ask the user what commands prepare a fresh checkout (install deps, build), store them with `measured-config --set worktree-setup "<commands>"` so the next worktree skips this question, then run them.
 
 4. **Verify a clean baseline.** Run the project's test command. Don't proceed past failing baseline tests without explicit permission — otherwise you can't tell new bugs from pre-existing ones. If tests pass, report the worktree path and the passing count, then proceed.
 
@@ -66,7 +66,7 @@ Use the least powerful model that can do the job.
 
 The implementer commits its own work after self-review. Resolve the commit instruction **before dispatching the first teammate**, then pass the same instruction to every implementer you dispatch.
 
-1. Read it with `measured-config --get commit-after-task`.
+1. Read it with `measured-config --get commit-after-task`. The stored value is the source of truth: follow it even if the prompt suggests otherwise. To change the behavior, change the setting.
 2. **If it prints nothing (unset/null):** you cannot proceed without a selection. Use `AskUserQuestion` to ask whether the implementer should commit each task after review. Store the answer with `measured-config --set commit-after-task true` (or `false`) so later tasks skip the question.
 3. **If `true`:** tell the implementer to commit its work.
 4. **If `false`:** tell the implementer not to commit; it leaves its work uncommitted.
