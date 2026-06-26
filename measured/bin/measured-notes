@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Locate this repo's plans, or start a new one.
 
-State lives under one dir per repo (namespaced by working directory, like
-Claude Code's own projects/<encoded-cwd>/). That state dir holds one plan
-directory per planning effort, named `YYYY-MM-DD-slug`.
+The docs directory is determined by the repo's `docs-location` setting (set via
+`measured-config --set docs-location <value>`). This setting is required; the
+script exits with an error and remediation instructions if it is absent.
 
-  (no arguments)        print the state dir, creating it if absent
+  (no arguments)        print the docs dir, creating it if absent
   --new-plan-dir SLUG   create `YYYY-MM-DD-<sanitized-slug>` and print its path
 
 Build ticket/architecture/task paths by joining filenames to a plan dir
@@ -27,13 +27,14 @@ usage: measured-notes [--new-plan-dir SLUG]
 
 Locate this repo's plans, or start a new one.
 
-State is shared across every Claude session in the repo. It holds one plan
-directory per planning effort, named `YYYY-MM-DD-slug`.
+The docs directory comes from the repo's `docs-location` setting. Set it with:
+  measured-config --set docs-location XDG_STATE_HOME
+  measured-config --set docs-location "REPO: path/to/docs"
 
-  (no arguments)        print the absolute path of the state dir, creating it
+  (no arguments)        print the absolute path of the docs dir, creating it
                         if it does not yet exist
   --new-plan-dir SLUG   sanitize SLUG to a kebab-case slug, create a plan dir
-                        named `YYYY-MM-DD-<slug>` under the state dir, and print
+                        named `YYYY-MM-DD-<slug>` under the docs dir, and print
                         its absolute path
 
 Build a plan's files by joining filenames to its dir yourself, e.g.
@@ -58,12 +59,36 @@ def main(argv: list[str]) -> int:
 
     repo = session_lib.repo_dir()
 
+    docs_location = session_lib.get_setting(repo, "docs-location")
+    if docs_location is None:
+        print(
+            "measured-notes: docs-location is not set.\n"
+            "\n"
+            "Tell measured where to store plan docs by running one of:\n"
+            "\n"
+            "  measured-config --set docs-location XDG_STATE_HOME\n"
+            "      Store docs in the default state dir (~/.local/state/…).\n"
+            "\n"
+            "  measured-config --set docs-location \"REPO: path/to/docs\"\n"
+            "      Store docs in a subdirectory of the project repo.",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        docs_dir = session_lib.resolve_docs_dir(repo, docs_location)
+    except ValueError as e:
+        print(f"measured-notes: {e}", file=sys.stderr)
+        return 1
+
+    docs_dir.mkdir(parents=True, exist_ok=True)
+
     if args.new_plan_dir is None:
-        print(repo)
+        print(docs_dir)
         return 0
 
     try:
-        print(session_lib.new_plan_dir(repo, args.new_plan_dir))
+        print(session_lib.new_plan_dir(docs_dir, args.new_plan_dir))
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 1

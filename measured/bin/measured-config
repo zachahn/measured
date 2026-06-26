@@ -21,6 +21,11 @@ Known settings:
   work-location         where the implement skill runs its work: "ask",
                         "worktree", "new-branch", "current-branch", or
                         "trunk-branch".
+  docs-location         where measured stores plan docs (ARCHITECTURE.md,
+                        TICKET.md, etc.). Required by measured-notes.
+                        "XDG_STATE_HOME" stores them in the default state dir
+                        (~/.local/state/…). "REPO: <path/to/docs>" stores them
+                        in a subdirectory of the project repo.
 
 Path/state resolution lives in ../lib/session_lib.py.
 """
@@ -57,6 +62,11 @@ Known settings:
   work-location         where the implement skill runs its work: "ask",
                         "worktree", "new-branch", "current-branch", or
                         "trunk-branch".
+  docs-location         where measured stores plan docs (ARCHITECTURE.md,
+                        TICKET.md, etc.). Required by measured-notes.
+                        "XDG_STATE_HOME" stores them in the default state dir
+                        (~/.local/state/…). "REPO: <path/to/docs>" stores them
+                        in a subdirectory of the project repo.
 """
 
 

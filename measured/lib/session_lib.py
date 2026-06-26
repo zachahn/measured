@@ -216,6 +216,35 @@ def new_plan_dir(repo: pathlib.Path, slug: str) -> pathlib.Path:
     return path
 
 
+DOCS_LOCATION_XDG = "XDG_STATE_HOME"
+DOCS_LOCATION_REPO_PREFIX = "REPO:"
+
+
+def resolve_docs_dir(repo: pathlib.Path, docs_location: str) -> pathlib.Path:
+    """Resolve a docs-location setting value to an absolute directory path.
+
+    "XDG_STATE_HOME" → the repo's own state dir (the historical default).
+    "REPO: <path>"   → <path> resolved relative to the Claude working directory.
+
+    Raises ValueError for any other value.
+    """
+    value = docs_location.strip()
+    if value == DOCS_LOCATION_XDG:
+        return repo
+    if value.upper().startswith(DOCS_LOCATION_REPO_PREFIX):
+        rel = value[len(DOCS_LOCATION_REPO_PREFIX):].strip()
+        if not rel:
+            raise ValueError(
+                f"docs-location 'REPO:' requires a path, e.g. 'REPO: docs/plans'"
+            )
+        base = pathlib.Path(os.getcwd())
+        return (base / rel).resolve()
+    raise ValueError(
+        f"unknown docs-location value: {value!r}\n"
+        f"Expected 'XDG_STATE_HOME' or 'REPO: <path/to/docs>'."
+    )
+
+
 SETTINGS_FILENAME = "settings.json"
 
 
