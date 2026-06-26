@@ -7,13 +7,13 @@
   "plugins": [
     {
       "name": "measured",
-      "version": "1.3.3",
+      "version": "1.3.4",
       "source": "./measured",
       "homepage": "https://github.com/zachahn/measured"
     },
     {
       "name": "measured-behavior",
-      "version": "1.3.3",
+      "version": "1.3.4",
       "source": "./measured-behavior",
       "homepage": "https://github.com/zachahn/measured"
     }
