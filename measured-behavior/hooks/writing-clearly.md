@@ -18,4 +18,3 @@ Follow _Elements of Style_:
 - Do not coin jargon mid-paragraph. When a word names no real thing the reader can point at, cut it or name the real thing.
 - State a point once. Do not restate it as a compressed tagline.
 </guidance>
-

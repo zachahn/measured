@@ -120,14 +120,18 @@ class OutputShapeTest(unittest.TestCase):
     def test_hit_emits_stop_event_with_guidance(self):
         context = context_for(FOGGY_SAMPLE)
         self.assertIsNotNone(context)
-        # The guidance body from the reminder file rides along on every hit.
-        reminder_body = REMINDER.read_text(encoding="utf-8").strip()
-        first_rule = reminder_body.splitlines()[3]  # a rule bullet, not the tag
-        self.assertIn(first_rule.strip(), context)
+        # Every rule bullet from the reminder file rides along on every hit.
+        reminder_body = REMINDER.read_text(encoding="utf-8")
+        rules = [line for line in reminder_body.splitlines()
+                 if line.startswith("- ")]
+        self.assertTrue(rules, "reminder file has no rule bullets")
+        for rule in rules:
+            self.assertIn(rule, context)
 
     def test_hit_lists_the_specific_offense(self):
         context = context_for(FOGGY_SAMPLE)
-        self.assertIn("Flagged in your last message:", context)
+        # The detector names what it flagged, not a fixed category.
+        self.assertIn("A writing check flagged your last message:", context)
 
     def test_stop_event_name(self):
         with tempfile.TemporaryDirectory() as tmp:

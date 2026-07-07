@@ -184,7 +184,7 @@ def main():
 
     reminder = REMINDER_PATH.read_text(encoding="utf-8").strip()
     bullets = "\n".join(f"- {o}" for o in offenses)
-    flagged = f"Flagged in your last message:\n{bullets}"
+    flagged = f"A writing check flagged your last message:\n{bullets}"
     # Insert the specific offenses just inside the opening <guidance> tag so the
     # whole reminder stays one block.
     context = reminder.replace(

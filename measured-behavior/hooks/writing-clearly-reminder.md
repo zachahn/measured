@@ -1,5 +1,5 @@
 <guidance>
-A writing check flagged your last message for noun-pile phrasing. Rewrite it and hold to these rules:
+Rewrite it and hold to these rules:
 
 - Write every sentence as subject, verb, object.
 - Name the thing that acts. Write "the parser", "the approval screen", "the retry loop". Never write "the mechanism", "the component", "the form".
