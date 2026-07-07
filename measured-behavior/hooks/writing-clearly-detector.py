@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """Stop hook: catch compressed noun-pile writing in Claude's own messages.
 
-The `writing-clearly` SessionStart hook injects the rules. This hook enforces
-them. When Claude finishes a turn, this reads the transcript, pulls the text of
-Claude's last message, and runs heuristics for the failure mode Zach hates:
-stacked abstract nouns with no verb ("one runtime mechanism, two authoring
-forms"), nominalized verbs ("compilation failure results in deployment
-cessation"), and paragraphs stuffed with abstract nouns. One abstract noun is
-fine; a pile of them is the tell.
+The `writing-clearly` SessionStart hook injects the full rules. This hook
+enforces them per turn. When Claude finishes a turn, this reads the transcript,
+pulls the text of Claude's last message, and runs heuristics for the failure
+mode Zach hates: stacked abstract nouns with no verb ("one runtime mechanism,
+two authoring forms"), nominalized verbs ("compilation failure results in
+deployment cessation"), and paragraphs stuffed with abstract nouns. One abstract
+noun is fine; a pile of them is the tell.
 
-On a hit it prints `hookSpecificOutput.additionalContext` — the `<guidance>`
-block from `writing-clearly-reminder.md` (a condensed `writing-clearly.md`),
-with the specific offenses inserted at the top. That guidance lands in context
-(invisible to the human) and steers the next message. False positives are
+On a hit it prints `hookSpecificOutput.additionalContext` naming only the rules
+the message broke. Each offense quotes the exact bad substring and states the
+one rule it violated, in the form `You said "...". You must NEVER ...`. Nothing
+else rides along — no full rulebook, no `<guidance>` wrapper. That keeps the
+injected block short and pointed at the actual mistake. False positives are
 acceptable; the goal is to never let a noun-pile slip through, so the heuristics
 err toward flagging.
 
@@ -25,8 +26,6 @@ import json
 import re
 import sys
 from pathlib import Path
-
-REMINDER_PATH = Path(__file__).resolve().parent / "writing-clearly-reminder.md"
 
 # Abstract nouns that carry no picture on their own. One is fine — real writing
 # uses these words. A paragraph stuffed with them is the tell, so we never flag
@@ -106,31 +105,54 @@ def last_assistant_text(transcript_path):
     return text
 
 
+def _offense(bad, rule):
+    """Format one offense: quote the bad substring, state the rule it broke."""
+    return f'You said "{_clip(bad)}". You must NEVER {rule}.'
+
+
 def find_offenses(text):
-    """Return a list of heuristic hits. Empty means the writing is clean."""
+    """Return a list of offense lines. Empty means the writing is clean.
+
+    Each line quotes the exact bad substring and states the one rule it broke,
+    in the form `You said "...". You must NEVER ...`.
+    """
     offenses = []
 
     slogan = NOUN_PILE_SLOGAN.search(text)
     if slogan:
-        offenses.append(f'noun-pile slogan: "{slogan.group(0)}"')
+        offenses.append(_offense(
+            slogan.group(0),
+            "stack abstract nouns into a slogan. Give the sentence a subject, "
+            "a verb, and an object, and make a concrete actor do the acting",
+        ))
 
     of_stack = OF_STACK.search(text)
     if of_stack:
-        offenses.append(f'stacked "of" phrases: "{of_stack.group(0)}"')
+        offenses.append(_offense(
+            of_stack.group(0),
+            "stack prepositional phrases into a pile. Name the thing that acts "
+            "and give it a plain verb",
+        ))
 
     # One abstract noun is fine. A turn stuffed with them is the tell. Count
     # bare occurrences and flag past the density limit.
     abstract = ABSTRACT_NOUN.findall(text)
     if len(abstract) >= ABSTRACT_DENSITY_LIMIT:
         sample = ", ".join(dict.fromkeys(w.lower() for w in abstract))
-        offenses.append(f'too many abstract words ({len(abstract)}): {sample}')
+        offenses.append(_offense(
+            sample,
+            "pack a paragraph with abstract nouns. Use concrete nouns the "
+            'reader can picture. Write "the parser", not "the mechanism"',
+        ))
 
     passive = PASSIVE_BY.search(text)
     if passive:
-        excerpt = passive.group(0).strip()
-        if len(excerpt) > 80:
-            excerpt = excerpt[:77] + "..."
-        offenses.append(f'passive voice, name the actor: "{excerpt}"')
+        offenses.append(_offense(
+            passive.group(0).strip(),
+            "write passive voice. Name the actor, then the verb. Write "
+            '"the engine logs every call", not "every call is logged by the '
+            'engine"',
+        ))
 
     # A cluster of nominalizations in one sentence is the smell. Flag when a
     # single sentence carries two or more. Reuse the same split to catch
@@ -140,19 +162,31 @@ def find_offenses(text):
     for sentence in re.split(r"(?<=[.!?])\s+", text):
         stripped = sentence.strip()
         if not nom_flagged and len(NOMINALIZATION.findall(sentence)) >= 2:
-            offenses.append(f'nominalization pile: "{_clip(stripped)}"')
+            offenses.append(_offense(
+                stripped,
+                "pile up nominalizations. Turn them back into verbs. Write "
+                '"the compiler rejects the file, so the deploy stops", not '
+                '"compilation failure results in deployment cessation"',
+            ))
             nom_flagged = True
         if not comma_flagged and stripped.count(",") >= 3:
-            offenses.append(f'too many clauses, split it up: "{_clip(stripped)}"')
+            offenses.append(_offense(
+                stripped,
+                "cram many clauses into one sentence. Write one idea per "
+                "sentence. Split it into short full sentences",
+            ))
             comma_flagged = True
         if nom_flagged and comma_flagged:
             break
 
     # Detect em-dash and semicolon, but report them with generic wording. The
-    # guidance never names this punctuation, so the flag must not either — else
-    # it hands Claude a rule to game.
+    # rule text never names this punctuation, so the offense must not either —
+    # else it hands Claude a rule to game.
     if EM_DASH.search(text) or SEMICOLON.search(text):
-        offenses.append("choppy punctuation, use short full sentences instead")
+        offenses.append(
+            "You wrote with choppy punctuation. You must NEVER chop a "
+            "sentence apart. Write short, full sentences instead."
+        )
 
     return offenses
 
@@ -182,13 +216,10 @@ def main():
     if not offenses:
         return
 
-    reminder = REMINDER_PATH.read_text(encoding="utf-8").strip()
-    bullets = "\n".join(f"- {o}" for o in offenses)
-    flagged = f"A writing check flagged your last message:\n{bullets}"
-    # Insert the specific offenses just inside the opening <guidance> tag so the
-    # whole reminder stays one block.
-    context = reminder.replace(
-        "<guidance>\n", f"<guidance>\n{flagged}\n\n", 1
+    # Name only the rules this message broke. Each offense quotes the bad
+    # substring and states its rule. No full rulebook rides along.
+    context = "A writing check flagged your last message.\n" + "\n".join(
+        f"- {o}" for o in offenses
     )
     print(json.dumps({
         "hookSpecificOutput": {

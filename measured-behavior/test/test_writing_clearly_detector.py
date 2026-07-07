@@ -6,8 +6,9 @@ Claude Code invokes the hook as `python3 .../writing-clearly-detector.py` with
 the Stop payload on stdin. The payload carries `transcript_path`, a JSONL file
 of the conversation. The hook reads Claude's last message from that file, runs
 writing heuristics, and — only on a hit — prints a Stop hookSpecificOutput whose
-additionalContext carries the guidance plus the flagged offenses. Clean text,
-missing files, and junk input all produce no output.
+additionalContext names only the rules the message broke. Each offense quotes
+the bad substring and states its rule in the form `You said "...". You must
+NEVER ...`. Clean text, missing files, and junk input all produce no output.
 
 We exercise the real subprocess entrypoint, writing a throwaway transcript per
 case. The contract under test: exit 0 always; silence unless a heuristic fires;
@@ -24,7 +25,6 @@ import unittest
 
 PLUGIN_ROOT = pathlib.Path(__file__).resolve().parent.parent
 HOOK = PLUGIN_ROOT / "hooks" / "writing-clearly-detector.py"
-REMINDER = PLUGIN_ROOT / "hooks" / "writing-clearly-reminder.md"
 
 
 def write_transcript(path, assistant_text):
@@ -117,21 +117,25 @@ class MalformedInputTest(unittest.TestCase):
 
 
 class OutputShapeTest(unittest.TestCase):
-    def test_hit_emits_stop_event_with_guidance(self):
+    def test_hit_emits_offense_with_inline_rule(self):
         context = context_for(FOGGY_SAMPLE)
         self.assertIsNotNone(context)
-        # Every rule bullet from the reminder file rides along on every hit.
-        reminder_body = REMINDER.read_text(encoding="utf-8")
-        rules = [line for line in reminder_body.splitlines()
-                 if line.startswith("- ")]
-        self.assertTrue(rules, "reminder file has no rule bullets")
-        for rule in rules:
-            self.assertIn(rule, context)
+        # Each offense quotes the bad substring and states its rule inline,
+        # in the "You said ... You must NEVER ..." form.
+        self.assertIn("You said", context)
+        self.assertIn("You must NEVER", context)
+
+    def test_hit_omits_the_full_rulebook(self):
+        context = context_for(FOGGY_SAMPLE)
+        # Only the broken rules ride along — no <guidance> wrapper, and clean
+        # rules the message did not break stay out of the block.
+        self.assertNotIn("<guidance>", context)
+        self.assertNotIn("Follow _Elements of Style_", context)
 
     def test_hit_lists_the_specific_offense(self):
         context = context_for(FOGGY_SAMPLE)
         # The detector names what it flagged, not a fixed category.
-        self.assertIn("A writing check flagged your last message:", context)
+        self.assertIn("A writing check flagged your last message.", context)
 
     def test_stop_event_name(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -152,39 +156,47 @@ class HeuristicTest(unittest.TestCase):
     def test_noun_pile_slogan(self):
         self.assertFlags(
             "The clean resolution is one runtime mechanism, two authoring forms.",
-            "noun-pile slogan",
+            "stack abstract nouns into a slogan",
         )
 
     def test_passive_voice_with_agent(self):
         self.assertFlags(
             "Every call is mediated by the engine. It works well.",
-            "passive voice",
+            "write passive voice",
         )
 
     def test_nominalization_pile(self):
         self.assertFlags(
             "Compilation failure results in deployment cessation.",
-            "nominalization pile",
+            "pile up nominalizations",
         )
 
     def test_comma_overload(self):
         self.assertFlags(
             "The step absorbs iteration, pagination, retries, and the glue.",
-            "too many clauses",
+            "cram many clauses into one sentence",
         )
 
     def test_abstract_noun_density(self):
         self.assertFlags(
             "The envelope crosses the boundary. The handle wraps the sink. "
             "The trace records the invariant across the layer.",
-            "too many abstract words",
+            "pack a paragraph with abstract nouns",
         )
 
     def test_stacked_of_phrases(self):
         self.assertFlags(
             "It is a matter of degree of freedom that nobody planned.",
-            'stacked "of" phrases',
+            "stack prepositional phrases into a pile",
         )
+
+    def test_offense_quotes_the_bad_substring(self):
+        # The offense line quotes the exact text that tripped the check.
+        context = context_for(
+            "The clean resolution is one runtime mechanism, two authoring forms."
+        )
+        self.assertIn('You said "one runtime mechanism, two authoring forms"',
+                      context)
 
 
 class SingleAbstractNounTest(unittest.TestCase):

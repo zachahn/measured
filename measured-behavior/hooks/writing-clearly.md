@@ -17,4 +17,7 @@ Follow _Elements of Style_:
 - Make every pronoun point at one obvious noun. When "it" could mean two things, name the thing.
 - Do not coin jargon mid-paragraph. When a word names no real thing the reader can point at, cut it or name the real thing.
 - State a point once. Do not restate it as a compressed tagline.
+- State the finding flat. Do not arrange clauses for rhythm. Do not close with an aphorism. Do not reach for a metaphor when the plain noun works.
+  - Write "The detector catches punctuation but not jargon." Never write "the mechanical tells are covered, the semantic ones are not."
+  - Write "The guidance argues against the fault, but only fires when a punctuation check trips first." Never write "the guidance is strong but hostage to a mechanical trigger."
 </guidance>
