@@ -65,8 +65,11 @@ OF_STACK = re.compile(
 # Em-dash and semicolon. We detect these but never name them in the guidance,
 # so Claude gets no clue to route around the check. An em-dash joining clauses
 # and a semicolon are both strong "an LLM wrote this" tells. Also catch a
-# spaced hyphen (" - ") used as a stand-in dash.
-EM_DASH = re.compile(r"—|\s-\s")
+# spaced hyphen (" - ") used as a stand-in dash, but not a Markdown bullet.
+# A stand-in dash has a word character before its space ("word - word"); a
+# bullet has only whitespace before the hyphen at the line start ("  - item").
+# The lookbehind stays fixed-width (one word char) so Python's re accepts it.
+EM_DASH = re.compile(r"—|(?<=\w) - ")
 SEMICOLON = re.compile(r";")
 
 # Passive voice with a named agent: "is/are/was/were/been <participle> ... by".

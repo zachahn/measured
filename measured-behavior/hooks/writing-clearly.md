@@ -17,7 +17,8 @@ Follow _Elements of Style_:
 - Make every pronoun point at one obvious noun. When "it" could mean two things, name the thing.
 - Do not coin jargon mid-paragraph. When a word names no real thing the reader can point at, cut it or name the real thing.
 - State a point once. Do not restate it as a compressed tagline.
+- Never use an em-dash. Never use a spaced hyphen as a stand-in. An em-dash tacks an extra clause onto a finished sentence. It signals that you do not have to keep talking but are choosing to. End the sentence at the period. If the trailing clause matters, make it its own sentence. If it does not, cut it.
 - State the finding flat. Do not arrange clauses for rhythm. Do not close with an aphorism. Do not reach for a metaphor when the plain noun works.
   - Write "The detector catches punctuation but not jargon." Never write "the mechanical tells are covered, the semantic ones are not."
-  - Write "The guidance argues against the fault, but only fires when a punctuation check trips first." Never write "the guidance is strong but hostage to a mechanical trigger."
+  - Write "The guidance argues against the fault, but it fires only when a punctuation check trips first." Never write "the guidance is strong but hostage to a mechanical trigger."
 </guidance>

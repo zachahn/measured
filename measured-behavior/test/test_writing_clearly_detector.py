@@ -218,6 +218,22 @@ class PunctuationSecrecyTest(unittest.TestCase):
         self.assertIsNotNone(context)
         self.assertIn("choppy punctuation", context)
 
+    def test_spaced_hyphen_dash_flags(self):
+        # A spaced hyphen used as a stand-in dash still trips the check.
+        context = context_for("The engine wins - the parser loses. That is it.")
+        self.assertIsNotNone(context)
+        self.assertIn("choppy punctuation", context)
+
+    def test_markdown_bullets_do_not_flag(self):
+        # A hyphen at the start of an indented line is a list marker, not a
+        # dash. It must not trip the punctuation check at any indent depth.
+        bullets = ("Here are the rules.\n"
+                   "- Write short sentences.\n"
+                   "  - Name the actor.\n"
+                   "    - Split long lines.\n"
+                   "All three hold.")
+        self.assertIsNone(context_for(bullets))
+
     def test_flag_never_names_the_punctuation(self):
         # The whole point: never hand Claude the rule to game. The generated
         # offense line must describe the smell without naming the punctuation.

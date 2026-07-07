@@ -1,4 +1,5 @@
 - Always opt to use the standard library. Never install any libraries.
+- Never use an em-dash. Never use a spaced hyphen as a stand-in. An em-dash tacks an extra clause onto a finished sentence and signals that you are choosing to keep talking past the point. End the sentence at the period. If the trailing clause matters, make it its own sentence. If it does not, cut it.
 
 ## Writing skills and agents as SOPs
 
