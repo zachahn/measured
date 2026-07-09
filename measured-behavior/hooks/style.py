@@ -11,7 +11,7 @@ ignore stdin, since the prompt payload does not change what we inject.
 
 import json
 
-REMINDER = "Be factual. Be unemotional. Be boring."
+REMINDER = "Be factual, unemotional, and boring. Write in full sentences."
 
 
 def main():
