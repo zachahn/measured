@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Read and write this repo's commit settings.
+"""Read and write this repo's behavior settings.
 
-The settings describe how Claude commits in this repo: when to commit, which
-branch to commit to, how to word a subject line. The `commit-settings` hook
-states them to Claude on every prompt, so they apply to all work in the repo.
+The settings describe how Claude works in this repo: when to commit, which
+branch to commit to, how to word a subject line, and how much comment to write
+in code. The reminder hooks state them to Claude, so they apply to all work in
+the repo.
 
-  (no arguments)        print every commit setting as JSON
+  (no arguments)        print every behavior setting as JSON
   --get KEY             print one setting's value (nothing if unset)
-  --set KEY VALUE       set one setting and print the new commit settings
-  --unset KEY           remove one setting and print the new commit settings
+  --set KEY VALUE       set one setting and print the new settings
+  --unset KEY           remove one setting and print the new settings
   --list                print every key with its known values
 
 Settings live in the same per-repo file the `measured` plugin uses, so
@@ -19,7 +20,7 @@ A value outside a key's known values is stored as written, so a free-text rule
 like "commit only after the last task" works. Unknown keys are rejected: a
 typo like `commit-stlye` would otherwise store silently and never apply.
 
-Key vocabulary lives in ../lib/commit_settings.py. Path resolution and the
+Key vocabulary lives in ../lib/behavior_settings.py. Path resolution and the
 read/write of the settings file live in ../lib/settings_store.py.
 """
 
@@ -30,7 +31,7 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
-import commit_settings  # noqa: E402
+import behavior_settings  # noqa: E402
 import settings_store  # noqa: E402
 
 
@@ -41,19 +42,20 @@ USAGE = (
 
 HELP_TEXT = f"""\
 {USAGE}
-Read and write this repo's commit settings.
+Read and write this repo's behavior settings.
 
-The commit-settings hook states these to Claude on every prompt, so they govern
-every commit in the repo. They are shared across every Claude session in it and
-persist between them. They are stored outside the repo and are not committed.
+The reminder hooks state these to Claude, so they govern every commit and every
+line of code written in the repo. They are shared across every Claude session
+in it and persist between them. They are stored outside the repo and are not
+committed.
 
-  (no arguments)        print every commit setting as a JSON object
+  (no arguments)        print every behavior setting as a JSON object
   --get KEY             print one setting's value (nothing if unset)
-  --set KEY VALUE       set one setting, then print the commit settings
-  --unset KEY           remove one setting, then print the commit settings
+  --set KEY VALUE       set one setting, then print the settings
+  --unset KEY           remove one setting, then print the settings
   --list                print every key with its known values
 
-Keys:
+Commit keys:
 
   commit-behavior       when to commit
   commit-location       which branch to commit to
@@ -62,6 +64,16 @@ Keys:
   commit-body           when a commit needs a body
   commit-signoff        whether to pass --signoff
   commit-attribution    whether to add Co-Authored-By/Claude-Session trailers
+
+Comment key:
+
+  comment-density       how much comment to write in code. Unset means Claude
+                        comments as it normally would.
+
+Hook keys:
+
+  commit-reminder-timing        every-turn (default) or session-start
+  commit-settings-for-agents    forward the commit settings to subagents
 
 Run --list to see each key's known values. Any other value is stored as
 written and passed to Claude verbatim.
@@ -77,25 +89,29 @@ class _Parser(argparse.ArgumentParser):
 
 
 def _check_key(key: str) -> None:
-    """Reject a key that is not a commit setting."""
-    if key not in commit_settings.COMMIT_KEYS:
-        keys = "\n  ".join(commit_settings.COMMIT_KEYS)
-        raise ValueError(f"unknown setting: {key!r}\n\nCommit settings are:\n  {keys}")
+    """Reject a key that is not a behavior setting."""
+    if key not in behavior_settings.SETTING_KEYS:
+        keys = "\n  ".join(behavior_settings.SETTING_KEYS)
+        raise ValueError(f"unknown setting: {key!r}\n\nBehavior settings are:\n  {keys}")
 
 
-def _commit_only(settings: dict) -> dict:
-    """Narrow a full settings object to the commit keys that are set."""
+def _ours_only(settings: dict) -> dict:
+    """Narrow a full settings object to this plugin's keys that are set.
+
+    The file also holds the `measured` plugin's keys. Printing those would
+    imply this command manages them, so they stay out of the output.
+    """
     return {
         key: settings[key]
-        for key in commit_settings.COMMIT_KEYS
-        if commit_settings.is_set(settings, key)
+        for key in behavior_settings.SETTING_KEYS
+        if behavior_settings.is_set(settings, key)
     }
 
 
 def _format_list() -> str:
     lines = []
-    for key in commit_settings.COMMIT_KEYS:
-        values = " | ".join(commit_settings.KNOWN_VALUES.get(key, {}))
+    for key in behavior_settings.SETTING_KEYS:
+        values = " | ".join(behavior_settings.KNOWN_VALUES.get(key, {}))
         lines.append(f"{key}\n  {values}")
     return "\n".join(lines)
 
@@ -128,16 +144,16 @@ def main(argv: list[str]) -> int:
             key, value = args.set
             _check_key(key)
             settings = settings_store.set_setting(cwd, key, value)
-            print(json.dumps(_commit_only(settings), indent=2))
+            print(json.dumps(_ours_only(settings), indent=2))
             return 0
 
         if args.unset is not None:
             _check_key(args.unset)
             settings = settings_store.set_setting(cwd, args.unset, None)
-            print(json.dumps(_commit_only(settings), indent=2))
+            print(json.dumps(_ours_only(settings), indent=2))
             return 0
 
-        print(json.dumps(_commit_only(settings_store.load_settings(cwd)), indent=2))
+        print(json.dumps(_ours_only(settings_store.load_settings(cwd)), indent=2))
         return 0
     except ValueError as e:
         print(str(e), file=sys.stderr)

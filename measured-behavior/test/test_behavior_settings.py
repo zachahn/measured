@@ -1,4 +1,4 @@
-"""Tests for lib/commit_settings.py, lib/settings_store.py, and the hook.
+"""Tests for lib/behavior_settings.py, lib/settings_store.py, and the hooks.
 
 Run directly or via `rake test`. Stdlib unittest only.
 """
@@ -14,11 +14,12 @@ import unittest
 PLUGIN_ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "lib"))
 
-import commit_settings  # noqa: E402
+import behavior_settings  # noqa: E402
 import settings_store  # noqa: E402
 
-HOOK = PLUGIN_ROOT / "hooks" / "commit-settings.py"
-HELP_HOOK = PLUGIN_ROOT / "hooks" / "commit-settings-help.py"
+HOOK = PLUGIN_ROOT / "hooks" / "reminders-every-turn.py"
+START_HOOK = PLUGIN_ROOT / "hooks" / "reminders-session-start.py"
+HELP_HOOK = PLUGIN_ROOT / "hooks" / "setup-notice.py"
 AGENT_HOOK = PLUGIN_ROOT / "hooks" / "commit-settings-for-agents.py"
 CONFIG_BIN = PLUGIN_ROOT / "bin" / "measured-behavior-config"
 
@@ -127,28 +128,28 @@ class LoadSettingsTest(unittest.TestCase):
 class DescribeTest(unittest.TestCase):
     def test_expands_a_known_value(self):
         self.assertEqual(
-            commit_settings.describe("commit-behavior", "after-every-turn"),
+            behavior_settings.describe("commit-behavior", "after-every-turn"),
             "Commit your work at the end of every turn.",
         )
 
     def test_ignores_case_and_whitespace(self):
         self.assertEqual(
-            commit_settings.describe("commit-style", "  Imperative  "),
-            commit_settings.describe("commit-style", "imperative"),
+            behavior_settings.describe("commit-style", "  Imperative  "),
+            behavior_settings.describe("commit-style", "imperative"),
         )
 
     def test_passes_an_unknown_value_through(self):
         self.assertEqual(
-            commit_settings.describe("commit-behavior", "commit only on Fridays"),
+            behavior_settings.describe("commit-behavior", "commit only on Fridays"),
             "commit only on Fridays",
         )
 
     def test_passes_through_for_an_unknown_key(self):
-        self.assertEqual(commit_settings.describe("nonsense", "value"), "value")
+        self.assertEqual(behavior_settings.describe("nonsense", "value"), "value")
 
     def test_every_known_value_is_a_nonempty_sentence(self):
-        for key, values in commit_settings.KNOWN_VALUES.items():
-            self.assertIn(key, commit_settings.COMMIT_KEYS)
+        for key, values in behavior_settings.KNOWN_VALUES.items():
+            self.assertIn(key, behavior_settings.SETTING_KEYS)
             for value, text in values.items():
                 self.assertTrue(text.strip(), f"{key}={value} has no text")
                 self.assertTrue(
@@ -161,27 +162,27 @@ class DescribeTest(unittest.TestCase):
 
 class RenderTest(unittest.TestCase):
     def test_renders_nothing_when_no_settings_are_set(self):
-        self.assertEqual(commit_settings.render({}), "")
+        self.assertEqual(behavior_settings.render({}), "")
 
     def test_ignores_unrelated_settings(self):
         self.assertEqual(
-            commit_settings.render({"worktree-setup": "bundle install"}), ""
+            behavior_settings.render({"worktree-setup": "bundle install"}), ""
         )
 
     def test_skips_blank_and_none_values(self):
         self.assertEqual(
-            commit_settings.render({"commit-style": "   ", "commit-body": None}), ""
+            behavior_settings.render({"commit-style": "   ", "commit-body": None}), ""
         )
 
     def test_renders_one_set_key(self):
-        out = commit_settings.render({"commit-style": "imperative"})
-        self.assertIn(commit_settings.HEADER, out)
+        out = behavior_settings.render({"commit-style": "imperative"})
+        self.assertIn(behavior_settings.HEADER, out)
         self.assertIn("- commit-style: Write the subject as an imperative", out)
-        self.assertIn(commit_settings.FOOTER, out)
+        self.assertIn(behavior_settings.FOOTER, out)
         self.assertNotIn("commit-behavior", out)
 
     def test_orders_keys_consistently(self):
-        out = commit_settings.render(
+        out = behavior_settings.render(
             {
                 "commit-attribution": "false",
                 "commit-behavior": "after-every-turn",
@@ -192,10 +193,10 @@ class RenderTest(unittest.TestCase):
         self.assertLess(out.index("commit-style"), out.index("commit-attribution"))
 
     def test_renders_every_commit_instruction(self):
-        out = commit_settings.render(
-            {key: "true" for key in commit_settings.COMMIT_KEYS}
+        out = behavior_settings.render(
+            {key: "true" for key in behavior_settings.COMMIT_KEYS}
         )
-        for key in commit_settings.REMINDER_KEYS:
+        for key in behavior_settings.REMINDER_KEYS:
             self.assertIn(f"- {key}:", out)
 
 
@@ -260,39 +261,78 @@ class HookTest(unittest.TestCase):
 
 
 class AnySetTest(unittest.TestCase):
+    """`any_set` drives the startup notice; `any_commit_set` drives nothing else."""
+
     def test_false_for_no_settings(self):
-        self.assertFalse(commit_settings.any_set({}))
+        self.assertFalse(behavior_settings.any_set({}))
 
     def test_false_for_unrelated_settings(self):
         self.assertFalse(
-            commit_settings.any_set(
+            behavior_settings.any_set(
                 {"worktree-setup": "bundle install", "work-location": "worktree"}
             )
         )
 
     def test_false_for_blank_values(self):
         self.assertFalse(
-            commit_settings.any_set({"commit-style": "  ", "commit-body": None})
+            behavior_settings.any_set({"commit-style": "  ", "commit-body": None})
         )
 
     def test_true_for_one_commit_setting(self):
-        self.assertTrue(commit_settings.any_set({"commit-signoff": "false"}))
+        self.assertTrue(behavior_settings.any_set({"commit-signoff": "false"}))
+
+    def test_true_for_the_comment_setting_alone(self):
+        """Configuring only comments still means the user found the feature."""
+        self.assertTrue(
+            behavior_settings.any_set({behavior_settings.COMMENT_KEY: "never"})
+        )
+
+    def test_true_for_the_timing_key_alone(self):
+        self.assertTrue(
+            behavior_settings.any_set(
+                {behavior_settings.COMMIT_TIMING_KEY: "session-start"}
+            )
+        )
+
+    def test_commit_set_ignores_the_comment_setting(self):
+        """A comment policy says nothing about how to commit."""
+        self.assertFalse(
+            behavior_settings.any_commit_set({behavior_settings.COMMENT_KEY: "never"})
+        )
+        self.assertTrue(behavior_settings.any_commit_set({"commit-signoff": "false"}))
 
 
-class HelpHookTest(unittest.TestCase):
-    def test_prints_setup_help_to_stderr_when_unconfigured(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            stdout, stderr = _run_help_hook(tmp, {"cwd": "/some/project"})
+class SetupNoticeTest(unittest.TestCase):
+    """The notice must reach the user's terminal, not the debug log.
 
-            self.assertIn("no commit settings", stderr)
-            self.assertIn("measured-behavior-config --set commit-behavior", stderr)
-            self.assertIn("measured-behavior-config --set commit-location", stderr)
+    An earlier version printed to stderr and exited 0. Claude Code reads a
+    hook's stderr only when it exits non-zero, so that notice reached nobody.
+    It travels in `systemMessage` now, which the terminal shows.
+    """
 
-    def test_writes_nothing_to_stdout(self):
-        """stdout would become Claude's context; the help is for the user."""
+    def test_shows_the_notice_as_a_system_message_when_unconfigured(self):
         with tempfile.TemporaryDirectory() as tmp:
             stdout, _ = _run_help_hook(tmp, {"cwd": "/some/project"})
-            self.assertEqual(stdout, "")
+
+            message = json.loads(stdout)["systemMessage"]
+            self.assertIn("no behavior settings", message)
+            self.assertIn("measured-behavior-config --set commit-behavior", message)
+            self.assertIn("measured-behavior-config --set comment-density", message)
+
+    def test_writes_nothing_to_stderr(self):
+        """stderr goes to the debug log on exit 0, so nothing may rely on it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            _, stderr = _run_help_hook(tmp, {"cwd": "/some/project"})
+            self.assertEqual(stderr, "")
+
+    def test_adds_no_context_for_claude(self):
+        """Claude needs no instruction about a feature the user has not chosen."""
+        with tempfile.TemporaryDirectory() as tmp:
+            stdout, _ = _run_help_hook(tmp, {"cwd": "/some/project"})
+            payload = json.loads(stdout)
+
+            self.assertNotIn("additionalContext", payload)
+            self.assertNotIn("hookSpecificOutput", payload)
 
     def test_stays_silent_once_a_setting_is_stored(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -304,42 +344,52 @@ class HelpHookTest(unittest.TestCase):
             self.assertEqual(stdout, "")
             self.assertEqual(stderr, "")
 
+    def test_stays_silent_once_only_comments_are_configured(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_settings(
+                    "/some/project", {behavior_settings.COMMENT_KEY: "never"}
+                )
+
+            stdout, _ = _run_help_hook(tmp, {"cwd": "/some/project"})
+            self.assertEqual(stdout, "")
+
     def test_ignores_unrelated_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
             with _env(XDG_STATE_HOME=tmp):
                 _write_settings("/some/project", {"worktree-setup": "bundle install"})
 
-            _, stderr = _run_help_hook(tmp, {"cwd": "/some/project"})
-            self.assertIn("no commit settings", stderr)
+            stdout, _ = _run_help_hook(tmp, {"cwd": "/some/project"})
+            self.assertIn("no behavior settings", json.loads(stdout)["systemMessage"])
 
-    def test_prints_help_on_unparseable_stdin(self):
+    def test_shows_the_notice_on_unparseable_stdin(self):
         with tempfile.TemporaryDirectory() as tmp:
-            _, stderr = _run_help_hook(tmp, raw="not json")
-            self.assertIn("no commit settings", stderr)
+            stdout, _ = _run_help_hook(tmp, raw="not json")
+            self.assertIn("no behavior settings", json.loads(stdout)["systemMessage"])
 
     def test_setup_help_names_every_key(self):
-        for key in commit_settings.COMMIT_KEYS:
-            self.assertIn(key, commit_settings.SETUP_HELP)
+        for key in behavior_settings.SETTING_KEYS:
+            self.assertIn(key, behavior_settings.SETUP_HELP)
 
 
 class ForwardToAgentsTest(unittest.TestCase):
     def test_off_when_unset(self):
-        self.assertFalse(commit_settings.forward_to_agents({}))
+        self.assertFalse(behavior_settings.forward_to_agents({}))
 
     def test_on_for_true_values(self):
-        for value in commit_settings.TRUE_VALUES:
+        for value in behavior_settings.TRUE_VALUES:
             self.assertTrue(
-                commit_settings.forward_to_agents(
-                    {commit_settings.FORWARD_TO_AGENTS_KEY: value}
+                behavior_settings.forward_to_agents(
+                    {behavior_settings.FORWARD_TO_AGENTS_KEY: value}
                 ),
                 f"{value!r} should enable forwarding",
             )
 
     def test_off_for_false_values(self):
-        for value in commit_settings.FALSE_VALUES:
+        for value in behavior_settings.FALSE_VALUES:
             self.assertFalse(
-                commit_settings.forward_to_agents(
-                    {commit_settings.FORWARD_TO_AGENTS_KEY: value}
+                behavior_settings.forward_to_agents(
+                    {behavior_settings.FORWARD_TO_AGENTS_KEY: value}
                 ),
                 f"{value!r} should disable forwarding",
             )
@@ -347,24 +397,32 @@ class ForwardToAgentsTest(unittest.TestCase):
     def test_off_for_an_unrecognized_value(self):
         """Rewriting another agent's prompt needs a clear yes."""
         self.assertFalse(
-            commit_settings.forward_to_agents(
-                {commit_settings.FORWARD_TO_AGENTS_KEY: "maybe"}
+            behavior_settings.forward_to_agents(
+                {behavior_settings.FORWARD_TO_AGENTS_KEY: "maybe"}
             )
         )
 
     def test_stays_out_of_the_reminder(self):
-        out = commit_settings.render(
+        out = behavior_settings.render(
             {
-                commit_settings.FORWARD_TO_AGENTS_KEY: "true",
+                behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
                 "commit-style": "imperative",
             }
         )
-        self.assertNotIn(commit_settings.FORWARD_TO_AGENTS_KEY, out)
+        self.assertNotIn(behavior_settings.FORWARD_TO_AGENTS_KEY, out)
 
-    def test_alone_does_not_count_as_configured(self):
-        """Setting only this key leaves the repo with no commit policy."""
+    def test_alone_is_no_commit_policy(self):
+        """Setting only this key leaves the repo with nothing to say about commits."""
         self.assertFalse(
-            commit_settings.any_set({commit_settings.FORWARD_TO_AGENTS_KEY: "true"})
+            behavior_settings.any_commit_set(
+                {behavior_settings.FORWARD_TO_AGENTS_KEY: "true"}
+            )
+        )
+
+    def test_alone_still_silences_the_setup_notice(self):
+        """The user who set it has found the feature; the notice has done its job."""
+        self.assertTrue(
+            behavior_settings.any_set({behavior_settings.FORWARD_TO_AGENTS_KEY: "true"})
         )
 
 
@@ -396,7 +454,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-style": "imperative",
-                        commit_settings.FORWARD_TO_AGENTS_KEY: "false",
+                        behavior_settings.FORWARD_TO_AGENTS_KEY: "false",
                     },
                 )
             self.assertEqual(self._run(tmp), "")
@@ -405,7 +463,7 @@ class AgentHookTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with _env(XDG_STATE_HOME=tmp):
                 _write_settings(
-                    "/some/project", {commit_settings.FORWARD_TO_AGENTS_KEY: "true"}
+                    "/some/project", {behavior_settings.FORWARD_TO_AGENTS_KEY: "true"}
                 )
             self.assertEqual(self._run(tmp), "")
 
@@ -416,7 +474,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-location": "current-branch",
-                        commit_settings.FORWARD_TO_AGENTS_KEY: "true",
+                        behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
                     },
                 )
             updated = json.loads(self._run(tmp))["hookSpecificOutput"]["updatedInput"]
@@ -432,7 +490,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-style": "imperative",
-                        commit_settings.FORWARD_TO_AGENTS_KEY: "true",
+                        behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
                     },
                 )
             updated = json.loads(self._run(tmp))["hookSpecificOutput"]["updatedInput"]
@@ -452,7 +510,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-style": "imperative",
-                        commit_settings.FORWARD_TO_AGENTS_KEY: "true",
+                        behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
                     },
                 )
             specific = json.loads(self._run(tmp))["hookSpecificOutput"]
@@ -465,7 +523,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-style": "imperative",
-                        commit_settings.FORWARD_TO_AGENTS_KEY: "true",
+                        behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
                     },
                 )
             payload = dict(self.PAYLOAD, tool_input={"prompt": ""})
@@ -553,12 +611,233 @@ class ConfigScriptTest(unittest.TestCase):
     def test_list_names_every_key(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = self._run(tmp, "--list", cwd=self._repo(tmp)).stdout
-            for key in commit_settings.COMMIT_KEYS:
+            for key in behavior_settings.SETTING_KEYS:
                 self.assertIn(key, out)
+
+    def test_writes_and_reads_the_new_keys(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = self._repo(tmp)
+            for key, value in (
+                (behavior_settings.COMMENT_KEY, "exceptional-only"),
+                (behavior_settings.COMMIT_TIMING_KEY, "session-start"),
+            ):
+                self._run(tmp, "--set", key, value, cwd=cwd)
+                got = self._run(tmp, "--get", key, cwd=cwd)
+                self.assertEqual(got.stdout.strip(), value)
+
+    def test_unsetting_the_comment_key_silences_the_reminder(self):
+        """Unset must return the repo to Claude commenting as it normally would."""
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = self._repo(tmp)
+            self._run(tmp, "--set", behavior_settings.COMMENT_KEY, "never", cwd=cwd)
+            self._run(tmp, "--unset", behavior_settings.COMMENT_KEY, cwd=cwd)
+
+            with _env(XDG_STATE_HOME=tmp):
+                stored = settings_store.load_settings(cwd)
+            self.assertEqual(behavior_settings.render_comment(stored), "")
+
+
+class CommitTimingTest(unittest.TestCase):
+    def test_defaults_to_every_turn(self):
+        self.assertEqual(
+            behavior_settings.commit_timing({}), behavior_settings.EVERY_TURN
+        )
+
+    def test_reads_session_start(self):
+        self.assertEqual(
+            behavior_settings.commit_timing(
+                {behavior_settings.COMMIT_TIMING_KEY: "session-start"}
+            ),
+            behavior_settings.SESSION_START,
+        )
+
+    def test_ignores_case_and_whitespace(self):
+        self.assertEqual(
+            behavior_settings.commit_timing(
+                {behavior_settings.COMMIT_TIMING_KEY: "  Session-Start  "}
+            ),
+            behavior_settings.SESSION_START,
+        )
+
+    def test_falls_back_to_every_turn_for_an_unknown_value(self):
+        """A reminder that never arrives loses the setting; too often costs context."""
+        self.assertEqual(
+            behavior_settings.commit_timing(
+                {behavior_settings.COMMIT_TIMING_KEY: "sometimes"}
+            ),
+            behavior_settings.EVERY_TURN,
+        )
+
+    def test_stays_out_of_the_commit_reminder(self):
+        out = behavior_settings.render(
+            {
+                behavior_settings.COMMIT_TIMING_KEY: "session-start",
+                "commit-style": "imperative",
+            }
+        )
+        self.assertNotIn(behavior_settings.COMMIT_TIMING_KEY, out)
+
+
+class RenderCommentTest(unittest.TestCase):
+    def test_renders_nothing_when_unset(self):
+        """Unset means Claude never learns the setting exists."""
+        self.assertEqual(behavior_settings.render_comment({}), "")
+
+    def test_renders_nothing_for_a_blank_value(self):
+        self.assertEqual(
+            behavior_settings.render_comment({behavior_settings.COMMENT_KEY: "  "}), ""
+        )
+
+    def test_renders_never(self):
+        out = behavior_settings.render_comment({behavior_settings.COMMENT_KEY: "never"})
+        self.assertIn(behavior_settings.COMMENT_HEADER, out)
+        self.assertIn("Write no comments", out)
+        self.assertIn(behavior_settings.FOOTER, out)
+
+    def test_renders_exceptional_only(self):
+        out = behavior_settings.render_comment(
+            {behavior_settings.COMMENT_KEY: "exceptional-only"}
+        )
+        self.assertIn("Comment on why, never on what", out)
+
+    def test_passes_free_text_through(self):
+        out = behavior_settings.render_comment(
+            {behavior_settings.COMMENT_KEY: "comment every public method"}
+        )
+        self.assertIn("comment every public method", out)
+
+    def test_stays_out_of_the_commit_reminder(self):
+        out = behavior_settings.render(
+            {behavior_settings.COMMENT_KEY: "never", "commit-style": "imperative"}
+        )
+        self.assertNotIn(behavior_settings.COMMENT_KEY, out)
+
+
+class EveryTurnHookTest(unittest.TestCase):
+    """Which reminders ride on a user prompt."""
+
+    def _context(self, tmp, settings):
+        with _env(XDG_STATE_HOME=tmp):
+            _write_settings("/some/project", settings)
+        out = _run_hook(tmp, {"cwd": "/some/project"})
+        if not out:
+            return ""
+        return json.loads(out)["hookSpecificOutput"]["additionalContext"]
+
+    def test_states_the_commit_settings_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            context = self._context(tmp, {"commit-location": "current-branch"})
+            self.assertIn("branch that is already checked out", context)
+
+    def test_omits_the_commit_settings_for_a_session_start_repo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            context = self._context(
+                tmp,
+                {
+                    "commit-location": "current-branch",
+                    behavior_settings.COMMIT_TIMING_KEY: "session-start",
+                },
+            )
+            self.assertEqual(context, "")
+
+    def test_states_the_comment_setting(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            context = self._context(tmp, {behavior_settings.COMMENT_KEY: "never"})
+            self.assertIn("Write no comments", context)
+
+    def test_states_the_comment_setting_even_at_session_start_timing(self):
+        """The timing key governs the commit settings only."""
+        with tempfile.TemporaryDirectory() as tmp:
+            context = self._context(
+                tmp,
+                {
+                    behavior_settings.COMMENT_KEY: "never",
+                    "commit-style": "imperative",
+                    behavior_settings.COMMIT_TIMING_KEY: "session-start",
+                },
+            )
+            self.assertIn("Write no comments", context)
+            self.assertNotIn("imperative sentence", context)
+
+    def test_states_both_reminders_together(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            context = self._context(
+                tmp,
+                {
+                    "commit-style": "imperative",
+                    behavior_settings.COMMENT_KEY: "exceptional-only",
+                },
+            )
+            self.assertIn("imperative sentence", context)
+            self.assertIn("Comment on why", context)
+            self.assertLess(
+                context.index(behavior_settings.HEADER),
+                context.index(behavior_settings.COMMENT_HEADER),
+            )
+
+    def test_silent_when_only_the_timing_key_is_stored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            context = self._context(
+                tmp, {behavior_settings.COMMIT_TIMING_KEY: "every-turn"}
+            )
+            self.assertEqual(context, "")
+
+
+class SessionStartHookTest(unittest.TestCase):
+    """The commit reminder for a repo that asked for it once a session."""
+
+    def _start(self, tmp, settings):
+        with _env(XDG_STATE_HOME=tmp):
+            _write_settings("/some/project", settings)
+        return _run(START_HOOK, tmp, {"cwd": "/some/project"})[0]
+
+    def test_silent_under_the_every_turn_default(self):
+        """Exactly one hook states the settings, so they never arrive twice."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self._start(tmp, {"commit-style": "imperative"}), "")
+
+    def test_states_the_commit_settings_when_asked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self._start(
+                tmp,
+                {
+                    "commit-style": "imperative",
+                    behavior_settings.COMMIT_TIMING_KEY: "session-start",
+                },
+            )
+            specific = json.loads(out)["hookSpecificOutput"]
+
+            self.assertEqual(specific["hookEventName"], "SessionStart")
+            self.assertIn("imperative sentence", specific["additionalContext"])
+
+    def test_silent_when_no_commit_setting_is_stored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                self._start(tmp, {behavior_settings.COMMIT_TIMING_KEY: "session-start"}),
+                "",
+            )
+
+    def test_omits_the_comment_setting(self):
+        """The every-turn hook owns the comment reminder."""
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self._start(
+                tmp,
+                {
+                    "commit-style": "imperative",
+                    behavior_settings.COMMENT_KEY: "never",
+                    behavior_settings.COMMIT_TIMING_KEY: "session-start",
+                },
+            )
+            context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+            self.assertNotIn("Write no comments", context)
+
+    def test_prints_nothing_on_unparseable_stdin(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(_run(START_HOOK, tmp, raw="not json")[0], "")
 
 
 class ManifestTest(unittest.TestCase):
-    """The manifest is what makes the hook fire on every prompt."""
+    """The manifest is what makes the hooks fire."""
 
     def setUp(self):
         manifest = PLUGIN_ROOT / ".claude-plugin" / "plugin.json"
@@ -573,15 +852,31 @@ class ManifestTest(unittest.TestCase):
         ]
 
     def test_registers_the_hook_on_user_prompt_submit(self):
-        self.assertEqual(len(self._entries("UserPromptSubmit", "commit-settings.py")), 1)
+        entries = self._entries("UserPromptSubmit", "reminders-every-turn.py")
+        self.assertEqual(len(entries), 1)
 
     def test_hook_has_no_matcher_so_every_prompt_fires_it(self):
-        entry = self._entries("UserPromptSubmit", "commit-settings.py")[0]
+        entry = self._entries("UserPromptSubmit", "reminders-every-turn.py")[0]
         self.assertNotIn("matcher", entry)
 
-    def test_registers_the_help_hook_on_session_start(self):
-        entries = self._entries("SessionStart", "commit-settings-help.py")
+    def test_registers_the_session_start_reminder(self):
+        entries = self._entries("SessionStart", "reminders-session-start.py")
         self.assertEqual(len(entries), 1)
+
+    def test_registers_the_setup_notice_on_session_start(self):
+        entries = self._entries("SessionStart", "setup-notice.py")
+        self.assertEqual(len(entries), 1)
+
+    def test_every_registered_hook_file_exists(self):
+        """A renamed hook that the manifest still points at would fail silently."""
+        for event, entries in self.hooks.items():
+            for entry in entries:
+                for hook in entry.get("hooks", []):
+                    name = hook["command"].rsplit("/", 1)[-1]
+                    self.assertTrue(
+                        (PLUGIN_ROOT / "hooks" / name).is_file(),
+                        f"{event} points at a missing hook: {name}",
+                    )
 
     def test_registers_the_agent_hook_on_the_agent_tool(self):
         entries = self._entries("PreToolUse", "commit-settings-for-agents.py")
@@ -645,7 +940,7 @@ def _run_hook(state_home, payload=None, raw=None):
 
 
 def _run_help_hook(state_home, payload=None, raw=None):
-    """Run the startup help hook and return its (stdout, stderr)."""
+    """Run the setup notice hook and return its (stdout, stderr)."""
     return _run(HELP_HOOK, state_home, payload, raw)
 
 

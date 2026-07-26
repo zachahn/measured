@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """PreToolUse hook: give a spawned subagent this repo's commit settings.
 
-The `commit-settings.py` hook injects the settings on every user prompt, but a
-subagent never sees a user prompt. It gets a prompt written by the agent that
-spawned it, so the repo's commit policy stops at the subagent boundary. This
-hook appends the settings to that prompt, so an agent that commits does it the
-way the repo asked.
+The reminder hooks inject the settings for a user prompt, but a subagent never
+sees a user prompt. It gets a prompt written by the agent that spawned it, so
+the repo's commit policy stops at the subagent boundary. This hook appends the
+settings to that prompt, so an agent that commits does it the way the repo
+asked.
+
+It forwards the commit settings only. The comment setting stays behind, because
+a subagent that writes no code needs no comment policy and the ones that do
+write code get their instructions from the agent that spawned them.
 
 Rewriting another agent's prompt is intrusive, so the repo opts in:
 
@@ -28,7 +32,7 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
-import commit_settings  # noqa: E402
+import behavior_settings  # noqa: E402
 import settings_store  # noqa: E402
 
 PROMPT_FIELD = "prompt"
@@ -41,10 +45,10 @@ def updated_prompt(prompt, reminder):
 
 def decide(tool_input, settings):
     """Return the replacement tool input, or None to leave the spawn alone."""
-    if not commit_settings.forward_to_agents(settings):
+    if not behavior_settings.forward_to_agents(settings):
         return None
 
-    reminder = commit_settings.render(settings)
+    reminder = behavior_settings.render(settings)
     if not reminder:
         return None  # Nothing configured to forward.
 

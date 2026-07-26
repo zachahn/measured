@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PreToolUse hook: auto-approve Bash calls to measured-behavior-config.
 
-`measured-behavior-config` only reads and writes this plugin's own commit
+`measured-behavior-config` only reads and writes this plugin's own behavior
 settings file; it touches nothing else. Claude runs it often, so prompting for
 approval every time is just noise. This hook approves that one case and stays
 silent otherwise, letting Claude Code's normal permission flow handle
@@ -24,9 +24,9 @@ The hook approves a command only when every one of these holds:
    is refused.
 3. The arguments form one of the command's real invocations: no arguments,
    `--list`, `--help`, `-h`, `--get KEY`, `--unset KEY`, or `--set KEY VALUE`.
-   KEY must be a known commit setting. The argument grammar is small and fully
-   known, so the hook checks it rather than approving arbitrary argv. `--set`
-   in particular writes the file that the `commit-settings` hook injects into
+   KEY must be a known behavior setting. The argument grammar is small and
+   fully known, so the hook checks it rather than approving arbitrary argv.
+   `--set` in particular writes the file that the reminder hooks inject into
    Claude's context on every later prompt, so its key is worth checking.
 
 We never *deny*; a hook denial would override the user, and the point is only
@@ -42,7 +42,7 @@ import string
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
-import commit_settings  # noqa: E402
+import behavior_settings  # noqa: E402
 
 TARGET = "measured-behavior-config"
 
@@ -77,9 +77,9 @@ def _arguments_are_known(args: list[str]) -> bool:
     if flag in ("--list", "--help", "-h"):
         return not rest
     if flag in ("--get", "--unset"):
-        return len(rest) == 1 and rest[0] in commit_settings.COMMIT_KEYS
+        return len(rest) == 1 and rest[0] in behavior_settings.SETTING_KEYS
     if flag == "--set":
-        return len(rest) == 2 and rest[0] in commit_settings.COMMIT_KEYS
+        return len(rest) == 2 and rest[0] in behavior_settings.SETTING_KEYS
     return False
 
 

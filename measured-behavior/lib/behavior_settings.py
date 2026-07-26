@@ -1,9 +1,14 @@
-"""The commit settings and the reminder rendered from them.
+"""The per-repo behavior settings and the reminders rendered from them.
 
-Six per-repo settings describe how a repo wants commits made. They live in the
-measured settings file and are written with `measured-config --set <key>`. The
-`commit-settings.py` hook renders the ones that are set and injects them into
-Claude's context on every prompt.
+A repo stores settings that describe how Claude works in it. Two groups exist
+today. The commit settings say how to make a commit. The comment setting says
+how much explanatory comment to write in code. They live in the measured
+settings file and are written with `measured-behavior-config --set <key>`.
+
+Two hooks read this module. `reminders-every-turn.py` fires on every prompt.
+`reminders-session-start.py` fires once a session. `commit-reminder-timing`
+decides which one states the commit settings. The comment reminder rides every
+turn, because it governs code Claude writes at any point in a session.
 
 Each setting names its own known values. A user may store any string, so the
 renderer explains a known value and passes an unknown one through verbatim.
@@ -30,9 +35,26 @@ COMMIT_KEYS = (
 # telling Claude how its own subagents get briefed changes no commit it makes.
 FORWARD_TO_AGENTS_KEY = "commit-settings-for-agents"
 
+# When the commit reminder reaches Claude. It configures a hook rather than
+# describing a commit, so it stays out of the reminder too.
+COMMIT_TIMING_KEY = "commit-reminder-timing"
+
+# How much explanatory comment Claude writes in code. Its own group: one key,
+# always stated every turn, and unset means Claude never hears of the idea.
+COMMENT_KEY = "comment-density"
+
+# Every key `measured-behavior-config` accepts.
+SETTING_KEYS = (*COMMIT_KEYS, COMMIT_TIMING_KEY, COMMENT_KEY)
+
 # What the forwarding hook does when the key is unset. Forwarding off by
 # default keeps a spawned agent's prompt exactly as its author wrote it.
 FORWARD_TO_AGENTS_DEFAULT = False
+
+# When to state the commit settings if the repo has not said. Every turn keeps
+# the settings fresh as a session grows, which is what they are for.
+EVERY_TURN = "every-turn"
+SESSION_START = "session-start"
+COMMIT_TIMING_DEFAULT = EVERY_TURN
 
 # Known value -> the instruction Claude reads. Lookup lowercases and strips the
 # stored value, so "After Every Turn" matches "after-every-turn".
@@ -104,16 +126,41 @@ KNOWN_VALUES = {
         "true": "Append the commit settings to every subagent's prompt.",
         "false": "Leave subagent prompts alone.",
     },
+    COMMIT_TIMING_KEY: {
+        EVERY_TURN: "State the commit settings on every prompt.",
+        SESSION_START: "State the commit settings once, at the start of a session.",
+    },
+    COMMENT_KEY: {
+        "never": (
+            "Write no comments in code you author. Name variables and functions "
+            "so the code reads without them. Delete a comment you would have "
+            "written and rewrite the code it would have explained. This covers "
+            "docstrings, block comments, and end-of-line comments alike. Leave "
+            "comments that already exist in a file alone."
+        ),
+        "exceptional-only": (
+            "Write a comment only when the code cannot carry the point on its "
+            "own: a constraint the reader cannot see, a workaround for a bug in "
+            "another system, or a reason the obvious implementation fails here. "
+            "Comment on why, never on what. A comment that restates the line "
+            "below it is noise, so cut it. Leave comments that already exist in "
+            "a file alone."
+        ),
+    },
 }
 
-# Keys that describe a commit. The reminder lists these; the eighth key
-# configures the forwarding hook and is not a commit instruction.
+# Keys that describe a commit. The reminder lists these; the other keys steer a
+# hook and are not commit instructions.
 REMINDER_KEYS = tuple(key for key in COMMIT_KEYS if key != FORWARD_TO_AGENTS_KEY)
 
 TRUE_VALUES = ("true", "yes", "on", "1", "always")
 FALSE_VALUES = ("false", "no", "off", "0", "never")
 
 HEADER = "This repo stores commit settings. They govern how you commit here:"
+
+COMMENT_HEADER = (
+    "This repo stores a comment setting. It governs the code you write here:"
+)
 
 FOOTER = (
     "A stored setting is the source of truth. Follow it even if this prompt "
@@ -123,21 +170,22 @@ FOOTER = (
 
 
 SETUP_HELP = """\
-Measured: this repo has no commit settings. Claude will commit however it \
-usually does.
+Measured: this repo has no behavior settings. Claude will commit and comment \
+however it usually does.
 
-Set them so every session commits the same way:
+Set them so every session behaves the same way:
 
   measured-behavior-config --set commit-behavior after-every-turn
   measured-behavior-config --set commit-location current-branch
   measured-behavior-config --set commit-style imperative
+  measured-behavior-config --set comment-density exceptional-only
 
 Also available: commit-scope, commit-body, commit-signoff, \
-commit-attribution, and commit-settings-for-agents (forwards these to spawned \
-subagents).
+commit-attribution, commit-settings-for-agents (forwards the commit settings to \
+spawned subagents), and commit-reminder-timing (every-turn or session-start).
 
 Run `measured-behavior-config --list` for each key's values, or ask Claude to \
-"set up measured commit settings" to walk through them."""
+"set up measured behavior settings" to walk through them."""
 
 
 def is_set(settings, key):
@@ -146,14 +194,22 @@ def is_set(settings, key):
     return value is not None and bool(str(value).strip())
 
 
-def any_set(settings):
+def any_commit_set(settings):
     """Return True when the repo has at least one commit instruction stored.
 
-    Ignores `commit-settings-for-agents`, which configures the forwarding hook
-    rather than describing a commit. A repo that set only that key still has
-    nothing to say about commits, so the startup help still applies.
+    Ignores the keys that steer a hook rather than describing a commit. A repo
+    that set only those still has nothing to say about commits.
     """
     return any(is_set(settings, key) for key in REMINDER_KEYS)
+
+
+def any_set(settings):
+    """Return True when the repo has stored any behavior setting at all.
+
+    The startup notice reads this. A repo that configured only comments has
+    found the feature, so the notice has done its job and stops.
+    """
+    return any(is_set(settings, key) for key in SETTING_KEYS)
 
 
 def forward_to_agents(settings):
@@ -167,6 +223,22 @@ def forward_to_agents(settings):
     if value is None:
         return FORWARD_TO_AGENTS_DEFAULT
     return str(value).strip().lower() in TRUE_VALUES
+
+
+def commit_timing(settings):
+    """Return when the commit reminder fires: EVERY_TURN or SESSION_START.
+
+    Only the exact value `session-start` moves the reminder to the start of a
+    session. Anything else means every turn, including free text, because a
+    reminder that arrives too often costs context while one that never arrives
+    loses the setting.
+    """
+    value = settings.get(COMMIT_TIMING_KEY)
+    if value is None:
+        return COMMIT_TIMING_DEFAULT
+    if str(value).strip().lower() == SESSION_START:
+        return SESSION_START
+    return EVERY_TURN
 
 
 def describe(key, value):
@@ -183,8 +255,8 @@ def describe(key, value):
 def render(settings):
     """Render the commit settings as a reminder, or "" when none are set.
 
-    Reads only the six commit keys and skips any that are missing or blank, so
-    a repo that sets one key gets one line rather than a table of unset rows.
+    Reads only the commit keys and skips any that are missing or blank, so a
+    repo that sets one key gets one line rather than a table of unset rows.
     """
     lines = [
         f"- {key}: {describe(key, settings[key])}"
@@ -196,3 +268,22 @@ def render(settings):
         return ""
 
     return "\n".join([HEADER, *lines, "", FOOTER])
+
+
+def render_comment(settings):
+    """Render the comment setting as a reminder, or "" when it is unset.
+
+    An unset key renders nothing on purpose. Silence means silence: Claude
+    comments as it normally would and never learns the setting exists.
+    """
+    if not is_set(settings, COMMENT_KEY):
+        return ""
+
+    return "\n".join(
+        [
+            COMMENT_HEADER,
+            f"- {COMMENT_KEY}: {describe(COMMENT_KEY, settings[COMMENT_KEY])}",
+            "",
+            FOOTER,
+        ]
+    )

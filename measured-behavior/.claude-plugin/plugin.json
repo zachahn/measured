@@ -42,7 +42,7 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/commit-settings.py"
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/reminders-every-turn.py"
           }
         ]
       }
@@ -57,7 +57,11 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/commit-settings-help.py"
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/reminders-session-start.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/setup-notice.py"
           }
         ]
       }
