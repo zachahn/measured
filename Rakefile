@@ -56,6 +56,7 @@ module TestTasks
       sh "python3 measured-behavior/test/test_writing_clearly.py"
       sh "python3 measured-behavior/test/test_writing_clearly_detector.py"
       sh "python3 measured-behavior/test/test_commit_settings.py"
+      sh "python3 measured-behavior/test/test_auto_approve_config.py"
       sh "python3 measured/test/test_auto_approve_plugin_reads.py"
       sh "python3 measured/test/test_worktree_guard.py"
       sh "python3 measured/test/test_workspace_git_ignored.py"
