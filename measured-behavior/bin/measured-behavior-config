@@ -72,7 +72,7 @@ Comment key:
 
 Hook keys:
 
-  commit-reminder-timing        every-turn (default) or session-start
+  commit-reminder-timing        session-start (default) or every-turn
   commit-settings-for-agents    forward the commit settings to subagents
 
 Run --list to see each key's known values. Any other value is stored as

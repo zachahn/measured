@@ -6,8 +6,9 @@ This hook fires on every prompt, so a setting rides in fresh each turn.
 
 Two reminders can appear here. The comment setting always does, because Claude
 writes code at any point in a session and the setting governs every line of it.
-The commit settings appear unless the repo set `commit-reminder-timing` to
-`session-start`, which hands them to `reminders-session-start.py` instead.
+The commit settings appear only when the repo sets `commit-reminder-timing` to
+`every-turn`. They default to once a session, which
+`reminders-session-start.py` handles.
 
 The reminders reach Claude only. UserPromptSubmit hooks add to context through
 `hookSpecificOutput.additionalContext`, which the user never sees, so a repo

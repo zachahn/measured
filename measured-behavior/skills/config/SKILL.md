@@ -36,10 +36,10 @@ The comment reminder always fires on every prompt, because Claude writes code at
 
 | Key | Values |
 |-----|--------|
-| `commit-reminder-timing` | `every-turn` (the default), `session-start` |
+| `commit-reminder-timing` | `session-start` (the default), `every-turn` |
 | `commit-settings-for-agents` | `true`, `false` (append the commit settings to every spawned subagent's prompt; off unless set to `true`) |
 
-`commit-reminder-timing` decides when Claude hears the commit settings. `every-turn` restates them on every prompt, which keeps them fresh as a session grows and costs context each turn. `session-start` states them once per session, which costs less and risks a later prompt outweighing them. It governs the commit settings only.
+`commit-reminder-timing` decides when Claude hears the commit settings. `session-start` states them once per session, and again after a compaction, resume, `/clear`, or fork. `every-turn` restates them on every prompt, which keeps them fresh as a long session grows and costs context each turn. Suggest `every-turn` to a user who reports that Claude drifts from the settings late in a session. It governs the commit settings only.
 
 Any key also accepts free text. The hook passes an unrecognized value to Claude verbatim, so `commit only after the last task` works as a value.
 

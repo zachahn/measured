@@ -34,7 +34,7 @@ Write them with `measured-behavior-config --set <key> <value>`, which validates 
 | `commit-signoff` | Whether to pass `--signoff`. `true` or `false`. |
 | `commit-attribution` | Whether commits carry the `Co-Authored-By: Claude` and `Claude-Session:` trailers. `true` or `false`. |
 | `commit-settings-for-agents` | Whether spawned subagents get the commit settings appended to their prompt. `true` or `false`. Off unless set to `true`. |
-| `commit-reminder-timing` | When Claude hears the commit settings. `every-turn` (the default) restates them on every prompt. `session-start` states them once per session. |
+| `commit-reminder-timing` | When Claude hears the commit settings. `session-start` (the default) states them once per session, and again after a compaction, resume, or fork. `every-turn` restates them on every prompt. |
 | `comment-density` | How much comment Claude writes in code. `never` writes none at all. `exceptional-only` comments only where the code cannot carry the point. Leave it unset to let Claude comment as it normally would. |
 
 Any of these accepts a free-text value when none of the listed values fit. The hook passes an unrecognized value through verbatim, so `measured-config --set commit-behavior "commit only after the last task"` reaches Claude as written.

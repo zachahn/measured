@@ -7,8 +7,9 @@ settings file and are written with `measured-behavior-config --set <key>`.
 
 Two hooks read this module. `reminders-every-turn.py` fires on every prompt.
 `reminders-session-start.py` fires once a session. `commit-reminder-timing`
-decides which one states the commit settings. The comment reminder rides every
-turn, because it governs code Claude writes at any point in a session.
+decides which one states the commit settings, and it defaults to once a
+session. The comment reminder rides every turn, because it governs code Claude
+writes at any point in a session.
 
 Each setting names its own known values. A user may store any string, so the
 renderer explains a known value and passes an unknown one through verbatim.
@@ -50,11 +51,14 @@ SETTING_KEYS = (*COMMIT_KEYS, COMMIT_TIMING_KEY, COMMENT_KEY)
 # default keeps a spawned agent's prompt exactly as its author wrote it.
 FORWARD_TO_AGENTS_DEFAULT = False
 
-# When to state the commit settings if the repo has not said. Every turn keeps
-# the settings fresh as a session grows, which is what they are for.
+# When to state the commit settings if the repo has not said. Once a session is
+# enough: the settings change how a commit is made, not whether Claude is
+# thinking about commits, and restating them on every prompt spends context on
+# every turn to change the handful that end in a commit. A repo that finds them
+# fading in a long session sets `every-turn`.
 EVERY_TURN = "every-turn"
 SESSION_START = "session-start"
-COMMIT_TIMING_DEFAULT = EVERY_TURN
+COMMIT_TIMING_DEFAULT = SESSION_START
 
 # Known value -> the instruction Claude reads. Lookup lowercases and strips the
 # stored value, so "After Every Turn" matches "after-every-turn".
@@ -127,8 +131,8 @@ KNOWN_VALUES = {
         "false": "Leave subagent prompts alone.",
     },
     COMMIT_TIMING_KEY: {
-        EVERY_TURN: "State the commit settings on every prompt.",
         SESSION_START: "State the commit settings once, at the start of a session.",
+        EVERY_TURN: "State the commit settings on every prompt.",
     },
     COMMENT_KEY: {
         "never": (
@@ -182,7 +186,7 @@ Set them so every session behaves the same way:
 
 Also available: commit-scope, commit-body, commit-signoff, \
 commit-attribution, commit-settings-for-agents (forwards the commit settings to \
-spawned subagents), and commit-reminder-timing (every-turn or session-start).
+spawned subagents), and commit-reminder-timing (session-start or every-turn).
 
 Run `measured-behavior-config --list` for each key's values, or ask Claude to \
 "set up measured behavior settings" to walk through them."""
@@ -226,19 +230,19 @@ def forward_to_agents(settings):
 
 
 def commit_timing(settings):
-    """Return when the commit reminder fires: EVERY_TURN or SESSION_START.
+    """Return when the commit reminder fires: SESSION_START or EVERY_TURN.
 
-    Only the exact value `session-start` moves the reminder to the start of a
-    session. Anything else means every turn, including free text, because a
-    reminder that arrives too often costs context while one that never arrives
-    loses the setting.
+    Only the exact value `every-turn` moves the reminder onto every prompt.
+    Anything else means once a session, including free text, because this key
+    takes two values and free text describes neither. Falling back to the
+    default keeps a typo cheap.
     """
     value = settings.get(COMMIT_TIMING_KEY)
     if value is None:
         return COMMIT_TIMING_DEFAULT
-    if str(value).strip().lower() == SESSION_START:
-        return SESSION_START
-    return EVERY_TURN
+    if str(value).strip().lower() == EVERY_TURN:
+        return EVERY_TURN
+    return SESSION_START
 
 
 def describe(key, value):

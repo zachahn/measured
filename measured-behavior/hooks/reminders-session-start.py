@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """SessionStart hook: state this repo's commit settings once a session.
 
-A repo that sets `commit-reminder-timing` to `session-start` wants the commit
-settings stated once rather than on every prompt. This hook states them, and
-`reminders-every-turn.py` skips them. Exactly one of the two speaks, so the
-settings never arrive twice.
+This is the default path. The commit settings change how a commit is made, and
+most turns end in no commit, so stating them once a session costs less than
+restating them on every prompt. `reminders-every-turn.py` skips them unless the
+repo sets `commit-reminder-timing` to `every-turn`. Exactly one of the two
+speaks, so the settings never arrive twice.
 
-Stating them once costs less context than stating them every turn. It also
-fades: the settings sit at the top of a long session and a later prompt may
-outweigh them. The every-turn default exists for that reason, and this hook
-serves the repo that would rather spend the context elsewhere.
+Stating them once has a cost of its own: they sit at the top of a long session
+and a later prompt may outweigh them. A repo that sees that happen sets
+`every-turn`.
 
-The hook re-fires on `resume`, `clear`, and `compact`, the moments prior
-context is dropped or summarized away, so the settings return each time.
+The manifest fires this hook on `startup`, `resume`, `clear`, `compact`, and
+`fork`. The last three matter most. Each one drops or summarizes away the
+context holding the settings, and a session that keeps running without them
+would commit the wrong way for the rest of its life.
 
 Reads the working directory from the hook payload on stdin. Prints nothing
-when the repo uses the every-turn default or stores no commit setting.
+when the repo asked for every-turn timing or stores no commit setting.
 
 Stdlib-only and tolerant of failure: any unexpected error exits 0 with no
 output, so a hook bug can never block a session from starting.

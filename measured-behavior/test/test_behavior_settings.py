@@ -201,6 +201,15 @@ class RenderTest(unittest.TestCase):
 
 
 class HookTest(unittest.TestCase):
+    """Payload handling in the every-turn hook.
+
+    These cases are about reading the payload, not about timing, so they store
+    `every-turn` to put the commit settings on the prompt where they can be
+    asserted against. `EveryTurnHookTest` covers the timing itself.
+    """
+
+    EVERY_TURN = {behavior_settings.COMMIT_TIMING_KEY: "every-turn"}
+
     def test_prints_nothing_when_no_settings_are_set(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(_run_hook(tmp, {"cwd": "/some/project"}), "")
@@ -214,7 +223,11 @@ class HookTest(unittest.TestCase):
             with _env(XDG_STATE_HOME=tmp):
                 _write_settings(
                     "/some/project",
-                    {"commit-behavior": "on-user-request", "commit-style": "imperative"},
+                    {
+                        "commit-behavior": "on-user-request",
+                        "commit-style": "imperative",
+                        **self.EVERY_TURN,
+                    },
                 )
 
             out = _run_hook(tmp, {"cwd": "/some/project"})
@@ -227,7 +240,7 @@ class HookTest(unittest.TestCase):
             self.assertIn("imperative sentence", context)
 
     def test_emits_for_any_prompt(self):
-        """The settings reach Claude every turn, not only during a skill."""
+        """The settings reach Claude on any prompt, not only during a skill."""
         prompts = [
             "what does this repo do",
             "fix the typo in README",
@@ -236,7 +249,10 @@ class HookTest(unittest.TestCase):
         ]
         with tempfile.TemporaryDirectory() as tmp:
             with _env(XDG_STATE_HOME=tmp):
-                _write_settings("/some/project", {"commit-location": "current-branch"})
+                _write_settings(
+                    "/some/project",
+                    {"commit-location": "current-branch", **self.EVERY_TURN},
+                )
 
             for prompt in prompts:
                 out = _run_hook(tmp, {"cwd": "/some/project", "prompt": prompt})
@@ -250,8 +266,12 @@ class HookTest(unittest.TestCase):
     def test_reads_settings_for_the_payload_cwd_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             with _env(XDG_STATE_HOME=tmp):
-                _write_settings("/project/a", {"commit-style": "conventional"})
-                _write_settings("/project/b", {"commit-style": "imperative"})
+                _write_settings(
+                    "/project/a", {"commit-style": "conventional", **self.EVERY_TURN}
+                )
+                _write_settings(
+                    "/project/b", {"commit-style": "imperative", **self.EVERY_TURN}
+                )
 
             out = _run_hook(tmp, {"cwd": "/project/b"})
             context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
@@ -638,9 +658,17 @@ class ConfigScriptTest(unittest.TestCase):
 
 
 class CommitTimingTest(unittest.TestCase):
-    def test_defaults_to_every_turn(self):
+    def test_defaults_to_session_start(self):
         self.assertEqual(
-            behavior_settings.commit_timing({}), behavior_settings.EVERY_TURN
+            behavior_settings.commit_timing({}), behavior_settings.SESSION_START
+        )
+
+    def test_reads_every_turn(self):
+        self.assertEqual(
+            behavior_settings.commit_timing(
+                {behavior_settings.COMMIT_TIMING_KEY: "every-turn"}
+            ),
+            behavior_settings.EVERY_TURN,
         )
 
     def test_reads_session_start(self):
@@ -654,18 +682,18 @@ class CommitTimingTest(unittest.TestCase):
     def test_ignores_case_and_whitespace(self):
         self.assertEqual(
             behavior_settings.commit_timing(
-                {behavior_settings.COMMIT_TIMING_KEY: "  Session-Start  "}
+                {behavior_settings.COMMIT_TIMING_KEY: "  Every-Turn  "}
             ),
-            behavior_settings.SESSION_START,
+            behavior_settings.EVERY_TURN,
         )
 
-    def test_falls_back_to_every_turn_for_an_unknown_value(self):
-        """A reminder that never arrives loses the setting; too often costs context."""
+    def test_falls_back_to_the_default_for_an_unknown_value(self):
+        """The key takes two values, so free text describes neither."""
         self.assertEqual(
             behavior_settings.commit_timing(
                 {behavior_settings.COMMIT_TIMING_KEY: "sometimes"}
             ),
-            behavior_settings.EVERY_TURN,
+            behavior_settings.SESSION_START,
         )
 
     def test_stays_out_of_the_commit_reminder(self):
@@ -724,28 +752,29 @@ class EveryTurnHookTest(unittest.TestCase):
             return ""
         return json.loads(out)["hookSpecificOutput"]["additionalContext"]
 
-    def test_states_the_commit_settings_by_default(self):
+    def test_omits_the_commit_settings_by_default(self):
+        """The session-start hook owns them unless the repo asks otherwise."""
         with tempfile.TemporaryDirectory() as tmp:
             context = self._context(tmp, {"commit-location": "current-branch"})
-            self.assertIn("branch that is already checked out", context)
+            self.assertEqual(context, "")
 
-    def test_omits_the_commit_settings_for_a_session_start_repo(self):
+    def test_states_the_commit_settings_for_an_every_turn_repo(self):
         with tempfile.TemporaryDirectory() as tmp:
             context = self._context(
                 tmp,
                 {
                     "commit-location": "current-branch",
-                    behavior_settings.COMMIT_TIMING_KEY: "session-start",
+                    behavior_settings.COMMIT_TIMING_KEY: "every-turn",
                 },
             )
-            self.assertEqual(context, "")
+            self.assertIn("branch that is already checked out", context)
 
     def test_states_the_comment_setting(self):
         with tempfile.TemporaryDirectory() as tmp:
             context = self._context(tmp, {behavior_settings.COMMENT_KEY: "never"})
             self.assertIn("Write no comments", context)
 
-    def test_states_the_comment_setting_even_at_session_start_timing(self):
+    def test_states_the_comment_setting_under_the_default_timing(self):
         """The timing key governs the commit settings only."""
         with tempfile.TemporaryDirectory() as tmp:
             context = self._context(
@@ -753,7 +782,6 @@ class EveryTurnHookTest(unittest.TestCase):
                 {
                     behavior_settings.COMMENT_KEY: "never",
                     "commit-style": "imperative",
-                    behavior_settings.COMMIT_TIMING_KEY: "session-start",
                 },
             )
             self.assertIn("Write no comments", context)
@@ -766,6 +794,7 @@ class EveryTurnHookTest(unittest.TestCase):
                 {
                     "commit-style": "imperative",
                     behavior_settings.COMMENT_KEY: "exceptional-only",
+                    behavior_settings.COMMIT_TIMING_KEY: "every-turn",
                 },
             )
             self.assertIn("imperative sentence", context)
@@ -791,30 +820,32 @@ class SessionStartHookTest(unittest.TestCase):
             _write_settings("/some/project", settings)
         return _run(START_HOOK, tmp, {"cwd": "/some/project"})[0]
 
-    def test_silent_under_the_every_turn_default(self):
-        """Exactly one hook states the settings, so they never arrive twice."""
+    def test_states_the_commit_settings_by_default(self):
         with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual(self._start(tmp, {"commit-style": "imperative"}), "")
-
-    def test_states_the_commit_settings_when_asked(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            out = self._start(
-                tmp,
-                {
-                    "commit-style": "imperative",
-                    behavior_settings.COMMIT_TIMING_KEY: "session-start",
-                },
-            )
+            out = self._start(tmp, {"commit-style": "imperative"})
             specific = json.loads(out)["hookSpecificOutput"]
 
             self.assertEqual(specific["hookEventName"], "SessionStart")
             self.assertIn("imperative sentence", specific["additionalContext"])
 
+    def test_silent_for_an_every_turn_repo(self):
+        """Exactly one hook states the settings, so they never arrive twice."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                self._start(
+                    tmp,
+                    {
+                        "commit-style": "imperative",
+                        behavior_settings.COMMIT_TIMING_KEY: "every-turn",
+                    },
+                ),
+                "",
+            )
+
     def test_silent_when_no_commit_setting_is_stored(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(
-                self._start(tmp, {behavior_settings.COMMIT_TIMING_KEY: "session-start"}),
-                "",
+                self._start(tmp, {behavior_settings.COMMENT_KEY: "never"}), ""
             )
 
     def test_omits_the_comment_setting(self):
@@ -825,7 +856,6 @@ class SessionStartHookTest(unittest.TestCase):
                 {
                     "commit-style": "imperative",
                     behavior_settings.COMMENT_KEY: "never",
-                    behavior_settings.COMMIT_TIMING_KEY: "session-start",
                 },
             )
             context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
@@ -862,6 +892,18 @@ class ManifestTest(unittest.TestCase):
     def test_registers_the_session_start_reminder(self):
         entries = self._entries("SessionStart", "reminders-session-start.py")
         self.assertEqual(len(entries), 1)
+
+    def test_session_start_reminder_fires_on_every_source(self):
+        """Each source drops the context holding the settings, so all must fire.
+
+        `compact`, `clear`, and `fork` matter most. A session that keeps running
+        past one of them without the settings commits the wrong way afterward.
+        """
+        entry = self._entries("SessionStart", "reminders-session-start.py")[0]
+        sources = set(entry["matcher"].split("|"))
+        self.assertEqual(
+            sources, {"startup", "resume", "clear", "compact", "fork"}
+        )
 
     def test_registers_the_setup_notice_on_session_start(self):
         entries = self._entries("SessionStart", "setup-notice.py")
