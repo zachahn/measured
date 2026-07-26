@@ -194,7 +194,7 @@ git worktree remove <worktree-path>
 ## Integration
 
 **Called by:**
-- **implement** - After all tasks complete
+- **implement** (Step 7) - After all tasks complete
 
 **Pairs with:**
 - **implement** - Cleans up the worktree that skill's gate creates
