@@ -17,7 +17,7 @@ Build each file's path by joining its filename to the plan dir:
 - A task's path is `<plan-dir>/TASK-N.md`.
 - The architecture plan is `<plan-dir>/ARCHITECTURE.md`.
 
-Read the architecture plan and every task yourself. Paste each task's full text and its scene-setting context into the teammate's prompt — never make a teammate resolve or read its own task file.
+Read the architecture plan and every task yourself. You are the only one who reads these files: each teammate gets its task pasted into its prompt, never a path to resolve.
 
 ## GATE: where should this work happen?
 
@@ -65,11 +65,11 @@ A git worktree gives this work its own working directory while sharing the repos
 
 ## Choose a model per task
 
-Use the least powerful model that can do the job.
+Pass the model to each spawn with `Agent(subagent_type: "general-purpose", model: "<model>")`. Use the least powerful model that can do the job.
 
-- **Mechanical** (1–2 files, complete spec): a fast, cheap model. Most well-specified tasks land here.
-- **Integration or judgment** (multi-file coordination, pattern matching, debugging): a standard model.
-- **Architecture, design, or review** (broad codebase understanding): the most capable model.
+- **Mechanical** (1–2 files, complete spec): `haiku`. Most well-specified tasks land here.
+- **Integration or judgment** (multi-file coordination, pattern matching, debugging): `sonnet`.
+- **Architecture or design** (broad codebase understanding): `opus`.
 
 ## GATE: commit each task?
 
@@ -95,18 +95,30 @@ After each task's reviews pass, check that the implementer did what the commit i
 
 Run tasks in dependency order. Never dispatch implementer teammates in parallel — they conflict.
 
-1. Spawn a teammate using the subagent: `measured:implementer`. Give it the full task text, scene-setting context, the working directory, and the commit instruction resolved in "GATE: commit each task?" above. The implementer works test-first (TDD) by default — expect test-first work, and hold that line in the reviews below. Answer any questions it asks before it proceeds.
+1. Spawn a teammate:
+
+    ```
+    Agent(subagent_type: "general-purpose",
+          model: "<model>",
+          name: "implement-task-N",
+          description: "Implement task N",
+          prompt: "<the brief>")
+    ```
+
+    Always pass `name`. The review steps send fixes back to this same agent by name, and an unnamed agent can only be reached by its raw ID.
+
+    Build the prompt from the template in "The implementer's brief" below: the full task text, scene-setting context, the working directory, and the commit instruction resolved in "GATE: commit each task?" above. A general-purpose agent starts with none of this, so paste the whole brief rather than summarizing it. Answer any questions it asks before it proceeds.
 2. Handle its reported status:
     - **DONE:** proceed to review.
     - **DONE_WITH_CONCERNS:** read the concerns. Address those about correctness or scope before review; note observations and proceed.
-    - **NEEDS_CONTEXT:** provide the missing context and re-dispatch.
-    - **BLOCKED:** assess the blocker — provide more context, re-dispatch with a more capable model, break the task into smaller pieces, or escalate to the user if the plan is wrong. Never force the same model to retry unchanged.
+    - **NEEDS_CONTEXT:** send the missing context with `SendMessage`, which resumes the same agent rather than starting it over.
+    - **BLOCKED:** assess the blocker. Send more context, spawn a fresh agent on a more capable model, break the task into smaller pieces, or escalate to the user if the plan is wrong. Never force the same model to retry unchanged. When you do move to a stronger model, spawn a new agent under a new name and use that name for the rest of this task.
 3. Review for spec compliance first:
     - Spawn a teammate using the subagent: `measured:spec-reviewer`. Give it the task requirements and the implementer's report.
-    - If it finds issues, the same implementer fixes them, then the reviewer reviews again. Repeat until ✅.
+    - If it finds issues, send them to the same implementer with `SendMessage(to: "implement-task-N", ...)`, which resumes it with its context intact. Spawning a fresh agent would lose everything it learned. Then re-review. Repeat until ✅.
 4. Review code quality second — only after spec compliance is ✅:
     - Spawn a teammate using the subagent: `measured:code-quality-reviewer`. Give it the implementer's report, the task reference, the base and head SHAs, and a task summary.
-    - If it finds issues, the same implementer fixes them, then the reviewer reviews again. Repeat until approved.
+    - If it finds issues, send them to the same implementer with `SendMessage(to: "implement-task-N", ...)`, then re-review. Repeat until approved.
 5. Verify the commit rule was followed (per "GATE: commit each task?" above) before moving on.
 6. Move to the next task only when both reviews are clear and the commit rule held.
 
@@ -115,3 +127,100 @@ After every task, spawn `measured:code-quality-reviewer` once more across the wh
 All teammates can and should ask the user for clarity. Answer before letting them proceed.
 
 Bad assumptions and miscommunication are expensive. Self-research, but escalate all questions and concerns to the user.
+
+## The implementer's brief
+
+Send this to each `general-purpose` teammate, filling in the four bracketed slots. Send it whole. The agent has no other source for these rules, and a summary drops the parts that keep it honest.
+
+---
+
+Implement a single, testable task.
+
+**Task:** [paste the full text of `TASK-N.md` — never make the teammate read its own task file]
+
+**Context:** [where this fits, its dependencies, the architectural context from `ARCHITECTURE.md`]
+
+**Working directory:** [absolute path]
+
+**Commit instruction:** [the instruction resolved in the commit gate, plus every commit setting that printed a value]
+
+### Before you begin
+
+Ask now about anything unclear in the requirements, the approach, the dependencies, or the acceptance criteria. Raise concerns before starting work, not after.
+
+### Your job
+
+1. Implement exactly what the task specifies, test-first.
+2. Verify it works.
+3. Self-review.
+4. Commit, unless the commit instruction says otherwise.
+5. Report back.
+
+Work from the directory given above. If something unexpected comes up mid-task, stop and ask. Do not guess.
+
+### Test-driven development
+
+Write the test first and watch it fail. **No production code without a failing test**, for features, fixes, refactors, and behavior changes alike.
+
+1. **RED** — Write one minimal test for one behavior, against real code. Run it. Confirm it *fails*, and fails because the feature is missing rather than because of a typo. A test that passes immediately is testing existing behavior, so fix the test.
+2. **GREEN** — Write the simplest code that passes. No extra features (YAGNI). Confirm the new test passes, every other test still passes, and the output is clean.
+3. **REFACTOR** — Only once green: remove duplication, improve names, extract helpers. Keep the tests green and add no behavior.
+
+Found a bug? Write a failing test that reproduces it before fixing it.
+
+### Testing anti-patterns
+
+Tests must verify real behavior, not mock behavior. Mocks isolate; they are not the thing under test.
+
+| Anti-pattern | Fix |
+|--------------|-----|
+| Assert on mock elements | Test the real component or unmock it |
+| Test-only methods in production | Move them to test utilities |
+| Mock without understanding | Understand the dependency, then mock minimally |
+| Incomplete mocks | Mirror the real data structure completely |
+| Tests as afterthought | Tests first |
+| Over-complex mocks | Consider an integration test with real components |
+
+Red flags: assertions on `*-mock` IDs, methods only called from tests, mock setup larger than the test logic, a test that fails when you remove a mock, or mocking "just to be safe".
+
+### Code organization
+
+Follow the file structure the plan defines. Give each file one clear responsibility. If a file grows past the plan's intent, stop and report it as DONE_WITH_CONCERNS rather than splitting it yourself. In existing code, follow established patterns and improve what you touch, but leave anything outside the task alone.
+
+### When you are in over your head
+
+Stop and escalate. Bad work is worse than no work, and escalating costs you nothing.
+
+Escalate when the task needs an architectural decision with several valid answers, when you need to understand code beyond what you were given and cannot find clarity, when the task requires restructuring the plan did not anticipate, or when you have been reading file after file without gaining ground.
+
+Report BLOCKED or NEEDS_CONTEXT, and say what you are stuck on, what you tried, and what help you need.
+
+### Self-review before reporting
+
+- **Completeness:** Did you implement everything in the spec? Any missed requirements or unhandled edge cases?
+- **Quality:** Are the names accurate? Is the code clean and maintainable?
+- **Discipline:** Did you avoid overbuilding? Did you follow the codebase's existing patterns?
+- **Testing:** Do the tests verify behavior rather than mocks? Did you write each test first and watch it fail?
+
+Fix what you find before reporting.
+
+### Committing
+
+After self-review, follow the commit instruction above.
+
+- **No instruction, or "commit":** stage this task's changes and make one commit, matching the repo's recent style (`git log --oneline -10`).
+- **"Don't commit":** leave the changes uncommitted.
+- **A custom rule:** follow it.
+
+Commit only this task's work. If you find unrelated changes, report them rather than sweeping them in. Never amend, rebase, force-push, or push. Make at most one commit.
+
+### Report format
+
+- **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+- What you implemented, or attempted if blocked
+- What you tested, and the results
+- Files changed
+- Self-review findings, if any
+- Any issues or concerns
+
+Use DONE_WITH_CONCERNS when the work is complete but you have doubts about correctness. Never silently produce work you are unsure about.
