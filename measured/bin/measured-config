@@ -15,9 +15,6 @@ Known settings:
 
   worktree-setup        shell commands to run after creating a worktree to get
                         it ready to work in (install deps, build, etc.)
-  commit-after-task     whether the implement skill commits each task after it
-                        passes review. Prefer "true" or "false"; may also hold
-                        a free-text instruction passed to the implementer.
   work-location         where the implement skill runs its work: "ask",
                         "worktree", "new-branch", "current-branch", or
                         "trunk-branch".
@@ -26,6 +23,27 @@ Known settings:
                         "XDG_STATE_HOME" stores them in the default state dir
                         (~/.local/state/…). "REPO: <path/to/docs>" stores them
                         in a subdirectory of the project repo.
+
+Commit settings, stated to Claude on every prompt by the measured-behavior
+plugin's commit-settings hook:
+
+  commit-behavior       when to commit: "after-every-turn" or "on-user-request".
+  commit-location       which branch to commit to: "current-branch", which
+                        includes committing to main, "new-branch", or "ask".
+  commit-style          how to word a subject: "imperative" or "conventional".
+  commit-scope          how much goes in one commit: "per-task", "per-file", or
+                        "squash-all".
+  commit-body           when a commit needs a body: "always", "when-nontrivial",
+                        or "never".
+  commit-signoff        whether to pass --signoff: "true" or "false".
+  commit-attribution    whether to add Co-Authored-By/Claude-Session trailers:
+                        "true" or "false".
+  commit-settings-for-agents
+                        whether spawned subagents get these settings appended
+                        to their prompt: "true" or "false". Off unless "true".
+
+The vocabulary for those values lives in the measured-behavior plugin, at
+lib/commit_settings.py. Any other value is passed through verbatim.
 
 Path/state resolution lives in ../lib/session_lib.py.
 """
@@ -56,9 +74,6 @@ Known settings:
 
   worktree-setup        shell commands to run after creating a worktree to get
                         it ready to work in (install deps, build, etc.)
-  commit-after-task     whether the implement skill commits each task after it
-                        passes review. Prefer "true" or "false"; may also hold
-                        a free-text instruction passed to the implementer.
   work-location         where the implement skill runs its work: "ask",
                         "worktree", "new-branch", "current-branch", or
                         "trunk-branch".
@@ -67,6 +82,27 @@ Known settings:
                         "XDG_STATE_HOME" stores them in the default state dir
                         (~/.local/state/…). "REPO: <path/to/docs>" stores them
                         in a subdirectory of the project repo.
+
+Commit settings. The measured-behavior plugin states these to Claude on every
+prompt, so they govern every commit in the repo, not just the implement skill.
+Each accepts a free-text value, passed through verbatim, when none of the
+listed values fit.
+
+  commit-behavior       when to commit: "after-every-turn" or "on-user-request".
+  commit-location       which branch to commit to: "current-branch" (commit to
+                        the checked-out branch, including main), "new-branch",
+                        or "ask".
+  commit-style          how to word a subject: "imperative" or "conventional".
+  commit-scope          how much goes in one commit: "per-task", "per-file", or
+                        "squash-all".
+  commit-body           when a commit needs a body: "always", "when-nontrivial",
+                        or "never".
+  commit-signoff        whether to pass --signoff: "true" or "false".
+  commit-attribution    whether to add Co-Authored-By/Claude-Session trailers:
+                        "true" or "false".
+  commit-settings-for-agents
+                        whether spawned subagents get these settings appended
+                        to their prompt: "true" or "false". Off unless "true".
 """
 
 

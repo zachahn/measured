@@ -75,11 +75,13 @@ Use the least powerful model that can do the job.
 
 The implementer commits its own work after self-review. Resolve the commit instruction **before dispatching the first teammate**, then pass the same instruction to every implementer you dispatch.
 
-1. Read it with `measured-config --get commit-after-task`. The stored value is the source of truth: follow it even if the prompt suggests otherwise. To change the behavior, change the setting.
-2. **If it prints nothing (unset/null):** you cannot proceed without a selection. Use `AskUserQuestion` to ask whether the implementer should commit each task after review. Store the answer with `measured-config --set commit-after-task true` (or `false`) so later tasks skip the question.
-3. **If `true`:** tell the implementer to commit its work.
-4. **If `false`:** tell the implementer not to commit; it leaves its work uncommitted.
+1. Read it with `measured-config --get commit-behavior`. The stored value is the source of truth: follow it even if the prompt suggests otherwise. To change the behavior, change the setting.
+2. **If it prints nothing (unset/null):** you cannot proceed without a selection. Use `AskUserQuestion` to ask whether the implementer should commit each task after review. Store the answer with `measured-config --set commit-behavior after-every-turn` (or `on-user-request`) so later tasks skip the question.
+3. **If `after-every-turn`:** tell the implementer to commit its work.
+4. **If `on-user-request`:** tell the implementer not to commit; it leaves its work uncommitted.
 5. **If any other value:** pass it through verbatim as the commit instruction, so the user's rule (e.g. "commit only after the last task") governs whether and how the implementer commits.
+
+Also read `measured-config --get commit-location`, `--get commit-style`, `--get commit-scope`, `--get commit-body`, `--get commit-signoff`, and `--get commit-attribution`. Pass every value that prints to the implementer alongside the commit instruction, so its commits match the rest of the repo. Skip any that print nothing.
 
 ### Verify the rule was followed
 

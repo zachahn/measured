@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""Read and write this repo's commit settings.
+
+The settings describe how Claude commits in this repo: when to commit, which
+branch to commit to, how to word a subject line. The `commit-settings` hook
+states them to Claude on every prompt, so they apply to all work in the repo.
+
+  (no arguments)        print every commit setting as JSON
+  --get KEY             print one setting's value (nothing if unset)
+  --set KEY VALUE       set one setting and print the new commit settings
+  --unset KEY           remove one setting and print the new commit settings
+  --list                print every key with its known values
+
+Settings live in the same per-repo file the `measured` plugin uses, so
+`measured-config` shows these keys too. Writing here leaves that plugin's own
+keys untouched. The file is stored outside the repo and is not committed.
+
+A value outside a key's known values is stored as written, so a free-text rule
+like "commit only after the last task" works. Unknown keys are rejected: a
+typo like `commit-stlye` would otherwise store silently and never apply.
+
+Key vocabulary lives in ../lib/commit_settings.py. Path resolution and the
+read/write of the settings file live in ../lib/settings_store.py.
+"""
+
+import argparse
+import json
+import os
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+import commit_settings  # noqa: E402
+import settings_store  # noqa: E402
+
+
+USAGE = (
+    "usage: measured-behavior-config "
+    "[--get KEY | --set KEY VALUE | --unset KEY | --list]\n"
+)
+
+HELP_TEXT = f"""\
+{USAGE}
+Read and write this repo's commit settings.
+
+The commit-settings hook states these to Claude on every prompt, so they govern
+every commit in the repo. They are shared across every Claude session in it and
+persist between them. They are stored outside the repo and are not committed.
+
+  (no arguments)        print every commit setting as a JSON object
+  --get KEY             print one setting's value (nothing if unset)
+  --set KEY VALUE       set one setting, then print the commit settings
+  --unset KEY           remove one setting, then print the commit settings
+  --list                print every key with its known values
+
+Keys:
+
+  commit-behavior       when to commit
+  commit-location       which branch to commit to
+  commit-style          how to word a subject line
+  commit-scope          how much work goes in one commit
+  commit-body           when a commit needs a body
+  commit-signoff        whether to pass --signoff
+  commit-attribution    whether to add Co-Authored-By/Claude-Session trailers
+
+Run --list to see each key's known values. Any other value is stored as
+written and passed to Claude verbatim.
+"""
+
+
+class _Parser(argparse.ArgumentParser):
+    def format_help(self) -> str:
+        return HELP_TEXT
+
+    def format_usage(self) -> str:
+        return USAGE
+
+
+def _check_key(key: str) -> None:
+    """Reject a key that is not a commit setting."""
+    if key not in commit_settings.COMMIT_KEYS:
+        keys = "\n  ".join(commit_settings.COMMIT_KEYS)
+        raise ValueError(f"unknown setting: {key!r}\n\nCommit settings are:\n  {keys}")
+
+
+def _commit_only(settings: dict) -> dict:
+    """Narrow a full settings object to the commit keys that are set."""
+    return {
+        key: settings[key]
+        for key in commit_settings.COMMIT_KEYS
+        if commit_settings.is_set(settings, key)
+    }
+
+
+def _format_list() -> str:
+    lines = []
+    for key in commit_settings.COMMIT_KEYS:
+        values = " | ".join(commit_settings.KNOWN_VALUES.get(key, {}))
+        lines.append(f"{key}\n  {values}")
+    return "\n".join(lines)
+
+
+def main(argv: list[str]) -> int:
+    parser = _Parser(prog="measured-behavior-config", add_help=False)
+    parser.add_argument("-h", "--help", action="help")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--get", metavar="KEY")
+    group.add_argument("--set", nargs=2, metavar=("KEY", "VALUE"))
+    group.add_argument("--unset", metavar="KEY")
+    group.add_argument("--list", action="store_true")
+
+    args = parser.parse_args(argv)
+    cwd = os.getcwd()
+
+    try:
+        if args.list:
+            print(_format_list())
+            return 0
+
+        if args.get is not None:
+            _check_key(args.get)
+            value = settings_store.load_settings(cwd).get(args.get)
+            if value is not None:
+                print(value)
+            return 0
+
+        if args.set is not None:
+            key, value = args.set
+            _check_key(key)
+            settings = settings_store.set_setting(cwd, key, value)
+            print(json.dumps(_commit_only(settings), indent=2))
+            return 0
+
+        if args.unset is not None:
+            _check_key(args.unset)
+            settings = settings_store.set_setting(cwd, args.unset, None)
+            print(json.dumps(_commit_only(settings), indent=2))
+            return 0
+
+        print(json.dumps(_commit_only(settings_store.load_settings(cwd)), indent=2))
+        return 0
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
