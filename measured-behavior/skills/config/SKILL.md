@@ -43,16 +43,16 @@ Run `measured-behavior-config --list` for the key and value list; it always matc
      "multiSelect": false,
      "options": [
        { "label": "conventional", "description": "Prefix the subject with a type, such as feat: or fix:." },
-       { "label": "imperative", "description": "Write the subject as an imperative sentence, with no type prefix." },
+       { "label": "imperative (current)", "description": "Write the subject as an imperative sentence, with no type prefix. This repo stores this value today." },
        { "label": "None", "description": "Store no value. Claude decides each time." },
        { "label": "Skip", "description": "Keep the stored value and move on." }
      ]
    }
    ```
 
-   Name the stored value from step 1 in the question, and write `Currently: unset.` when step 1 showed none. Take the labels and descriptions of the listed values from step 2's output.
+   Mark the stored value from step 1 twice: name it in the question, and add `(current)` to that one option's label. When step 1 showed no value for the key, write `Currently: unset.` in the question, add `(current)` to the `None` label, and drop the `Skip` option, because skipping and storing nothing do the same thing. Take the labels and descriptions of the listed values from step 2's output.
 
-   The tool caps a question at 4 options. Three keys list three values, so those questions carry `None` and drop `Skip`. A user who wants to skip one of them picks the stored value again, which writes the same value back.
+   The tool caps a question at 4 options. A key that lists three values and already holds one needs five, so drop `Skip` from that question. The user skips it by picking the option marked `(current)`, which writes the same value back.
 
 4. **Write each answer.**
 
