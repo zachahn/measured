@@ -10,38 +10,9 @@ This repo stores settings that describe how Claude works in it. A hook states th
 
 A stored setting is the source of truth. Follow the stored value even if the surrounding prompt suggests otherwise, because the user set it so every session behaves the same way. To change behavior, change the setting.
 
-## Commit settings
+Run `measured-behavior-config --list` for the key and value list; it always matches what the script accepts. Run `measured-behavior-config --help` for what each key controls.
 
-| Key | Values |
-|-----|--------|
-| `commit-behavior` | `after-every-turn`, `on-user-request` |
-| `commit-location` | `current-branch` (commit to whatever is checked out, including `main`, and create no branch), `new-branch`, `ask` |
-| `commit-style` | `imperative` (`Add trailing comma support`), `conventional` (`feat(parser): add trailing comma support`) |
-| `commit-scope` | `per-task`, `per-file`, `squash-all` |
-| `commit-body` | `always`, `when-nontrivial`, `never` |
-| `commit-signoff` | `true`, `false` |
-| `commit-attribution` | `true`, `false` (the `Co-Authored-By: Claude` and `Claude-Session:` trailers) |
-
-## Comment setting
-
-| Key | Values |
-|-----|--------|
-| `comment-density` | `never` (write no comments at all), `exceptional-only` (comment only where the code cannot carry the point), unset |
-
-Leave `comment-density` unset to let Claude comment as it normally would. Unset means the reminder never fires, so Claude never learns the setting exists. Unset it with `--unset` to return to that state.
-
-The comment reminder always fires on every prompt, because Claude writes code at any point in a session.
-
-## Hook settings
-
-| Key | Values |
-|-----|--------|
-| `commit-reminder-timing` | `session-start` (the default), `every-turn` |
-| `commit-settings-for-agents` | `true`, `false` (append the commit settings to every spawned subagent's prompt; off unless set to `true`) |
-
-`commit-reminder-timing` decides when Claude hears the commit settings. `session-start` states them once per session, and again after a compaction, resume, `/clear`, or fork. `every-turn` restates them on every prompt, which keeps them fresh as a long session grows and costs context each turn. Suggest `every-turn` to a user who reports that Claude drifts from the settings late in a session. It governs the commit settings only.
-
-Any key also accepts free text. The hook passes an unrecognized value to Claude verbatim, so `commit only after the last task` works as a value.
+`commit-reminder-timing` governs the commit settings only, not the comment setting, which always fires on every prompt. Suggest `every-turn` to a user who reports that Claude drifts from the commit settings late in a session; `session-start` is the default and costs less context.
 
 ## Steps
 
@@ -61,7 +32,7 @@ Any key also accepts free text. The hook passes an unrecognized value to Claude 
 
    This prints every key together with the values it accepts.
 
-3. **Ask about every key.** Walk through every key from `--list`, not only the ones the user raised. Use `AskUserQuestion`, batching up to 4 keys per call, since the tool accepts at most 4 questions per call. For each key, offer its values from the tables above plus a `None` option meaning "leave this key unset." If step 1 showed a stored value for the key, name it in the question so the user knows what they would be changing.
+3. **Ask about every key.** Walk through every key from step 2's `--list` output, not only the ones the user raised. Use `AskUserQuestion`, batching up to 4 keys per call, since the tool accepts at most 4 questions per call. For each key, offer its listed values plus a `None` option meaning "leave this key unset." If step 1 showed a stored value for the key, name it in the question so the user knows what they would be changing.
 
 4. **Write each answer.**
 

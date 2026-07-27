@@ -31,8 +31,7 @@ Write them with `measured-behavior-config --set <key> <value>`, which validates 
 | `commit-style` | How to word a subject line. `imperative` (`Add trailing comma support`) or `conventional` (`feat(parser): add trailing comma support`). |
 | `commit-scope` | How much work goes in one commit. `per-task`, `per-file`, or `squash-all`. |
 | `commit-body` | When a commit needs a body. `always`, `when-nontrivial`, or `never`. |
-| `commit-signoff` | Whether to pass `--signoff`. `true` or `false`. |
-| `commit-attribution` | Whether commits carry the `Co-Authored-By: Claude` and `Claude-Session:` trailers. `true` or `false`. |
+| `commit-claude-attribution` | Whether commits carry the `Co-Authored-By: Claude` and `Claude-Session:` trailers. `true` or `false`. |
 | `commit-settings-for-agents` | Whether spawned subagents get the commit settings appended to their prompt. `true` or `false`. Off unless set to `true`. |
 | `commit-reminder-timing` | When Claude hears the commit settings. `session-start` (the default) states them once per session, and again after a compaction, resume, or fork. `every-turn` restates them on every prompt. |
 | `comment-density` | How much comment Claude writes in code. `never` writes none at all. `exceptional-only` comments only where the code cannot carry the point. Leave it unset to let Claude comment as it normally would. |

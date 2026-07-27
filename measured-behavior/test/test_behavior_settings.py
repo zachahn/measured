@@ -184,13 +184,13 @@ class RenderTest(unittest.TestCase):
     def test_orders_keys_consistently(self):
         out = behavior_settings.render(
             {
-                "commit-attribution": "false",
+                "commit-claude-attribution": "false",
                 "commit-behavior": "after-every-turn",
                 "commit-style": "conventional",
             }
         )
         self.assertLess(out.index("commit-behavior"), out.index("commit-style"))
-        self.assertLess(out.index("commit-style"), out.index("commit-attribution"))
+        self.assertLess(out.index("commit-style"), out.index("commit-claude-attribution"))
 
     def test_renders_every_commit_instruction(self):
         out = behavior_settings.render(
@@ -299,7 +299,7 @@ class AnySetTest(unittest.TestCase):
         )
 
     def test_true_for_one_commit_setting(self):
-        self.assertTrue(behavior_settings.any_set({"commit-signoff": "false"}))
+        self.assertTrue(behavior_settings.any_set({"commit-body": "never"}))
 
     def test_true_for_the_comment_setting_alone(self):
         """Configuring only comments still means the user found the feature."""
@@ -319,7 +319,7 @@ class AnySetTest(unittest.TestCase):
         self.assertFalse(
             behavior_settings.any_commit_set({behavior_settings.COMMENT_KEY: "never"})
         )
-        self.assertTrue(behavior_settings.any_commit_set({"commit-signoff": "false"}))
+        self.assertTrue(behavior_settings.any_commit_set({"commit-body": "never"}))
 
 
 class SetupNoticeTest(unittest.TestCase):

@@ -35,15 +35,15 @@ plugin's commit-settings hook:
                         "squash-all".
   commit-body           when a commit needs a body: "always", "when-nontrivial",
                         or "never".
-  commit-signoff        whether to pass --signoff: "true" or "false".
-  commit-attribution    whether to add Co-Authored-By/Claude-Session trailers:
+  commit-claude-attribution
+                        whether to add Co-Authored-By/Claude-Session trailers:
                         "true" or "false".
   commit-settings-for-agents
                         whether spawned subagents get these settings appended
                         to their prompt: "true" or "false". Off unless "true".
 
 The vocabulary for those values lives in the measured-behavior plugin, at
-lib/commit_settings.py. Any other value is passed through verbatim.
+lib/behavior_settings.py. Any other value is passed through verbatim.
 
 Path/state resolution lives in ../lib/session_lib.py.
 """
@@ -97,8 +97,8 @@ listed values fit.
                         "squash-all".
   commit-body           when a commit needs a body: "always", "when-nontrivial",
                         or "never".
-  commit-signoff        whether to pass --signoff: "true" or "false".
-  commit-attribution    whether to add Co-Authored-By/Claude-Session trailers:
+  commit-claude-attribution
+                        whether to add Co-Authored-By/Claude-Session trailers:
                         "true" or "false".
   commit-settings-for-agents
                         whether spawned subagents get these settings appended

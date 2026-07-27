@@ -1,9 +1,8 @@
 """The per-repo behavior settings and the reminders rendered from them.
 
-A repo stores settings that describe how Claude works in it. Two groups exist
-today. The commit settings say how to make a commit. The comment setting says
-how much explanatory comment to write in code. They live in the measured
-settings file and are written with `measured-behavior-config --set <key>`.
+A repo stores settings that describe how Claude works in it: how it uses git,
+and how much it comments in code. They live in the measured settings file and
+are written with `measured-behavior-config --set <key>`.
 
 Two hooks read this module. `reminders-every-turn.py` fires on every prompt.
 `reminders-session-start.py` fires once a session. `commit-reminder-timing`
@@ -26,8 +25,7 @@ COMMIT_KEYS = (
     "commit-style",
     "commit-scope",
     "commit-body",
-    "commit-signoff",
-    "commit-attribution",
+    "commit-claude-attribution",
     "commit-settings-for-agents",
 )
 
@@ -112,11 +110,7 @@ KNOWN_VALUES = {
         ),
         "never": "Write a subject line only. Add no body.",
     },
-    "commit-signoff": {
-        "true": "Sign off every commit. Pass `--signoff` to `git commit`.",
-        "false": "Do not sign off commits. Add no `Signed-off-by` trailer.",
-    },
-    "commit-attribution": {
+    "commit-claude-attribution": {
         "true": (
             "Add the `Co-Authored-By: Claude` and `Claude-Session:` trailers to "
             "every commit."
@@ -179,10 +173,32 @@ however it usually does.
 
 Run `/measured-behavior:config` to set them, so every session behaves the \
 same way. It covers commit-behavior, commit-location, commit-style, \
-commit-scope, commit-body, commit-signoff, commit-attribution, \
-commit-settings-for-agents (forwards the commit settings to spawned \
-subagents), commit-reminder-timing (session-start or every-turn), and \
-comment-density."""
+commit-scope, commit-body, commit-claude-attribution, commit-settings-for-agents \
+(forwards the commit settings to spawned subagents), commit-reminder-timing \
+(session-start or every-turn), and comment-density."""
+
+# Short, list-only notes for values whose meaning is not obvious from the
+# name alone. `--list` shows these; KNOWN_VALUES above is the full
+# instruction Claude reads once a value is actually set, and stays too long
+# for a quick reference.
+LIST_HINTS = {
+    "commit-location": {
+        "current-branch": "includes main; creates no branch",
+    },
+    "commit-style": {
+        "imperative": 'e.g. "Add trailing comma support"',
+        "conventional": 'e.g. "feat(parser): add trailing comma support"',
+    },
+    "commit-claude-attribution": {
+        "true": "adds Co-Authored-By + Claude-Session trailers",
+    },
+    FORWARD_TO_AGENTS_KEY: {
+        "false": "the default",
+    },
+    COMMIT_TIMING_KEY: {
+        SESSION_START: "the default",
+    },
+}
 
 
 def is_set(settings, key):

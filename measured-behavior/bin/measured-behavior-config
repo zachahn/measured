@@ -57,13 +57,12 @@ committed.
 
 Commit keys:
 
-  commit-behavior       when to commit
-  commit-location       which branch to commit to
-  commit-style          how to word a subject line
-  commit-scope          how much work goes in one commit
-  commit-body           when a commit needs a body
-  commit-signoff        whether to pass --signoff
-  commit-attribution    whether to add Co-Authored-By/Claude-Session trailers
+  commit-behavior            when to commit
+  commit-location            which branch to commit to
+  commit-style               how to word a subject line
+  commit-scope               how much work goes in one commit
+  commit-body                when a commit needs a body
+  commit-claude-attribution  whether to add Co-Authored-By/Claude-Session trailers
 
 Comment key:
 
@@ -111,7 +110,11 @@ def _ours_only(settings: dict) -> dict:
 def _format_list() -> str:
     lines = []
     for key in behavior_settings.SETTING_KEYS:
-        values = " | ".join(behavior_settings.KNOWN_VALUES.get(key, {}))
+        hints = behavior_settings.LIST_HINTS.get(key, {})
+        values = " | ".join(
+            f"{value} ({hints[value]})" if value in hints else value
+            for value in behavior_settings.KNOWN_VALUES.get(key, {})
+        )
         lines.append(f"{key}\n  {values}")
     return "\n".join(lines)
 
