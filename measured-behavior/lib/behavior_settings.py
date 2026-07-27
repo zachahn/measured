@@ -177,19 +177,12 @@ SETUP_HELP = """\
 Measured: this repo has no behavior settings. Claude will commit and comment \
 however it usually does.
 
-Set them so every session behaves the same way:
-
-  measured-behavior-config --set commit-behavior after-every-turn
-  measured-behavior-config --set commit-location current-branch
-  measured-behavior-config --set commit-style imperative
-  measured-behavior-config --set comment-density exceptional-only
-
-Also available: commit-scope, commit-body, commit-signoff, \
-commit-attribution, commit-settings-for-agents (forwards the commit settings to \
-spawned subagents), and commit-reminder-timing (session-start or every-turn).
-
-Run `measured-behavior-config --list` for each key's values, or ask Claude to \
-"set up measured behavior settings" to walk through them."""
+Run `/measured-behavior:config` to set them, so every session behaves the \
+same way. It covers commit-behavior, commit-location, commit-style, \
+commit-scope, commit-body, commit-signoff, commit-attribution, \
+commit-settings-for-agents (forwards the commit settings to spawned \
+subagents), commit-reminder-timing (session-start or every-turn), and \
+comment-density."""
 
 
 def is_set(settings, key):

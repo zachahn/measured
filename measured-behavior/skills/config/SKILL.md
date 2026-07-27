@@ -1,7 +1,7 @@
 ---
 name: config
 description: Use when the user wants to set, change, or view how Claude behaves in this repo - when and how to commit, which branch to commit to, how to word a commit subject, or how much comment to write in code
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Configuring behavior settings

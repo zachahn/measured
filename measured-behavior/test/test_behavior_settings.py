@@ -336,8 +336,7 @@ class SetupNoticeTest(unittest.TestCase):
 
             message = json.loads(stdout)["systemMessage"]
             self.assertIn("no behavior settings", message)
-            self.assertIn("measured-behavior-config --set commit-behavior", message)
-            self.assertIn("measured-behavior-config --set comment-density", message)
+            self.assertIn("/measured-behavior:config", message)
 
     def test_writes_nothing_to_stderr(self):
         """stderr goes to the debug log on exit 0, so nothing may rely on it."""
