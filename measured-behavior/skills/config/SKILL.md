@@ -51,11 +51,19 @@ Any key also accepts free text. The hook passes an unrecognized value to Claude 
    measured-behavior-config
    ```
 
-   This prints the settings as JSON, and prints `{}` when none are set.
+   This prints the settings as JSON, and prints `{}` when none are set. Keep this open to compare against as you go.
 
-2. **Find out what the user wants.** Ask only for the keys they raised. Do not walk through every key unless they ask you to. Use `AskUserQuestion` when they want to choose, and offer the values from the tables above.
+2. **List every key and its values.**
 
-3. **Write each setting.**
+   ```bash
+   measured-behavior-config --list
+   ```
+
+   This prints every key together with the values it accepts.
+
+3. **Ask about every key.** Walk through every key from `--list`, not only the ones the user raised. Use `AskUserQuestion`, batching up to 4 keys per call, since the tool accepts at most 4 questions per call. For each key, offer its values from the tables above plus a `None` option meaning "leave this key unset." If step 1 showed a stored value for the key, name it in the question so the user knows what they would be changing.
+
+4. **Write each answer.**
 
    ```bash
    measured-behavior-config --set <key> "<value>"
@@ -63,7 +71,9 @@ Any key also accepts free text. The hook passes an unrecognized value to Claude 
 
    The script prints the settings back. Confirm the value landed. It exits 1 on an unknown key, so a typo fails loudly rather than storing.
 
-4. **Report what changed.** Tell the user a setting applies from their next prompt, because the hook injects it at the start of each turn. Setting `commit-reminder-timing` to `session-start` applies at the next session start instead.
+   For a key the user answered `None`, leave it unset instead: run `measured-behavior-config --unset <key>` if step 1 showed it already had a value, otherwise do nothing.
+
+5. **Report what changed.** Tell the user a setting applies from their next prompt, because the hook injects it at the start of each turn. Setting `commit-reminder-timing` to `session-start` applies at the next session start instead.
 
 ## Other commands
 
