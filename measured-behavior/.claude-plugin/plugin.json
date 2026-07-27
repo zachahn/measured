@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/commit-settings-for-agents.py"
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/commit-settings-for-subagents.py"
           }
         ]
       },

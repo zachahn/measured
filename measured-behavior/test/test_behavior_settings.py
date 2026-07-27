@@ -20,7 +20,7 @@ import settings_store  # noqa: E402
 HOOK = PLUGIN_ROOT / "hooks" / "reminders-every-turn.py"
 START_HOOK = PLUGIN_ROOT / "hooks" / "reminders-session-start.py"
 HELP_HOOK = PLUGIN_ROOT / "hooks" / "setup-notice.py"
-AGENT_HOOK = PLUGIN_ROOT / "hooks" / "commit-settings-for-agents.py"
+SUBAGENT_HOOK = PLUGIN_ROOT / "hooks" / "commit-settings-for-subagents.py"
 CONFIG_BIN = PLUGIN_ROOT / "bin" / "measured-behavior-config"
 
 # The `measured` plugin owns writing the settings file. These tests read its
@@ -393,13 +393,13 @@ class SetupNoticeTest(unittest.TestCase):
 
 class ForwardToAgentsTest(unittest.TestCase):
     def test_off_when_unset(self):
-        self.assertFalse(behavior_settings.forward_to_agents({}))
+        self.assertFalse(behavior_settings.forward_to_subagents({}))
 
     def test_on_for_true_values(self):
         for value in behavior_settings.TRUE_VALUES:
             self.assertTrue(
-                behavior_settings.forward_to_agents(
-                    {behavior_settings.FORWARD_TO_AGENTS_KEY: value}
+                behavior_settings.forward_to_subagents(
+                    {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: value}
                 ),
                 f"{value!r} should enable forwarding",
             )
@@ -407,8 +407,8 @@ class ForwardToAgentsTest(unittest.TestCase):
     def test_off_for_false_values(self):
         for value in behavior_settings.FALSE_VALUES:
             self.assertFalse(
-                behavior_settings.forward_to_agents(
-                    {behavior_settings.FORWARD_TO_AGENTS_KEY: value}
+                behavior_settings.forward_to_subagents(
+                    {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: value}
                 ),
                 f"{value!r} should disable forwarding",
             )
@@ -416,32 +416,32 @@ class ForwardToAgentsTest(unittest.TestCase):
     def test_off_for_an_unrecognized_value(self):
         """Rewriting another agent's prompt needs a clear yes."""
         self.assertFalse(
-            behavior_settings.forward_to_agents(
-                {behavior_settings.FORWARD_TO_AGENTS_KEY: "maybe"}
+            behavior_settings.forward_to_subagents(
+                {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "maybe"}
             )
         )
 
     def test_stays_out_of_the_reminder(self):
         out = behavior_settings.render(
             {
-                behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
+                behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
                 "commit-style": "imperative",
             }
         )
-        self.assertNotIn(behavior_settings.FORWARD_TO_AGENTS_KEY, out)
+        self.assertNotIn(behavior_settings.FORWARD_TO_SUBAGENTS_KEY, out)
 
     def test_alone_is_no_commit_policy(self):
         """Setting only this key leaves the repo with nothing to say about commits."""
         self.assertFalse(
             behavior_settings.any_commit_set(
-                {behavior_settings.FORWARD_TO_AGENTS_KEY: "true"}
+                {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true"}
             )
         )
 
     def test_alone_still_silences_the_setup_notice(self):
         """The user who set it has found the feature; the notice has done its job."""
         self.assertTrue(
-            behavior_settings.any_set({behavior_settings.FORWARD_TO_AGENTS_KEY: "true"})
+            behavior_settings.any_set({behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true"})
         )
 
 
@@ -458,7 +458,7 @@ class AgentHookTest(unittest.TestCase):
     }
 
     def _run(self, tmp, payload=None):
-        return _run(AGENT_HOOK, tmp, payload or self.PAYLOAD)[0]
+        return _run(SUBAGENT_HOOK, tmp, payload or self.PAYLOAD)[0]
 
     def test_silent_when_forwarding_is_unset(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -473,7 +473,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-style": "imperative",
-                        behavior_settings.FORWARD_TO_AGENTS_KEY: "false",
+                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "false",
                     },
                 )
             self.assertEqual(self._run(tmp), "")
@@ -482,7 +482,7 @@ class AgentHookTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with _env(XDG_STATE_HOME=tmp):
                 _write_settings(
-                    "/some/project", {behavior_settings.FORWARD_TO_AGENTS_KEY: "true"}
+                    "/some/project", {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true"}
                 )
             self.assertEqual(self._run(tmp), "")
 
@@ -493,7 +493,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-location": "current-branch",
-                        behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
+                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
                     },
                 )
             updated = json.loads(self._run(tmp))["hookSpecificOutput"]["updatedInput"]
@@ -509,7 +509,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-style": "imperative",
-                        behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
+                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
                     },
                 )
             updated = json.loads(self._run(tmp))["hookSpecificOutput"]["updatedInput"]
@@ -529,7 +529,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-style": "imperative",
-                        behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
+                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
                     },
                 )
             specific = json.loads(self._run(tmp))["hookSpecificOutput"]
@@ -542,7 +542,7 @@ class AgentHookTest(unittest.TestCase):
                     "/some/project",
                     {
                         "commit-style": "imperative",
-                        behavior_settings.FORWARD_TO_AGENTS_KEY: "true",
+                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
                     },
                 )
             payload = dict(self.PAYLOAD, tool_input={"prompt": ""})
@@ -920,7 +920,7 @@ class ManifestTest(unittest.TestCase):
                     )
 
     def test_registers_the_agent_hook_on_the_agent_tool(self):
-        entries = self._entries("PreToolUse", "commit-settings-for-agents.py")
+        entries = self._entries("PreToolUse", "commit-settings-for-subagents.py")
         self.assertEqual(len(entries), 1)
         self.assertEqual(entries[0]["matcher"], "Agent")
 

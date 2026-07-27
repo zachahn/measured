@@ -13,7 +13,7 @@ write code get their instructions from the agent that spawned them.
 
 Rewriting another agent's prompt is intrusive, so the repo opts in:
 
-    measured-behavior-config --set commit-settings-for-agents true
+    measured-behavior-config --set commit-settings-for-subagents true
 
 The hook does nothing unless that key is true, and nothing when no commit
 settings are stored.
@@ -45,7 +45,7 @@ def updated_prompt(prompt, reminder):
 
 def decide(tool_input, settings):
     """Return the replacement tool input, or None to leave the spawn alone."""
-    if not behavior_settings.forward_to_agents(settings):
+    if not behavior_settings.forward_to_subagents(settings):
         return None
 
     reminder = behavior_settings.render(settings)

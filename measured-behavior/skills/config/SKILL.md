@@ -32,7 +32,27 @@ Run `measured-behavior-config --list` for the key and value list; it always matc
 
    This prints every key together with the values it accepts.
 
-3. **Ask about every key.** Walk through every key from step 2's `--list` output, not only the ones the user raised. Use `AskUserQuestion`, batching up to 4 keys per call, since the tool accepts at most 4 questions per call. For each key, offer its listed values plus a `None` option meaning "leave this key unset." If step 1 showed a stored value for the key, name it in the question so the user knows what they would be changing.
+3. **Ask about every key.** Walk through every key from step 2's output, not only the ones the user raised. Use `AskUserQuestion`, batching 4 keys per call.
+
+   Build each question like this one for `commit-style`:
+
+   ```json
+   {
+     "question": "How should Claude word a commit subject? Currently: imperative.",
+     "header": "Style",
+     "multiSelect": false,
+     "options": [
+       { "label": "conventional", "description": "Prefix the subject with a type, such as feat: or fix:." },
+       { "label": "imperative", "description": "Write the subject as an imperative sentence, with no type prefix." },
+       { "label": "None", "description": "Store no value. Claude decides each time." },
+       { "label": "Skip", "description": "Keep the stored value and move on." }
+     ]
+   }
+   ```
+
+   Name the stored value from step 1 in the question, and write `Currently: unset.` when step 1 showed none. Take the labels and descriptions of the listed values from step 2's output.
+
+   The tool caps a question at 4 options. Three keys list three values, so those questions carry `None` and drop `Skip`. A user who wants to skip one of them picks the stored value again, which writes the same value back.
 
 4. **Write each answer.**
 
@@ -42,7 +62,7 @@ Run `measured-behavior-config --list` for the key and value list; it always matc
 
    The script prints the settings back. Confirm the value landed. It exits 1 on an unknown key, so a typo fails loudly rather than storing.
 
-   For a key the user answered `None`, leave it unset instead: run `measured-behavior-config --unset <key>` if step 1 showed it already had a value, otherwise do nothing.
+   For `None`, run `measured-behavior-config --unset <key>`. For `Skip`, run nothing.
 
 5. **Report what changed.** Tell the user a setting applies from their next prompt, because the hook injects it at the start of each turn. Setting `commit-reminder-timing` to `session-start` applies at the next session start instead.
 

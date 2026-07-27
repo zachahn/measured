@@ -38,7 +38,7 @@ plugin's commit-settings hook:
   commit-claude-attribution
                         whether to add Co-Authored-By/Claude-Session trailers:
                         "true" or "false".
-  commit-settings-for-agents
+  commit-settings-for-subagents
                         whether spawned subagents get these settings appended
                         to their prompt: "true" or "false". Off unless "true".
 
@@ -100,7 +100,7 @@ listed values fit.
   commit-claude-attribution
                         whether to add Co-Authored-By/Claude-Session trailers:
                         "true" or "false".
-  commit-settings-for-agents
+  commit-settings-for-subagents
                         whether spawned subagents get these settings appended
                         to their prompt: "true" or "false". Off unless "true".
 """
