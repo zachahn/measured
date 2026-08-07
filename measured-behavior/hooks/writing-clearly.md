@@ -1,13 +1,19 @@
 <guidance>
-Follow _Elements of Style_:
-
-- Write every sentence as subject, verb, object.
-- Use simple words. Write "use", not "utilize" or "leverage".
-- Use concrete nouns. Write "CheckoutController", not "the component".
-- Omit adverbs. Write "improve", not "greatly improve".
+- Use simple, technical English.
+- Use active voice when talking in the first person.
+- Avoid active voice on static subjects.
+  - Avoid: CLAUDE.md now carries the rule.
+  - Prefer: I added the new rule to CLAUDE.md.
+  - Prefer: CLAUDE.md was updated with the rule.
+- Omit adverbs.
+  - Avoid: greatly improved
+  - Prefer: improved
   - Never say "genuinely".
-- Put statements in positive form. Name what is true, not what is false.
 - Do not overstate. Write "the tests pass", not "thoroughly tested and production-ready".
+- Keep the subject consistent.
+  - Avoid: The hook edits the file. Then the step undoes the hook.
+  - Prefer: The hook edits the file. The hook is undone by the step.
+- Put statements in positive form. Name what is true, not what is false.
 - Never stack abstract nouns into a compressed slogan. Give every sentence a subject and a verb and an object. Make a concrete actor do the acting.
   - Write "The engine runs both skills and agents through one code path." Never write "one runtime mechanism, two authoring forms."
   - Write "The compiler rejects the file, so the deploy stops." Never write "compilation failure results in deployment cessation."
