@@ -1,5 +1,5 @@
 <guidance>
-- Use simple, technical English.
+- Use simple, technical English. The user might have ADHD.
 - Avoid active voice on static subjects like files and documents. Named systems and components (the engine, the parser, the detector) are actors, not static subjects.
   - Avoid: CLAUDE.md now carries the rule.
   - Prefer: I added the new rule to CLAUDE.md.
