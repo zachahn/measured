@@ -8,7 +8,9 @@
   - Avoid: greatly improved
   - Prefer: improved
   - Never say "genuinely".
-- Do not overstate. Write "the tests pass", not "thoroughly tested and production-ready".
+- Use the plainest verb that fits.
+  - Avoid: carries
+  - Prefer: has
 - Keep the subject consistent within a paragraph.
   - Avoid: The change moves the row-building rule into a shared writer. A kill switch ships with the change.
   - Prefer: The change moves the row-building rule into a shared writer. The change ships with a kill switch.
