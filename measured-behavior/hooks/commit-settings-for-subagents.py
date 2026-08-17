@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: give a spawned subagent this repo's commit settings.
+"""PreToolUse hook: give a spawned subagent the commit settings in force.
 
 The reminder hooks inject the settings for a user prompt, but a subagent never
 sees a user prompt. It gets a prompt written by the agent that spawned it, so
@@ -67,7 +67,7 @@ def main():
     tool_input = payload.get("tool_input", {}) or {}
     cwd = payload.get("cwd") or os.getcwd()
 
-    updated = decide(tool_input, settings_store.load_settings(cwd))
+    updated = decide(tool_input, settings_store.load_effective_settings(cwd))
     if updated is None:
         return  # Stay silent; the spawn proceeds untouched.
 

@@ -1,8 +1,10 @@
-"""The per-repo behavior settings and the reminders rendered from them.
+"""The behavior settings and the reminders rendered from them.
 
-A repo stores settings that describe how Claude works in it: how it uses git,
-and how much it comments in code. They live in the measured settings file and
-are written with `measured-behavior-config --set <key>`.
+The settings describe how Claude works: how it uses git, and how much it
+comments in code. They are written with `measured-behavior-config --set <key>`,
+either globally or for one repo. This module reads whatever
+`settings_store.load_effective_settings` hands it and never asks which file a
+value came from, because a value in force reads the same either way.
 
 Two hooks read this module. `reminders-every-turn.py` fires on every prompt.
 `reminders-session-start.py` fires once a session. `commit-reminder-timing`
@@ -154,11 +156,9 @@ REMINDER_KEYS = tuple(key for key in COMMIT_KEYS if key != FORWARD_TO_SUBAGENTS_
 TRUE_VALUES = ("true", "yes", "on", "1", "always")
 FALSE_VALUES = ("false", "no", "off", "0", "never")
 
-HEADER = "This repo stores commit settings. They govern how you commit here:"
+HEADER = "These commit settings are stored. They govern how you commit here:"
 
-COMMENT_HEADER = (
-    "This repo stores a comment setting. It governs the code you write here:"
-)
+COMMENT_HEADER = "This comment setting is stored. It governs the code you write here:"
 
 FOOTER = (
     "A stored setting is the source of truth. Follow it even if this prompt "
@@ -168,14 +168,15 @@ FOOTER = (
 
 
 SETUP_HELP = """\
-Measured: this repo has no behavior settings. Claude will commit and comment \
-however it usually does.
+Measured: you have no behavior settings. Claude will commit and comment however \
+it usually does.
 
 Run `/measured-behavior:config` to set them, so every session behaves the \
-same way. It covers commit-behavior, commit-location, commit-style, \
-commit-scope, commit-body, commit-claude-attribution, commit-settings-for-subagents \
-(forwards the commit settings to spawned subagents), commit-reminder-timing \
-(session-start or every-turn), and comment-density."""
+same way. Store them once for every project, or for this repo alone. It covers \
+commit-behavior, commit-location, commit-style, commit-scope, commit-body, \
+commit-claude-attribution, commit-settings-for-subagents (forwards the commit \
+settings to spawned subagents), commit-reminder-timing (session-start or \
+every-turn), and comment-density."""
 
 # Short, list-only notes for values whose meaning is not obvious from the
 # name alone. `--list` shows these; KNOWN_VALUES above is the full
@@ -217,10 +218,12 @@ def any_commit_set(settings):
 
 
 def any_set(settings):
-    """Return True when the repo has stored any behavior setting at all.
+    """Return True when any behavior setting at all is stored.
 
-    The startup notice reads this. A repo that configured only comments has
-    found the feature, so the notice has done its job and stops.
+    The startup notice reads this, against the merge of the global and repo
+    files. A user who configured only comments, or who configured everything
+    globally and nothing here, has found the feature, so the notice has done
+    its job and stops.
     """
     return any(is_set(settings, key) for key in SETTING_KEYS)
 

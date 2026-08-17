@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Read and write this repo's behavior settings.
+"""Read and write the behavior settings.
 
-The settings describe how Claude works in this repo: when to commit, which
-branch to commit to, how to word a subject line, and how much comment to write
-in code. The reminder hooks state them to Claude, so they apply to all work in
-the repo.
+The settings describe how Claude works: when to commit, which branch to commit
+to, how to word a subject line, and how much comment to write in code. The
+reminder hooks state them to Claude, so they apply to all work in the repo.
 
   (no arguments)        print every behavior setting as JSON
   --get KEY             print one setting's value (nothing if unset)
@@ -12,16 +11,27 @@ the repo.
   --unset KEY           remove one setting and print the new settings
   --list                print every key with its known values
 
-Settings live in the same per-repo file the `measured` plugin uses, so
-`measured-config` shows these keys too. Writing here leaves that plugin's own
-keys untouched. The file is stored outside the repo and is not committed.
+Two scopes hold settings. The global scope applies to every project; the repo
+scope applies to the working directory and overrides the global value key by
+key. `--global` and `--repo` pick one. Without either, a read reports the merge
+of the two and a write goes to the repo, which is what the command did before
+the global scope existed.
+
+`--repo` reads the repo file alone. That is the only way to tell a value set in
+this repo from one inherited from the global file, and the config skill needs
+the difference: writing an inherited value into the repo would pin the repo to
+today's global value and stop later changes from reaching it.
+
+The repo file is shared with the `measured` plugin, so `measured-config` shows
+these keys too. Writing here leaves that plugin's own keys untouched. Both files
+are stored outside the repo and are not committed.
 
 A value outside a key's known values is stored as written, so a free-text rule
 like "commit only after the last task" works. Unknown keys are rejected: a
 typo like `commit-stlye` would otherwise store silently and never apply.
 
 Key vocabulary lives in ../lib/behavior_settings.py. Path resolution and the
-read/write of the settings file live in ../lib/settings_store.py.
+read/write of the settings files live in ../lib/settings_store.py.
 """
 
 import argparse
@@ -36,13 +46,13 @@ import settings_store  # noqa: E402
 
 
 USAGE = (
-    "usage: measured-behavior-config "
+    "usage: measured-behavior-config [--global | --repo] "
     "[--get KEY | --set KEY VALUE | --unset KEY | --list]\n"
 )
 
 HELP_TEXT = f"""\
 {USAGE}
-Read and write this repo's behavior settings.
+Read and write the behavior settings.
 
 The reminder hooks state these to Claude, so they govern every commit and every
 line of code written in the repo. They are shared across every Claude session
@@ -54,6 +64,15 @@ committed.
   --set KEY VALUE       set one setting, then print the settings
   --unset KEY           remove one setting, then print the settings
   --list                print every key with its known values
+
+Scope:
+
+  --global              act on the settings that apply to every project
+  --repo                act on this repo's settings alone
+
+Without a scope flag, a read reports the merge of the two, where a repo value
+overrides the global one, and a write goes to the repo. Unsetting a repo key
+returns it to the global value.
 
 Commit keys:
 
@@ -77,6 +96,12 @@ Hook keys:
 Run --list to see each key's known values. Any other value is stored as
 written and passed to Claude verbatim.
 """
+
+# The scope a command acts on. EFFECTIVE is a read-only view: a write with no
+# scope flag goes to the repo.
+GLOBAL = "global"
+REPO = "repo"
+EFFECTIVE = "effective"
 
 
 class _Parser(argparse.ArgumentParser):
@@ -119,9 +144,36 @@ def _format_list() -> str:
     return "\n".join(lines)
 
 
+def _read(cwd: str, scope: str) -> dict:
+    """Return the settings a read reports for a scope."""
+    if scope == GLOBAL:
+        return settings_store.load_global_settings()
+    if scope == REPO:
+        return settings_store.load_settings(cwd)
+    return settings_store.load_effective_settings(cwd)
+
+
+def _write(cwd: str, scope: str, key: str, value) -> dict:
+    """Write one setting to a scope and return that scope's settings.
+
+    A write with no scope flag goes to the repo, so the command keeps behaving
+    as it did before the global scope existed.
+    """
+    if scope == GLOBAL:
+        return settings_store.set_global_setting(key, value)
+    return settings_store.set_setting(cwd, key, value)
+
+
 def main(argv: list[str]) -> int:
     parser = _Parser(prog="measured-behavior-config", add_help=False)
     parser.add_argument("-h", "--help", action="help")
+
+    # Scope and action are separate choices, so they get separate groups: a
+    # scope flag pairs with any action.
+    scope_group = parser.add_mutually_exclusive_group()
+    scope_group.add_argument("--global", dest="global_", action="store_true")
+    scope_group.add_argument("--repo", action="store_true")
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--get", metavar="KEY")
     group.add_argument("--set", nargs=2, metavar=("KEY", "VALUE"))
@@ -130,6 +182,7 @@ def main(argv: list[str]) -> int:
 
     args = parser.parse_args(argv)
     cwd = os.getcwd()
+    scope = GLOBAL if args.global_ else REPO if args.repo else EFFECTIVE
 
     try:
         if args.list:
@@ -138,7 +191,7 @@ def main(argv: list[str]) -> int:
 
         if args.get is not None:
             _check_key(args.get)
-            value = settings_store.load_settings(cwd).get(args.get)
+            value = _read(cwd, scope).get(args.get)
             if value is not None:
                 print(value)
             return 0
@@ -146,17 +199,17 @@ def main(argv: list[str]) -> int:
         if args.set is not None:
             key, value = args.set
             _check_key(key)
-            settings = settings_store.set_setting(cwd, key, value)
-            print(json.dumps(_ours_only(settings), indent=2))
+            print(json.dumps(_ours_only(_write(cwd, scope, key, value)), indent=2))
             return 0
 
         if args.unset is not None:
             _check_key(args.unset)
-            settings = settings_store.set_setting(cwd, args.unset, None)
-            print(json.dumps(_ours_only(settings), indent=2))
+            print(
+                json.dumps(_ours_only(_write(cwd, scope, args.unset, None)), indent=2)
+            )
             return 0
 
-        print(json.dumps(_ours_only(settings_store.load_settings(cwd)), indent=2))
+        print(json.dumps(_ours_only(_read(cwd, scope)), indent=2))
         return 0
     except ValueError as e:
         print(str(e), file=sys.stderr)

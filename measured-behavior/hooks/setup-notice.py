@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """SessionStart hook: tell the user the behavior settings exist.
 
-A repo that has never stored a behavior setting gets no signal that the
-settings exist, so this hook shows a short setup notice when a session starts.
-It stops for good once the repo stores any one of them.
+A user who has never stored a behavior setting gets no signal that the settings
+exist, so this hook shows a short setup notice when a session starts. It stops
+for good once any one of them is stored, in this repo or globally. A global
+setting silences the notice in every repo, because a user who set one has found
+the feature and needs no further prompting anywhere.
 
 The notice reaches the user, not Claude. It travels in the `systemMessage`
 field, which Claude Code shows in the terminal. Two other channels look like
@@ -45,8 +47,8 @@ def main():
 
     cwd = payload.get("cwd") or os.getcwd()
 
-    if behavior_settings.any_set(settings_store.load_settings(cwd)):
-        return  # Already configured; say nothing.
+    if behavior_settings.any_set(settings_store.load_effective_settings(cwd)):
+        return  # Already configured here or globally; say nothing.
 
     # systemMessage reaches the user's terminal. additionalContext would reach
     # Claude instead, and Claude has nothing to do with this message.

@@ -86,6 +86,43 @@ class AutoApproveConfigTest(unittest.TestCase):
             os.symlink(PLUGIN_BIN, link)
             self.assert_command_allowed(f"{link} --list")
 
+    # Scope flags. Both files belong to the command, so a scope changes which
+    # one a write lands in and nothing else.
+
+    def test_allows_a_bare_scope_flag(self):
+        self.assert_command_allowed("measured-behavior-config --global")
+        self.assert_command_allowed("measured-behavior-config --repo")
+
+    def test_allows_a_scoped_set(self):
+        self.assert_command_allowed(
+            "measured-behavior-config --global --set commit-style imperative"
+        )
+        self.assert_command_allowed(
+            "measured-behavior-config --repo --set commit-style imperative"
+        )
+
+    def test_allows_a_scoped_get(self):
+        self.assert_command_allowed(
+            "measured-behavior-config --global --get commit-style"
+        )
+
+    def test_allows_a_scoped_unset(self):
+        self.assert_command_allowed(
+            "measured-behavior-config --global --unset commit-style"
+        )
+
+    def test_silent_on_a_scoped_unknown_key(self):
+        self.assert_command_silent(
+            "measured-behavior-config --global --set not-a-real-key x"
+        )
+
+    def test_silent_on_two_scope_flags(self):
+        self.assert_command_silent("measured-behavior-config --global --repo")
+        self.assert_command_silent("measured-behavior-config --global --global --list")
+
+    def test_silent_on_a_trailing_scope_flag(self):
+        self.assert_command_silent("measured-behavior-config --list --global")
+
     # Shell operators that chain a second command onto the first.
 
     def test_silent_on_chained_command(self):

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""UserPromptSubmit hook: state this repo's behavior settings each turn.
+"""UserPromptSubmit hook: state the behavior settings in force each turn.
+
+The settings come from the merge of the global file and this repo's file, so a
+repo that sets nothing still gets the user's global policy.
 
 A SessionStart hook states a setting once and it fades as the session grows.
 This hook fires on every prompt, so a setting rides in fresh each turn.
@@ -47,7 +50,7 @@ def main():
 
     cwd = payload.get("cwd") or os.getcwd()
 
-    parts = reminders(settings_store.load_settings(cwd))
+    parts = reminders(settings_store.load_effective_settings(cwd))
     if not parts:
         return  # Nothing configured; stay quiet.
 

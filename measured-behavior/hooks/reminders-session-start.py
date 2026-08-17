@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""SessionStart hook: state this repo's commit settings once a session.
+"""SessionStart hook: state the commit settings in force once a session.
+
+The settings come from the merge of the global file and this repo's file, so a
+repo that sets nothing still gets the user's global commit policy.
 
 This is the default path. The commit settings change how a commit is made, and
 most turns end in no commit, so stating them once a session costs less than
@@ -48,7 +51,7 @@ def main():
 
     cwd = payload.get("cwd") or os.getcwd()
 
-    text = reminder(settings_store.load_settings(cwd))
+    text = reminder(settings_store.load_effective_settings(cwd))
     if not text:
         return  # Nothing to state.
 

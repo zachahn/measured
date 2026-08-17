@@ -23,11 +23,12 @@ The hook approves a command only when every one of these holds:
    binary at `./measured-behavior-config` or `~/evil/measured-behavior-config`
    is refused.
 3. The arguments form one of the command's real invocations: no arguments,
-   `--list`, `--help`, `-h`, `--get KEY`, `--unset KEY`, or `--set KEY VALUE`.
-   KEY must be a known behavior setting. The argument grammar is small and
-   fully known, so the hook checks it rather than approving arbitrary argv.
-   `--set` in particular writes the file that the reminder hooks inject into
-   Claude's context on every later prompt, so its key is worth checking.
+   `--list`, `--help`, `-h`, `--get KEY`, `--unset KEY`, or `--set KEY VALUE`,
+   each optionally preceded by one scope flag, `--global` or `--repo`. KEY must
+   be a known behavior setting. The argument grammar is small and fully known,
+   so the hook checks it rather than approving arbitrary argv. `--set` in
+   particular writes the file that the reminder hooks inject into Claude's
+   context on every later prompt, so its key is worth checking.
 
 We never *deny*; a hook denial would override the user, and the point is only
 to remove friction. Stdlib-only and tolerant of failure: any unexpected error
@@ -55,6 +56,9 @@ PLUGIN_BIN = pathlib.Path(__file__).resolve().parent.parent / "bin" / TARGET
 # ! ~ # \ or newline. A command carrying anything else is refused unread.
 SAFE_CHARS = frozenset(string.ascii_letters + string.digits + " -_./=:,'\"")
 
+# The scope flags the command accepts, one at a time, before any action.
+SCOPE_FLAGS = ("--global", "--repo")
+
 
 def _resolves_to_plugin_bin(program: str) -> bool:
     """Return True if an absolute path names this plugin's own command."""
@@ -67,9 +71,22 @@ def _resolves_to_plugin_bin(program: str) -> bool:
 
 
 def _arguments_are_known(args: list[str]) -> bool:
-    """Return True if the arguments form one real invocation of the command."""
+    """Return True if the arguments form one real invocation of the command.
+
+    One leading scope flag is allowed and the rest is checked as usual. The
+    scope decides which settings file a write lands in, and both files are the
+    command's own, so neither scope widens what the command can touch.
+    """
     if not args:
         return True
+
+    if args[0] in SCOPE_FLAGS:
+        rest = args[1:]
+        if not rest:
+            return True  # A bare scope flag prints that scope's settings.
+        if rest[0] in SCOPE_FLAGS:
+            return False  # The command rejects a second scope flag.
+        return _arguments_are_known(rest)
 
     flag = args[0]
     rest = args[1:]

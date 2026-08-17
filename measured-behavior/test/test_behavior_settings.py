@@ -865,6 +865,345 @@ class SessionStartHookTest(unittest.TestCase):
             self.assertEqual(_run(START_HOOK, tmp, raw="not json")[0], "")
 
 
+class GlobalSettingsTest(unittest.TestCase):
+    """The settings file that applies to every project."""
+
+    def test_sits_beside_the_projects_dir(self):
+        with _env(XDG_STATE_HOME="/tmp/xdg-state-test"):
+            self.assertEqual(
+                settings_store.global_settings_path(),
+                settings_store.state_root() / settings_store.SETTINGS_FILENAME,
+            )
+
+    def test_returns_empty_when_file_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                self.assertEqual(settings_store.load_global_settings(), {})
+
+    def test_returns_empty_on_malformed_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global_text("{not json")
+                self.assertEqual(settings_store.load_global_settings(), {})
+
+    def test_returns_empty_when_not_an_object(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global_text("[1, 2]")
+                self.assertEqual(settings_store.load_global_settings(), {})
+
+    def test_reads_a_stored_object(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global({"commit-body": "never"})
+                self.assertEqual(
+                    settings_store.load_global_settings(), {"commit-body": "never"}
+                )
+
+    def test_set_writes_and_deletes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                settings_store.set_global_setting("commit-body", "never")
+                self.assertEqual(
+                    settings_store.load_global_settings(), {"commit-body": "never"}
+                )
+
+                settings_store.set_global_setting("commit-body", None)
+                self.assertEqual(settings_store.load_global_settings(), {})
+
+    def test_set_creates_the_state_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=os.path.join(tmp, "missing")):
+                settings_store.set_global_setting("commit-body", "never")
+                self.assertTrue(settings_store.global_settings_path().is_file())
+
+    def test_leaves_repo_settings_alone(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_settings("/some/project", {"commit-style": "imperative"})
+                settings_store.set_global_setting("commit-style", "conventional")
+
+                self.assertEqual(
+                    settings_store.load_settings("/some/project"),
+                    {"commit-style": "imperative"},
+                )
+
+
+class EffectiveSettingsTest(unittest.TestCase):
+    """The merge the hooks read: global defaults, repo overrides."""
+
+    def _effective(self, tmp, global_settings=None, repo_settings=None):
+        with _env(XDG_STATE_HOME=tmp):
+            if global_settings is not None:
+                _write_global(global_settings)
+            if repo_settings is not None:
+                _write_settings("/some/project", repo_settings)
+            return settings_store.load_effective_settings("/some/project")
+
+    def test_empty_when_neither_scope_is_set(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self._effective(tmp), {})
+
+    def test_reads_a_global_value_for_an_unconfigured_repo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                self._effective(tmp, {"commit-style": "imperative"}),
+                {"commit-style": "imperative"},
+            )
+
+    def test_reads_a_repo_value_with_no_global_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                self._effective(tmp, repo_settings={"commit-style": "imperative"}),
+                {"commit-style": "imperative"},
+            )
+
+    def test_repo_overrides_the_global_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                self._effective(
+                    tmp,
+                    {"commit-style": "imperative"},
+                    {"commit-style": "conventional"},
+                ),
+                {"commit-style": "conventional"},
+            )
+
+    def test_merges_key_by_key(self):
+        """A repo overriding one key still inherits the rest."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                self._effective(
+                    tmp,
+                    {"commit-style": "imperative", "commit-body": "never"},
+                    {"commit-style": "conventional"},
+                ),
+                {"commit-style": "conventional", "commit-body": "never"},
+            )
+
+    def test_a_blank_repo_value_does_not_mask_a_global_one(self):
+        """No command writes a blank, and masking on one would be invisible."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                self._effective(
+                    tmp,
+                    {"commit-style": "imperative", "commit-body": "never"},
+                    {"commit-style": "   ", "commit-body": None},
+                ),
+                {"commit-style": "imperative", "commit-body": "never"},
+            )
+
+    def test_keeps_keys_owned_by_the_measured_plugin(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            effective = self._effective(
+                tmp,
+                {"commit-style": "imperative"},
+                {"worktree-setup": "bundle install"},
+            )
+            self.assertEqual(effective["worktree-setup"], "bundle install")
+
+    def test_changes_nothing_for_a_repo_scoped_read(self):
+        """load_settings stays repo-only; the merge is a separate call."""
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global({"commit-style": "imperative"})
+                self.assertEqual(settings_store.load_settings("/some/project"), {})
+
+
+class GlobalDefaultsInHooksTest(unittest.TestCase):
+    """Every hook reads the merge, so a global setting reaches every repo."""
+
+    def test_session_start_states_a_global_commit_setting(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global({"commit-style": "imperative"})
+
+            out = _run(START_HOOK, tmp, {"cwd": "/unconfigured/project"})[0]
+            context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+            self.assertIn("imperative sentence", context)
+
+    def test_session_start_prefers_the_repo_value(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global({"commit-style": "imperative"})
+                _write_settings("/some/project", {"commit-style": "conventional"})
+
+            out = _run(START_HOOK, tmp, {"cwd": "/some/project"})[0]
+            context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+            self.assertIn("Conventional Commits", context)
+            self.assertNotIn("imperative sentence", context)
+
+    def test_every_turn_states_a_global_comment_setting(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global({behavior_settings.COMMENT_KEY: "never"})
+
+            out = _run_hook(tmp, {"cwd": "/unconfigured/project"})
+            context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+            self.assertIn("Write no comments", context)
+
+    def test_every_turn_reads_global_timing(self):
+        """The timing key works globally too, so the commit settings move."""
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global(
+                    {
+                        "commit-location": "current-branch",
+                        behavior_settings.COMMIT_TIMING_KEY: "every-turn",
+                    }
+                )
+
+            out = _run_hook(tmp, {"cwd": "/unconfigured/project"})
+            context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+            self.assertIn("branch that is already checked out", context)
+            self.assertEqual(_run(START_HOOK, tmp, {"cwd": "/unconfigured/project"})[0], "")
+
+    def test_subagent_hook_forwards_global_settings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global(
+                    {
+                        "commit-location": "current-branch",
+                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
+                    }
+                )
+
+            payload = dict(AgentHookTest.PAYLOAD, cwd="/unconfigured/project")
+            out = _run(SUBAGENT_HOOK, tmp, payload)[0]
+            updated = json.loads(out)["hookSpecificOutput"]["updatedInput"]
+            self.assertIn("branch that is already checked out", updated["prompt"])
+
+    def test_setup_notice_stays_silent_for_a_global_setting(self):
+        """The point of the global scope: one setup, then no notice anywhere."""
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global({"commit-style": "imperative"})
+
+            stdout, stderr = _run_help_hook(tmp, {"cwd": "/unconfigured/project"})
+            self.assertEqual(stdout, "")
+            self.assertEqual(stderr, "")
+
+    def test_setup_notice_still_shows_when_neither_scope_is_set(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(XDG_STATE_HOME=tmp):
+                _write_global({"worktree-setup": "bundle install"})
+
+            stdout, _ = _run_help_hook(tmp, {"cwd": "/unconfigured/project"})
+            self.assertIn("no behavior settings", json.loads(stdout)["systemMessage"])
+
+
+class ConfigScriptScopeTest(unittest.TestCase):
+    """`--global` and `--repo` on the config script."""
+
+    def _repo(self, tmp):
+        repo = os.path.realpath(os.path.join(tmp, "repo"))
+        os.makedirs(repo, exist_ok=True)
+        return repo
+
+    def _run(self, tmp, *args, cwd):
+        env = dict(os.environ, XDG_STATE_HOME=tmp)
+        return subprocess.run(
+            [sys.executable, str(CONFIG_BIN), *args],
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd=cwd,
+        )
+
+    def test_global_write_leaves_the_repo_file_alone(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = self._repo(tmp)
+            self._run(tmp, "--global", "--set", "commit-style", "imperative", cwd=cwd)
+
+            self.assertEqual(json.loads(self._run(tmp, "--repo", cwd=cwd).stdout), {})
+            self.assertEqual(
+                json.loads(self._run(tmp, "--global", cwd=cwd).stdout),
+                {"commit-style": "imperative"},
+            )
+
+    def test_repo_write_leaves_the_global_file_alone(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = self._repo(tmp)
+            self._run(tmp, "--set", "commit-style", "imperative", cwd=cwd)
+
+            self.assertEqual(json.loads(self._run(tmp, "--global", cwd=cwd).stdout), {})
+
+    def test_repo_flag_writes_the_repo_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = self._repo(tmp)
+            self._run(tmp, "--repo", "--set", "commit-style", "imperative", cwd=cwd)
+
+            self.assertEqual(
+                json.loads(self._run(tmp, "--repo", cwd=cwd).stdout),
+                {"commit-style": "imperative"},
+            )
+            self.assertEqual(json.loads(self._run(tmp, "--global", cwd=cwd).stdout), {})
+
+    def test_no_flag_prints_the_merge(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = self._repo(tmp)
+            self._run(tmp, "--global", "--set", "commit-body", "never", cwd=cwd)
+            self._run(tmp, "--set", "commit-style", "imperative", cwd=cwd)
+
+            self.assertEqual(
+                json.loads(self._run(tmp, cwd=cwd).stdout),
+                {"commit-style": "imperative", "commit-body": "never"},
+            )
+
+    def test_get_reads_the_scope_it_is_given(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = self._repo(tmp)
+            self._run(tmp, "--global", "--set", "commit-style", "imperative", cwd=cwd)
+            self._run(tmp, "--set", "commit-style", "conventional", cwd=cwd)
+
+            for args, expected in (
+                (("--get", "commit-style"), "conventional"),
+                (("--repo", "--get", "commit-style"), "conventional"),
+                (("--global", "--get", "commit-style"), "imperative"),
+            ):
+                self.assertEqual(self._run(tmp, *args, cwd=cwd).stdout.strip(), expected)
+
+    def test_unsetting_a_repo_key_restores_the_global_value(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = self._repo(tmp)
+            self._run(tmp, "--global", "--set", "commit-style", "imperative", cwd=cwd)
+            self._run(tmp, "--set", "commit-style", "conventional", cwd=cwd)
+            self._run(tmp, "--unset", "commit-style", cwd=cwd)
+
+            self.assertEqual(
+                self._run(tmp, "--get", "commit-style", cwd=cwd).stdout.strip(),
+                "imperative",
+            )
+
+    def test_global_unset_empties_the_global_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = self._repo(tmp)
+            self._run(tmp, "--global", "--set", "commit-style", "imperative", cwd=cwd)
+            self._run(tmp, "--global", "--unset", "commit-style", cwd=cwd)
+
+            self.assertEqual(json.loads(self._run(tmp, cwd=cwd).stdout), {})
+
+    def test_global_rejects_an_unknown_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self._run(
+                tmp, "--global", "--set", "commit-stlye", "imperative",
+                cwd=self._repo(tmp),
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("unknown setting", result.stderr)
+
+    def test_rejects_both_scope_flags(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self._run(tmp, "--global", "--repo", cwd=self._repo(tmp))
+            self.assertNotEqual(result.returncode, 0)
+
+    def test_help_documents_both_flags(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self._run(tmp, "--help", cwd=self._repo(tmp)).stdout
+            self.assertIn("--global", out)
+            self.assertIn("--repo", out)
+
+
 class ManifestTest(unittest.TestCase):
     """The manifest is what makes the hooks fire."""
 
@@ -958,6 +1297,16 @@ def _write_settings_text(project, text):
     repo = settings_store.repo_dir_for_project(project)
     repo.mkdir(parents=True, exist_ok=True)
     (repo / settings_store.SETTINGS_FILENAME).write_text(text)
+
+
+def _write_global(settings):
+    _write_global_text(json.dumps(settings))
+
+
+def _write_global_text(text):
+    path = settings_store.global_settings_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
 
 
 def _run(hook, state_home, payload=None, raw=None):
