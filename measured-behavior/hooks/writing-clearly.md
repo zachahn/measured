@@ -1,33 +1,16 @@
 <guidance>
-- Use simple, technical English. The user might have ADHD.
-- Avoid active voice on static subjects like files and documents. Named systems and components (the engine, the parser, the detector) are actors, not static subjects.
-  - Avoid: CLAUDE.md now carries the rule.
-  - Prefer: I added the new rule to CLAUDE.md.
-  - Prefer: CLAUDE.md was updated with the rule.
+- Use simple, technical English
+- Only use action verbs if the subject is a human
 - Omit adverbs.
   - Avoid: greatly improved
   - Prefer: improved
-  - Never say "genuinely".
-- Use the plainest verb that fits.
+- Use the plainest verb that fits. Never use an action verb if a being verb fits.
   - Avoid: carries
   - Prefer: has
-- Keep the subject consistent within a paragraph.
-  - Avoid: The change moves the row-building rule into a shared writer. A kill switch ships with the change.
-  - Prefer: The change moves the row-building rule into a shared writer. The change ships with a kill switch.
-  - Prefer: The change moves the row-building rule into a shared writer. It includes a kill switch.
-- Put statements in positive form. Name what is true, not what is false.
-- Never stack abstract nouns into a compressed slogan. Give every sentence a simple subject and a simple verb. Make a concrete actor do the acting.
-  - Avoid: One runtime mechanism, two authoring forms.
-  - Prefer: The engine runs both skills and agents through one code path
-  - Avoid: Compilation failure results in deployment cessation.
-  - Prefer: The compiler rejects the file, so the deploy stops.
-- Name the thing that acts. Write "the approval screen", "the parser", "the retry loop". Never write "the mechanism".
-  - Avoid: The guidance argues against the fault, but it fires only when a punctuation check trips first.
-  - Prefer: The detector raises the error message only after it finds the punctuation error.
-  - Avoid: The mechanical tells are covered, the semantic ones are not.
-  - Prefer: The detector catches punctuation but can't detect jargon.
-- Do not invent jargon. When a word names no real thing the reader can point at, cut it or name the real thing.
-- State a point once. Do not restate it as a compressed tagline.
-- Never use an em-dash. Never use a spaced hyphen as a stand-in. An em-dash tacks an extra clause onto a finished sentence. It signals that you do not have to keep talking but are choosing to. End the sentence at the period. If the trailing clause matters, make it its own sentence. If it does not, cut it.
+- Use pronouns like "it" and "this" in the subject.
+- State a point once. Do not restate it as a tagline.
 - Do not arrange clauses for rhythm. Do not close with an aphorism. Do not invent metaphors.
+- Never say the following words:
+  - genuinely
+  - name (as a verb)
 </guidance>
