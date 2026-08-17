@@ -76,22 +76,20 @@ returns it to the global value.
 
 Commit keys:
 
-  commit-behavior            when to commit
-  commit-location            which branch to commit to
-  commit-style               how to word a subject line
-  commit-scope               how much work goes in one commit
-  commit-body                when a commit needs a body
-  commit-claude-attribution  whether to add Co-Authored-By/Claude-Session trailers
+  commit-behavior       when to commit
+  commit-location       which branch to commit to
+  commit-style          how to word a subject line
+  commit-scope          how much work goes in one commit
+  commit-body           when a commit needs a body
 
 Comment key:
 
   comment-density       how much comment to write in code. Unset means Claude
                         comments as it normally would.
 
-Hook keys:
+Hook key:
 
   commit-reminder-timing        session-start (default) or every-turn
-  commit-settings-for-subagents    forward the commit settings to subagents
 
 Run --list to see each key's known values. Any other value is stored as
 written and passed to Claude verbatim.

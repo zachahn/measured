@@ -20,7 +20,6 @@ import settings_store  # noqa: E402
 HOOK = PLUGIN_ROOT / "hooks" / "reminders-every-turn.py"
 START_HOOK = PLUGIN_ROOT / "hooks" / "reminders-session-start.py"
 HELP_HOOK = PLUGIN_ROOT / "hooks" / "setup-notice.py"
-SUBAGENT_HOOK = PLUGIN_ROOT / "hooks" / "commit-settings-for-subagents.py"
 CONFIG_BIN = PLUGIN_ROOT / "bin" / "measured-behavior-config"
 
 # The `measured` plugin owns writing the settings file. These tests read its
@@ -184,19 +183,19 @@ class RenderTest(unittest.TestCase):
     def test_orders_keys_consistently(self):
         out = behavior_settings.render(
             {
-                "commit-claude-attribution": "false",
+                "commit-body": "never",
                 "commit-behavior": "after-every-turn",
                 "commit-style": "conventional",
             }
         )
         self.assertLess(out.index("commit-behavior"), out.index("commit-style"))
-        self.assertLess(out.index("commit-style"), out.index("commit-claude-attribution"))
+        self.assertLess(out.index("commit-style"), out.index("commit-body"))
 
     def test_renders_every_commit_instruction(self):
         out = behavior_settings.render(
             {key: "true" for key in behavior_settings.COMMIT_KEYS}
         )
-        for key in behavior_settings.REMINDER_KEYS:
+        for key in behavior_settings.COMMIT_KEYS:
             self.assertIn(f"- {key}:", out)
 
 
@@ -389,167 +388,6 @@ class SetupNoticeTest(unittest.TestCase):
     def test_setup_help_names_every_key(self):
         for key in behavior_settings.SETTING_KEYS:
             self.assertIn(key, behavior_settings.SETUP_HELP)
-
-
-class ForwardToAgentsTest(unittest.TestCase):
-    def test_off_when_unset(self):
-        self.assertFalse(behavior_settings.forward_to_subagents({}))
-
-    def test_on_for_true_values(self):
-        for value in behavior_settings.TRUE_VALUES:
-            self.assertTrue(
-                behavior_settings.forward_to_subagents(
-                    {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: value}
-                ),
-                f"{value!r} should enable forwarding",
-            )
-
-    def test_off_for_false_values(self):
-        for value in behavior_settings.FALSE_VALUES:
-            self.assertFalse(
-                behavior_settings.forward_to_subagents(
-                    {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: value}
-                ),
-                f"{value!r} should disable forwarding",
-            )
-
-    def test_off_for_an_unrecognized_value(self):
-        """Rewriting another agent's prompt needs a clear yes."""
-        self.assertFalse(
-            behavior_settings.forward_to_subagents(
-                {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "maybe"}
-            )
-        )
-
-    def test_stays_out_of_the_reminder(self):
-        out = behavior_settings.render(
-            {
-                behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
-                "commit-style": "imperative",
-            }
-        )
-        self.assertNotIn(behavior_settings.FORWARD_TO_SUBAGENTS_KEY, out)
-
-    def test_alone_is_no_commit_policy(self):
-        """Setting only this key leaves the repo with nothing to say about commits."""
-        self.assertFalse(
-            behavior_settings.any_commit_set(
-                {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true"}
-            )
-        )
-
-    def test_alone_still_silences_the_setup_notice(self):
-        """The user who set it has found the feature; the notice has done its job."""
-        self.assertTrue(
-            behavior_settings.any_set({behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true"})
-        )
-
-
-class AgentHookTest(unittest.TestCase):
-    PAYLOAD = {
-        "cwd": "/some/project",
-        "tool_name": "Agent",
-        "tool_input": {
-            "prompt": "Find all API endpoints",
-            "description": "Find endpoints",
-            "subagent_type": "Explore",
-            "model": "sonnet",
-        },
-    }
-
-    def _run(self, tmp, payload=None):
-        return _run(SUBAGENT_HOOK, tmp, payload or self.PAYLOAD)[0]
-
-    def test_silent_when_forwarding_is_unset(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with _env(XDG_STATE_HOME=tmp):
-                _write_settings("/some/project", {"commit-style": "imperative"})
-            self.assertEqual(self._run(tmp), "")
-
-    def test_silent_when_forwarding_is_false(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with _env(XDG_STATE_HOME=tmp):
-                _write_settings(
-                    "/some/project",
-                    {
-                        "commit-style": "imperative",
-                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "false",
-                    },
-                )
-            self.assertEqual(self._run(tmp), "")
-
-    def test_silent_when_no_commit_settings_are_stored(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with _env(XDG_STATE_HOME=tmp):
-                _write_settings(
-                    "/some/project", {behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true"}
-                )
-            self.assertEqual(self._run(tmp), "")
-
-    def test_appends_the_settings_to_the_prompt(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with _env(XDG_STATE_HOME=tmp):
-                _write_settings(
-                    "/some/project",
-                    {
-                        "commit-location": "current-branch",
-                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
-                    },
-                )
-            updated = json.loads(self._run(tmp))["hookSpecificOutput"]["updatedInput"]
-
-            self.assertTrue(updated["prompt"].startswith("Find all API endpoints"))
-            self.assertIn("branch that is already checked out", updated["prompt"])
-
-    def test_preserves_every_other_field(self):
-        """updatedInput replaces the whole object, so nothing may be dropped."""
-        with tempfile.TemporaryDirectory() as tmp:
-            with _env(XDG_STATE_HOME=tmp):
-                _write_settings(
-                    "/some/project",
-                    {
-                        "commit-style": "imperative",
-                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
-                    },
-                )
-            updated = json.loads(self._run(tmp))["hookSpecificOutput"]["updatedInput"]
-
-            original = self.PAYLOAD["tool_input"]
-            self.assertEqual(set(updated), set(original))
-            for field in original:
-                if field == "prompt":
-                    continue
-                self.assertEqual(updated[field], original[field], f"{field} changed")
-
-    def test_grants_no_permission(self):
-        """The hook rewrites input; it must not approve the spawn."""
-        with tempfile.TemporaryDirectory() as tmp:
-            with _env(XDG_STATE_HOME=tmp):
-                _write_settings(
-                    "/some/project",
-                    {
-                        "commit-style": "imperative",
-                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
-                    },
-                )
-            specific = json.loads(self._run(tmp))["hookSpecificOutput"]
-            self.assertNotIn("permissionDecision", specific)
-
-    def test_handles_an_empty_prompt(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with _env(XDG_STATE_HOME=tmp):
-                _write_settings(
-                    "/some/project",
-                    {
-                        "commit-style": "imperative",
-                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
-                    },
-                )
-            payload = dict(self.PAYLOAD, tool_input={"prompt": ""})
-            updated = json.loads(self._run(tmp, payload))["hookSpecificOutput"][
-                "updatedInput"
-            ]
-            self.assertFalse(updated["prompt"].startswith("\n"))
 
 
 class ConfigScriptTest(unittest.TestCase):
@@ -1058,21 +896,6 @@ class GlobalDefaultsInHooksTest(unittest.TestCase):
             self.assertIn("branch that is already checked out", context)
             self.assertEqual(_run(START_HOOK, tmp, {"cwd": "/unconfigured/project"})[0], "")
 
-    def test_subagent_hook_forwards_global_settings(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with _env(XDG_STATE_HOME=tmp):
-                _write_global(
-                    {
-                        "commit-location": "current-branch",
-                        behavior_settings.FORWARD_TO_SUBAGENTS_KEY: "true",
-                    }
-                )
-
-            payload = dict(AgentHookTest.PAYLOAD, cwd="/unconfigured/project")
-            out = _run(SUBAGENT_HOOK, tmp, payload)[0]
-            updated = json.loads(out)["hookSpecificOutput"]["updatedInput"]
-            self.assertIn("branch that is already checked out", updated["prompt"])
-
     def test_setup_notice_stays_silent_for_a_global_setting(self):
         """The point of the global scope: one setup, then no notice anywhere."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -1257,11 +1080,6 @@ class ManifestTest(unittest.TestCase):
                         (PLUGIN_ROOT / "hooks" / name).is_file(),
                         f"{event} points at a missing hook: {name}",
                     )
-
-    def test_registers_the_agent_hook_on_the_agent_tool(self):
-        entries = self._entries("PreToolUse", "commit-settings-for-subagents.py")
-        self.assertEqual(len(entries), 1)
-        self.assertEqual(entries[0]["matcher"], "Agent")
 
 
 class _env:

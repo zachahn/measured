@@ -27,14 +27,7 @@ COMMIT_KEYS = (
     "commit-style",
     "commit-scope",
     "commit-body",
-    "commit-claude-attribution",
-    "commit-settings-for-subagents",
 )
-
-# `commit-settings-for-subagents` configures the forwarding hook rather than a
-# commit. The hook reads it; `render` leaves it out of the reminder, because
-# telling Claude how its own subagents get briefed changes no commit it makes.
-FORWARD_TO_SUBAGENTS_KEY = "commit-settings-for-subagents"
 
 # When the commit reminder reaches Claude. It configures a hook rather than
 # describing a commit, so it stays out of the reminder too.
@@ -46,10 +39,6 @@ COMMENT_KEY = "comment-density"
 
 # Every key `measured-behavior-config` accepts.
 SETTING_KEYS = (*COMMIT_KEYS, COMMIT_TIMING_KEY, COMMENT_KEY)
-
-# What the forwarding hook does when the key is unset. Forwarding off by
-# default keeps a spawned subagent's prompt exactly as its author wrote it.
-FORWARD_TO_SUBAGENTS_DEFAULT = False
 
 # When to state the commit settings if the repo has not said. Once a session is
 # enough: the settings change how a commit is made, not whether Claude is
@@ -112,20 +101,6 @@ KNOWN_VALUES = {
         ),
         "never": "Write a subject line only. Add no body.",
     },
-    "commit-claude-attribution": {
-        "true": (
-            "Add the `Co-Authored-By: Claude` and `Claude-Session:` trailers to "
-            "every commit."
-        ),
-        "false": (
-            "Add no attribution trailers. Leave out `Co-Authored-By: Claude` and "
-            "`Claude-Session:`."
-        ),
-    },
-    FORWARD_TO_SUBAGENTS_KEY: {
-        "true": "Append the commit settings to every subagent's prompt.",
-        "false": "Leave subagent prompts alone.",
-    },
     COMMIT_TIMING_KEY: {
         SESSION_START: "State the commit settings once, at the start of a session.",
         EVERY_TURN: "State the commit settings on every prompt.",
@@ -149,13 +124,6 @@ KNOWN_VALUES = {
     },
 }
 
-# Keys that describe a commit. The reminder lists these; the other keys steer a
-# hook and are not commit instructions.
-REMINDER_KEYS = tuple(key for key in COMMIT_KEYS if key != FORWARD_TO_SUBAGENTS_KEY)
-
-TRUE_VALUES = ("true", "yes", "on", "1", "always")
-FALSE_VALUES = ("false", "no", "off", "0", "never")
-
 HEADER = "These commit settings are stored. They govern how you commit here:"
 
 COMMENT_HEADER = "This comment setting is stored. It governs the code you write here:"
@@ -174,9 +142,7 @@ it usually does.
 Run `/measured-behavior:config` to set them, so every session behaves the \
 same way. Store them once for every project, or for this repo alone. It covers \
 commit-behavior, commit-location, commit-style, commit-scope, commit-body, \
-commit-claude-attribution, commit-settings-for-subagents (forwards the commit \
-settings to spawned subagents), commit-reminder-timing (session-start or \
-every-turn), and comment-density."""
+commit-reminder-timing (session-start or every-turn), and comment-density."""
 
 # Short, list-only notes for values whose meaning is not obvious from the
 # name alone. `--list` shows these; KNOWN_VALUES above is the full
@@ -189,12 +155,6 @@ LIST_HINTS = {
     "commit-style": {
         "imperative": 'e.g. "Add trailing comma support"',
         "conventional": 'e.g. "feat(parser): add trailing comma support"',
-    },
-    "commit-claude-attribution": {
-        "true": "adds Co-Authored-By + Claude-Session trailers",
-    },
-    FORWARD_TO_SUBAGENTS_KEY: {
-        "false": "the default",
     },
     COMMIT_TIMING_KEY: {
         SESSION_START: "the default",
@@ -211,10 +171,11 @@ def is_set(settings, key):
 def any_commit_set(settings):
     """Return True when the repo has at least one commit instruction stored.
 
-    Ignores the keys that steer a hook rather than describing a commit. A repo
-    that set only those still has nothing to say about commits.
+    Reads the commit keys alone. `commit-reminder-timing` steers a hook rather
+    than describing a commit, so a repo that set only that still has nothing to
+    say about commits.
     """
-    return any(is_set(settings, key) for key in REMINDER_KEYS)
+    return any(is_set(settings, key) for key in COMMIT_KEYS)
 
 
 def any_set(settings):
@@ -226,19 +187,6 @@ def any_set(settings):
     its job and stops.
     """
     return any(is_set(settings, key) for key in SETTING_KEYS)
-
-
-def forward_to_subagents(settings):
-    """Return True when subagent prompts should carry the commit settings.
-
-    Off unless the repo turns it on. An unrecognized value counts as off: this
-    decides whether to rewrite a subagent's prompt, so anything short of a
-    clear yes leaves the prompt alone.
-    """
-    value = settings.get(FORWARD_TO_SUBAGENTS_KEY)
-    if value is None:
-        return FORWARD_TO_SUBAGENTS_DEFAULT
-    return str(value).strip().lower() in TRUE_VALUES
 
 
 def commit_timing(settings):
@@ -276,7 +224,7 @@ def render(settings):
     """
     lines = [
         f"- {key}: {describe(key, settings[key])}"
-        for key in REMINDER_KEYS
+        for key in COMMIT_KEYS
         if is_set(settings, key)
     ]
 

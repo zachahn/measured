@@ -81,7 +81,7 @@ The implementer commits its own work after self-review. Resolve the commit instr
 4. **If `on-user-request`:** tell the implementer not to commit; it leaves its work uncommitted.
 5. **If any other value:** pass it through verbatim as the commit instruction, so the user's rule (e.g. "commit only after the last task") governs whether and how the implementer commits.
 
-Also read `measured-config --get commit-location`, `--get commit-style`, `--get commit-scope`, `--get commit-body`, and `--get commit-claude-attribution`. Pass every value that prints to the implementer alongside the commit instruction, so its commits match the rest of the repo. Skip any that print nothing.
+Also read `measured-config --get commit-location`, `--get commit-style`, `--get commit-scope`, and `--get commit-body`. Pass every value that prints to the implementer alongside the commit instruction, so its commits match the rest of the repo. Skip any that print nothing.
 
 ### Verify the rule was followed
 
