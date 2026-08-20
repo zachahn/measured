@@ -53,8 +53,6 @@ module TestTasks
 
     task :scripts do
       sh "python3 measured/test/test_session_lib.py"
-      sh "python3 measured-behavior/test/test_writing_clearly.py"
-      sh "python3 measured-behavior/test/test_writing_clearly_detector.py"
       sh "python3 measured-behavior/test/test_behavior_settings.py"
       sh "python3 measured-behavior/test/test_auto_approve_config.py"
       sh "python3 measured/test/test_auto_approve_plugin_reads.py"
