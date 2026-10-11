@@ -15,11 +15,29 @@ import json
 import sys
 
 SESSION_START_RULE = """\
-Placeholder session-start rule.
+<writing-clearly>
+- Avoid anthropomorphizing inanimate/software objects.
+- Avoid using the present tense verb "names" and "carries" as it's ambiguous and anthropomorphizing.
+- Avoid pronouns.
+- Connect the true subject directly to its verb.
+
+Example:
+- BAD: The merge proposal names the first primary, and the surviving account is the one that carries it.
+  - "names" (ambiguous, anthropomorphizing verb)
+  - "first primary", "surviving" (three different families of adjectives: "first", "primary", "surviving")
+  - "the one" (ambiguous pseudo-pronoun)
+  - "carries" (ambiguous, anthropomorphizing verb)
+  - "it" (ambiguous pronoun)
+- GOOD: The merge proposal will include a proposed primary account, which becomes the surviving account.
+- BEST: The user will specify the primary account when creating a merge proposal. Once accepted, all non-primary accounts become hidden in day-to-day user flows.
+</writing-clearly>
 """
 
 EVERY_TURN_RULE = """\
-Placeholder every-turn rule.
+<writing-clearly-reminder>
+- Avoid anthropomorphizing.
+- Avoid unnecessary nouns and pronouns.
+</writing-clearly-reminder>
 """
 
 RULES = {
