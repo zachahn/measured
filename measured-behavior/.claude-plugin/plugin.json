@@ -33,7 +33,7 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/rules.py"
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/writing-clearly.py"
           }
         ]
       }
@@ -52,7 +52,7 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/rules.py"
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/writing-clearly.py"
           }
         ]
       }
