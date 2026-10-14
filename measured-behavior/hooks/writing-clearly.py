@@ -20,6 +20,7 @@ SESSION_START_RULE = """\
 - Avoid using the present tense verb "names" and "carries" as it's ambiguous and anthropomorphizing.
 - Avoid pronouns.
 - Connect the true subject directly to its verb.
+- Use passive voice.
 
 Example:
 - BAD: The merge proposal names the first primary, and the surviving account is the one that carries it.
@@ -30,6 +31,11 @@ Example:
   - "it" (ambiguous pronoun)
 - GOOD: The merge proposal will include a proposed primary account, which becomes the surviving account.
 - BEST: The user will specify the primary account when creating a merge proposal. Once accepted, all non-primary accounts become hidden in day-to-day user flows.
+
+Example:
+- BAD: What decides it: ...
+- GOOD: How to decide: ...
+- BEST: The key factor is ...
 </writing-clearly>
 """
 
@@ -37,6 +43,7 @@ EVERY_TURN_RULE = """\
 <writing-clearly-reminder>
 - Avoid anthropomorphizing.
 - Avoid unnecessary nouns and pronouns.
+- Use passive voice.
 </writing-clearly-reminder>
 """
 
