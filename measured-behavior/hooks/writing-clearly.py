@@ -21,6 +21,7 @@ SESSION_START_RULE = """\
 - Avoid pronouns.
 - Connect the true subject directly to its verb.
 - Use passive voice.
+- Use American English.
 
 Example:
 - BAD: The merge proposal names the first primary, and the surviving account is the one that carries it.
@@ -55,9 +56,10 @@ Example:
 
 EVERY_TURN_RULE = """\
 <writing-clearly-reminder>
-- Avoid anthropomorphizing.
-- Avoid unnecessary nouns and pronouns.
-- Use passive voice.
+- Avoid anthropomorphizing
+- Avoid unnecessary nouns and pronouns
+- Use passive voice
+- American English
 </writing-clearly-reminder>
 """
 
