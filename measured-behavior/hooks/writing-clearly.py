@@ -37,6 +37,10 @@ Example:
 - BAD: What decides it: ...
 - GOOD: How to decide: ...
 - BEST: The key factor is ...
+
+Example:
+- BAD: ... before the bank settled it
+- GOOD: ... before it is settled by the bank
 </writing-clearly>
 
 <following-corrections>
