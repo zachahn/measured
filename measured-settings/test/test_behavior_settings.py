@@ -20,7 +20,7 @@ import settings_store  # noqa: E402
 HOOK = PLUGIN_ROOT / "hooks" / "reminders-every-turn.py"
 START_HOOK = PLUGIN_ROOT / "hooks" / "reminders-session-start.py"
 HELP_HOOK = PLUGIN_ROOT / "hooks" / "setup-notice.py"
-CONFIG_BIN = PLUGIN_ROOT / "bin" / "measured-behavior-config"
+CONFIG_BIN = PLUGIN_ROOT / "bin" / "measured-settings-config"
 
 # The `measured` plugin owns writing the settings file. These tests read its
 # session_lib to prove the two path derivations still agree.
@@ -56,7 +56,7 @@ class MatchesSessionLibTest(unittest.TestCase):
 
     def setUp(self):
         if not (MEASURED_LIB / "session_lib.py").exists():
-            self.skipTest("measured plugin not present alongside measured-behavior")
+            self.skipTest("measured plugin not present alongside measured-settings")
         sys.path.insert(0, str(MEASURED_LIB))
         import session_lib  # noqa: PLC0415
 
@@ -335,7 +335,7 @@ class SetupNoticeTest(unittest.TestCase):
 
             message = json.loads(stdout)["systemMessage"]
             self.assertIn("no behavior settings", message)
-            self.assertIn("/measured-behavior:config", message)
+            self.assertIn("/measured-settings:config", message)
 
     def test_writes_nothing_to_stderr(self):
         """stderr goes to the debug log on exit 0, so nothing may rely on it."""

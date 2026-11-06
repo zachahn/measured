@@ -20,9 +20,9 @@ A stored setting is the source of truth. When you read a value with `measured-co
 
 ## Behavior settings
 
-These keys govern how Claude commits and comments in this repo. The **measured-behavior** plugin owns them: its reminder hook states the ones you set at the start of every turn, so they apply to all work, not just the implement skill. Setting none of them leaves Claude's default behavior alone.
+These keys govern how Claude commits and comments in this repo. The **measured-settings** plugin owns them: its reminder hook states the ones you set at the start of every turn, so they apply to all work, not just the implement skill. Setting none of them leaves Claude's default behavior alone.
 
-Write them with `measured-behavior-config --set <key> <value>`, which validates key names. `measured-config` reads and writes the same file, so both commands see the same values.
+Write them with `measured-settings-config --set <key> <value>`, which validates key names. `measured-config` reads and writes the same file, so both commands see the same values.
 
 | Key | Holds |
 |-----|-------|

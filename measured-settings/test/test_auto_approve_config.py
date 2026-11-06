@@ -1,10 +1,10 @@
-"""Tests for hooks/auto-approve-config.py, the measured-behavior-config approval hook.
+"""Tests for hooks/auto-approve-config.py, the measured-settings-config approval hook.
 
 Run directly or via `rake test`. Stdlib unittest only.
 
 Claude Code invokes the hook as `python3 .../auto-approve-config.py`, so we
 exercise that real entrypoint as a subprocess. The contract: exit 0 always; a
-PreToolUse allow decision on stdout for a plain measured-behavior-config
+PreToolUse allow decision on stdout for a plain measured-settings-config
 invocation; empty stdout (no decision) for everything else.
 """
 
@@ -18,7 +18,7 @@ import unittest
 
 PLUGIN_ROOT = pathlib.Path(__file__).resolve().parent.parent
 HOOK = PLUGIN_ROOT / "hooks" / "auto-approve-config.py"
-PLUGIN_BIN = PLUGIN_ROOT / "bin" / "measured-behavior-config"
+PLUGIN_BIN = PLUGIN_ROOT / "bin" / "measured-settings-config"
 
 
 def run_hook(stdin_text):
@@ -57,32 +57,32 @@ class AutoApproveConfigTest(unittest.TestCase):
     # Invocations the hook exists to approve.
 
     def test_allows_bare_command(self):
-        self.assert_command_allowed("measured-behavior-config --list")
+        self.assert_command_allowed("measured-settings-config --list")
 
     def test_allows_no_arguments(self):
-        self.assert_command_allowed("measured-behavior-config")
+        self.assert_command_allowed("measured-settings-config")
 
     def test_allows_set(self):
         self.assert_command_allowed(
-            "measured-behavior-config --set commit-behavior 'commit every turn'"
+            "measured-settings-config --set commit-behavior 'commit every turn'"
         )
 
     def test_allows_get(self):
-        self.assert_command_allowed("measured-behavior-config --get commit-style")
+        self.assert_command_allowed("measured-settings-config --get commit-style")
 
     def test_allows_unset(self):
-        self.assert_command_allowed("measured-behavior-config --unset commit-style")
+        self.assert_command_allowed("measured-settings-config --unset commit-style")
 
     def test_allows_help(self):
-        self.assert_command_allowed("measured-behavior-config --help")
-        self.assert_command_allowed("measured-behavior-config -h")
+        self.assert_command_allowed("measured-settings-config --help")
+        self.assert_command_allowed("measured-settings-config -h")
 
     def test_allows_absolute_path_to_plugin_bin(self):
         self.assert_command_allowed(f"{PLUGIN_BIN} --list")
 
     def test_allows_symlink_to_plugin_bin(self):
         with tempfile.TemporaryDirectory() as tmp:
-            link = pathlib.Path(tmp) / "measured-behavior-config"
+            link = pathlib.Path(tmp) / "measured-settings-config"
             os.symlink(PLUGIN_BIN, link)
             self.assert_command_allowed(f"{link} --list")
 
@@ -90,121 +90,121 @@ class AutoApproveConfigTest(unittest.TestCase):
     # one a write lands in and nothing else.
 
     def test_allows_a_bare_scope_flag(self):
-        self.assert_command_allowed("measured-behavior-config --global")
-        self.assert_command_allowed("measured-behavior-config --repo")
+        self.assert_command_allowed("measured-settings-config --global")
+        self.assert_command_allowed("measured-settings-config --repo")
 
     def test_allows_a_scoped_set(self):
         self.assert_command_allowed(
-            "measured-behavior-config --global --set commit-style imperative"
+            "measured-settings-config --global --set commit-style imperative"
         )
         self.assert_command_allowed(
-            "measured-behavior-config --repo --set commit-style imperative"
+            "measured-settings-config --repo --set commit-style imperative"
         )
 
     def test_allows_a_scoped_get(self):
         self.assert_command_allowed(
-            "measured-behavior-config --global --get commit-style"
+            "measured-settings-config --global --get commit-style"
         )
 
     def test_allows_a_scoped_unset(self):
         self.assert_command_allowed(
-            "measured-behavior-config --global --unset commit-style"
+            "measured-settings-config --global --unset commit-style"
         )
 
     def test_silent_on_a_scoped_unknown_key(self):
         self.assert_command_silent(
-            "measured-behavior-config --global --set not-a-real-key x"
+            "measured-settings-config --global --set not-a-real-key x"
         )
 
     def test_silent_on_two_scope_flags(self):
-        self.assert_command_silent("measured-behavior-config --global --repo")
-        self.assert_command_silent("measured-behavior-config --global --global --list")
+        self.assert_command_silent("measured-settings-config --global --repo")
+        self.assert_command_silent("measured-settings-config --global --global --list")
 
     def test_silent_on_a_trailing_scope_flag(self):
-        self.assert_command_silent("measured-behavior-config --list --global")
+        self.assert_command_silent("measured-settings-config --list --global")
 
     # Shell operators that chain a second command onto the first.
 
     def test_silent_on_chained_command(self):
-        self.assert_command_silent("measured-behavior-config --list; rm -rf /")
+        self.assert_command_silent("measured-settings-config --list; rm -rf /")
 
     def test_silent_on_piped_command(self):
-        self.assert_command_silent("measured-behavior-config --list | tee /tmp/x")
+        self.assert_command_silent("measured-settings-config --list | tee /tmp/x")
 
     def test_silent_on_and_chained_command(self):
-        self.assert_command_silent("measured-behavior-config --list && echo done")
+        self.assert_command_silent("measured-settings-config --list && echo done")
 
     def test_silent_on_command_substitution(self):
         self.assert_command_silent(
-            "measured-behavior-config --set commit-style $(cat /etc/hosts)"
+            "measured-settings-config --set commit-style $(cat /etc/hosts)"
         )
 
     def test_silent_on_newline_chained_command(self):
         # bash separates commands on a newline exactly as it does on `;`, and
         # shlex.split drops a newline as ordinary whitespace.
-        self.assert_command_silent("measured-behavior-config --list\nrm -rf /tmp/x")
+        self.assert_command_silent("measured-settings-config --list\nrm -rf /tmp/x")
 
     def test_silent_on_backslash_newline_chained_command(self):
-        self.assert_command_silent("measured-behavior-config --list\\\nrm -rf /tmp/x")
+        self.assert_command_silent("measured-settings-config --list\\\nrm -rf /tmp/x")
 
     def test_silent_on_carriage_return_chained_command(self):
-        self.assert_command_silent("measured-behavior-config --list\rrm -rf /tmp/x")
+        self.assert_command_silent("measured-settings-config --list\rrm -rf /tmp/x")
 
     def test_silent_on_redirect(self):
-        self.assert_command_silent("measured-behavior-config --list > /tmp/x")
+        self.assert_command_silent("measured-settings-config --list > /tmp/x")
 
     def test_silent_on_background_operator(self):
-        self.assert_command_silent("measured-behavior-config --list & rm -rf /tmp/x")
+        self.assert_command_silent("measured-settings-config --list & rm -rf /tmp/x")
 
     def test_silent_on_process_substitution(self):
-        self.assert_command_silent("measured-behavior-config --get <(rm -rf /tmp/x)")
+        self.assert_command_silent("measured-settings-config --get <(rm -rf /tmp/x)")
 
     def test_silent_on_backtick_substitution(self):
-        self.assert_command_silent("measured-behavior-config --get `id`")
+        self.assert_command_silent("measured-settings-config --get `id`")
 
     # A program that is not this plugin's own copy of the command.
 
     def test_silent_on_other_program(self):
-        self.assert_command_silent("echo measured-behavior-config")
+        self.assert_command_silent("echo measured-settings-config")
 
     def test_silent_on_lookalike_program_name(self):
-        self.assert_command_silent("not-measured-behavior-config --list")
+        self.assert_command_silent("not-measured-settings-config --list")
 
     def test_silent_on_relative_path(self):
-        self.assert_command_silent("./measured-behavior-config --list")
+        self.assert_command_silent("./measured-settings-config --list")
 
     def test_silent_on_traversal_path(self):
-        self.assert_command_silent("../../../tmp/evil/measured-behavior-config --list")
+        self.assert_command_silent("../../../tmp/evil/measured-settings-config --list")
 
     def test_silent_on_absolute_path_elsewhere(self):
-        self.assert_command_silent("/tmp/evil/measured-behavior-config --list")
+        self.assert_command_silent("/tmp/evil/measured-settings-config --list")
 
     def test_silent_on_tilde_path(self):
-        self.assert_command_silent("~/evil/measured-behavior-config --list")
+        self.assert_command_silent("~/evil/measured-settings-config --list")
 
     # Arguments outside the command's real grammar.
 
     def test_silent_on_unknown_flag(self):
-        self.assert_command_silent("measured-behavior-config --exec rm")
+        self.assert_command_silent("measured-settings-config --exec rm")
 
     def test_silent_on_unknown_key(self):
-        self.assert_command_silent("measured-behavior-config --get not-a-real-key")
-        self.assert_command_silent("measured-behavior-config --set not-a-real-key x")
+        self.assert_command_silent("measured-settings-config --get not-a-real-key")
+        self.assert_command_silent("measured-settings-config --set not-a-real-key x")
 
     def test_silent_on_wrong_arity(self):
-        self.assert_command_silent("measured-behavior-config --set commit-style")
-        self.assert_command_silent("measured-behavior-config --get commit-style extra")
-        self.assert_command_silent("measured-behavior-config --list extra")
+        self.assert_command_silent("measured-settings-config --set commit-style")
+        self.assert_command_silent("measured-settings-config --get commit-style extra")
+        self.assert_command_silent("measured-settings-config --list extra")
 
     def test_silent_on_positional_argument(self):
-        self.assert_command_silent("measured-behavior-config commit-style")
+        self.assert_command_silent("measured-settings-config commit-style")
 
     # Malformed input to the hook itself.
 
     def test_silent_on_other_tools(self):
         self.assert_no_decision(run_hook(json.dumps({
             "tool_name": "Read",
-            "tool_input": {"file_path": "measured-behavior-config"},
+            "tool_input": {"file_path": "measured-settings-config"},
         })))
 
     def test_silent_on_missing_command(self):
@@ -216,7 +216,7 @@ class AutoApproveConfigTest(unittest.TestCase):
 
     def test_silent_on_unbalanced_quotes(self):
         self.assert_command_silent(
-            "measured-behavior-config --set commit-style 'unterminated"
+            "measured-settings-config --set commit-style 'unterminated"
         )
 
 

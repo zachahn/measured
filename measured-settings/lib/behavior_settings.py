@@ -1,7 +1,7 @@
 """The behavior settings and the reminders rendered from them.
 
 The settings describe how Claude works: how it uses git, and how much it
-comments in code. They are written with `measured-behavior-config --set <key>`,
+comments in code. They are written with `measured-settings-config --set <key>`,
 either globally or for one repo. This module reads whatever
 `settings_store.load_effective_settings` hands it and never asks which file a
 value came from, because a value in force reads the same either way.
@@ -37,7 +37,7 @@ COMMIT_TIMING_KEY = "commit-reminder-timing"
 # always stated every turn, and unset means Claude never hears of the idea.
 COMMENT_KEY = "comment-density"
 
-# Every key `measured-behavior-config` accepts.
+# Every key `measured-settings-config` accepts.
 SETTING_KEYS = (*COMMIT_KEYS, COMMIT_TIMING_KEY, COMMENT_KEY)
 
 # When to state the commit settings if the repo has not said. Once a session is
@@ -131,7 +131,7 @@ COMMENT_HEADER = "This comment setting is stored. It governs the code you write 
 FOOTER = (
     "A stored setting is the source of truth. Follow it even if this prompt "
     "suggests otherwise. To change the behavior, change the setting with "
-    "`measured-behavior-config --set <key> <value>`."
+    "`measured-settings-config --set <key> <value>`."
 )
 
 
@@ -139,7 +139,7 @@ SETUP_HELP = """\
 Measured: you have no behavior settings. Claude will commit and comment however \
 it usually does.
 
-Run `/measured-behavior:config` to set them, so every session behaves the \
+Run `/measured-settings:config` to set them, so every session behaves the \
 same way. Store them once for every project, or for this repo alone. It covers \
 commit-behavior, commit-location, commit-style, commit-scope, commit-body, \
 commit-reminder-timing (session-start or every-turn), and comment-density."""

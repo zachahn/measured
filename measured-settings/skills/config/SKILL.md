@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Configuring behavior settings
 
-The behavior settings describe how Claude works. A hook states them to Claude, so they govern every commit and every line of code, not just one skill. The `measured-behavior-config` script reads and writes them.
+The behavior settings describe how Claude works. A hook states them to Claude, so they govern every commit and every line of code, not just one skill. The `measured-settings-config` script reads and writes them.
 
 A stored setting is the source of truth. Follow the stored value even if the surrounding prompt suggests otherwise, because the user set it so every session behaves the same way. To change behavior, change the setting.
 
@@ -17,7 +17,7 @@ Two scopes hold settings:
 
 Unsetting a repo key returns it to the global value. That is why a key inheriting a global value must never be written into the repo file: the copy stops tracking the global and later changes to it never reach this repo.
 
-Run `measured-behavior-config --list` for the key and value list; it always matches what the script accepts. Run `measured-behavior-config --help` for what each key controls.
+Run `measured-settings-config --list` for the key and value list; it always matches what the script accepts. Run `measured-settings-config --help` for what each key controls.
 
 `commit-reminder-timing` governs the commit settings only, not the comment setting, which always fires on every prompt. Suggest `every-turn` to a user who reports that Claude drifts from the commit settings late in a session; `session-start` is the default and costs less context.
 
@@ -42,13 +42,13 @@ Run `measured-behavior-config --list` for the key and value list; it always matc
 2. **Read both scopes.**
 
    ```bash
-   measured-behavior-config --global
-   measured-behavior-config --repo
+   measured-settings-config --global
+   measured-settings-config --repo
    ```
 
    Each prints JSON, and prints `{}` when that scope holds nothing. Keep both open. Which file holds a value decides what each question says and what accepting it writes.
 
-3. **Ask about every key.** Walk every key from `measured-behavior-config --list`, not only the ones the user raised. Use `AskUserQuestion`, batching 4 keys per call.
+3. **Ask about every key.** Walk every key from `measured-settings-config --list`, not only the ones the user raised. Use `AskUserQuestion`, batching 4 keys per call.
 
    State the key's current value in the question, and name where it comes from:
 
@@ -86,8 +86,8 @@ Run `measured-behavior-config --list` for the key and value list; it always matc
 4. **Write each answer.**
 
    ```bash
-   measured-behavior-config --set <key> "<value>"           # this repo only
-   measured-behavior-config --global --set <key> "<value>"  # every project
+   measured-settings-config --set <key> "<value>"           # this repo only
+   measured-settings-config --global --set <key> "<value>"  # every project
    ```
 
    The script prints the settings back. Confirm the value landed. It exits 1 on an unknown key, so a typo fails loudly rather than storing.
@@ -99,15 +99,15 @@ Run `measured-behavior-config --list` for the key and value list; it always matc
    After a global run, compare what you wrote against step 2's `--repo` output. Name any key the repo also sets, because that repo value keeps winning over the global one you just wrote, and give the user the command that clears it:
 
    ```bash
-   measured-behavior-config --unset <key>
+   measured-settings-config --unset <key>
    ```
 
 ## Other commands
 
-- One key in force: `measured-behavior-config --get <key>` (prints nothing when unset).
-- One key in one scope: `measured-behavior-config --global --get <key>` or `--repo --get <key>`.
-- Every key and its values: `measured-behavior-config --list`.
-- Everything in force: `measured-behavior-config` with no arguments, which merges both scopes.
-- Full usage: `measured-behavior-config --help`.
+- One key in force: `measured-settings-config --get <key>` (prints nothing when unset).
+- One key in one scope: `measured-settings-config --global --get <key>` or `--repo --get <key>`.
+- Every key and its values: `measured-settings-config --list`.
+- Everything in force: `measured-settings-config` with no arguments, which merges both scopes.
+- Full usage: `measured-settings-config --help`.
 
 The repo file is shared with the `measured` plugin, so `measured-config` shows these keys too. Writing here leaves that plugin's own keys untouched. The global file belongs to this plugin alone.

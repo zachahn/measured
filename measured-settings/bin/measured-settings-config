@@ -46,7 +46,7 @@ import settings_store  # noqa: E402
 
 
 USAGE = (
-    "usage: measured-behavior-config [--global | --repo] "
+    "usage: measured-settings-config [--global | --repo] "
     "[--get KEY | --set KEY VALUE | --unset KEY | --list]\n"
 )
 
@@ -163,7 +163,7 @@ def _write(cwd: str, scope: str, key: str, value) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    parser = _Parser(prog="measured-behavior-config", add_help=False)
+    parser = _Parser(prog="measured-settings-config", add_help=False)
     parser.add_argument("-h", "--help", action="help")
 
     # Scope and action are separate choices, so they get separate groups: a

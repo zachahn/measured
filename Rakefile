@@ -53,8 +53,8 @@ module TestTasks
 
     task :scripts do
       sh "python3 measured/test/test_session_lib.py"
-      sh "python3 measured-behavior/test/test_behavior_settings.py"
-      sh "python3 measured-behavior/test/test_auto_approve_config.py"
+      sh "python3 measured-settings/test/test_behavior_settings.py"
+      sh "python3 measured-settings/test/test_auto_approve_config.py"
       sh "python3 measured/test/test_auto_approve_plugin_reads.py"
       sh "python3 measured/test/test_worktree_guard.py"
       sh "python3 measured/test/test_workspace_git_ignored.py"
@@ -63,6 +63,7 @@ module TestTasks
 
     task :validate do
       sh "claude plugin validate ./measured-behavior"
+      sh "claude plugin validate ./measured-settings"
       sh "claude plugin validate ./measured"
       sh "claude plugin validate ."
       puts "[test] validate done"

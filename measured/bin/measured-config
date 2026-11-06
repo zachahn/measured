@@ -24,7 +24,7 @@ Known settings:
                         (~/.local/state/…). "REPO: <path/to/docs>" stores them
                         in a subdirectory of the project repo.
 
-Commit settings, stated to Claude on every prompt by the measured-behavior
+Commit settings, stated to Claude on every prompt by the measured-settings
 plugin's commit-settings hook:
 
   commit-behavior       when to commit: "after-every-turn" or "on-user-request".
@@ -36,7 +36,7 @@ plugin's commit-settings hook:
   commit-body           when a commit needs a body: "always", "when-nontrivial",
                         or "never".
 
-The vocabulary for those values lives in the measured-behavior plugin, at
+The vocabulary for those values lives in the measured-settings plugin, at
 lib/behavior_settings.py. Any other value is passed through verbatim.
 
 Path/state resolution lives in ../lib/session_lib.py.
@@ -77,7 +77,7 @@ Known settings:
                         (~/.local/state/…). "REPO: <path/to/docs>" stores them
                         in a subdirectory of the project repo.
 
-Commit settings. The measured-behavior plugin states these to Claude on every
+Commit settings. The measured-settings plugin states these to Claude on every
 prompt, so they govern every commit in the repo, not just the implement skill.
 Each accepts a free-text value, passed through verbatim, when none of the
 listed values fit.

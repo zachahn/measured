@@ -6,9 +6,9 @@ merge of the two: the global file provides defaults, and a repo overrides the
 keys it sets.
 
 Both plugins share the repo file. `measured` writes its own keys through
-`measured-config`, and `measured-behavior` writes the commit keys through
-`measured-behavior-config`. Neither imports the other, so either installs and
-runs without the other present. The global file belongs to `measured-behavior`
+`measured-config`, and `measured-settings` writes the commit keys through
+`measured-settings-config`. Neither imports the other, so either installs and
+runs without the other present. The global file belongs to `measured-settings`
 alone; `measured` has no global scope.
 
 Both plugins derive the same repo path from the same rule: encode the project's
@@ -16,7 +16,7 @@ absolute path the way Claude Code names its `projects/<encoded-cwd>/` dirs,
 then look under the measured state root. `measured/lib/session_lib.py` holds
 the writing side of that rule. The two derivations are duplicated on purpose,
 because neither plugin may import the other, and
-`measured-behavior/test/test_behavior_settings.py` asserts they agree.
+`measured-settings/test/test_behavior_settings.py` asserts they agree.
 
 A hook receives the working directory on stdin, so this module takes a cwd
 argument and never walks the process tree the way session_lib does.

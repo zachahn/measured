@@ -8,6 +8,7 @@ Plugins for careful software engineering
 claude plugin marketplace add zachahn/measured
 claude plugin install measured@measured-suite
 claude plugin install measured-behavior@measured-suite
+claude plugin install measured-settings@measured-suite
 ```
 
 ## Upgrading
@@ -16,4 +17,5 @@ claude plugin install measured-behavior@measured-suite
 claude plugin marketplace update measured-suite
 claude plugin update measured@measured-suite
 claude plugin update measured-behavior@measured-suite
+claude plugin update measured-settings@measured-suite
 ```
