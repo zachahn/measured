@@ -318,7 +318,7 @@ module VersionTasks
       VersionTasks.audit
     end
 
-    desc "Bump all declared files to NEW_VERSION (rake version:bump NEW_VERSION=1.2.3)"
+    desc "Bump all declared files to NEW_VERSION (rake version:bump NEW_VERSION=#{VersionTasks.current_version})"
     task :bump do
       new_version = ENV["NEW_VERSION"] || ENV["VERSION"]
       abort "Usage: rake version:bump NEW_VERSION=X.Y.Z" if new_version.nil? || new_version.empty?
