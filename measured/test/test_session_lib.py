@@ -6,6 +6,7 @@ Run directly or via `rake test`. Stdlib unittest only.
 import datetime
 import os
 import pathlib
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -94,6 +95,43 @@ class RepoDirForProjectTest(unittest.TestCase):
     def test_does_not_create_the_dir(self):
         path = lib.repo_dir_for_project("/no/such/place/xyz")
         self.assertFalse(path.exists())
+
+
+class MainWorktreePathTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = pathlib.Path(os.path.realpath(self._tmp.name))
+        self.main = self.root / "main"
+        self.linked = self.root / "linked"
+        git = ["git", "-c", "user.name=t", "-c", "user.email=t@t"]
+        subprocess.run(git + ["init", "-q", str(self.main)], check=True)
+        subprocess.run(
+            git + ["-C", str(self.main), "commit", "-q", "--allow-empty", "-m", "init"],
+            check=True,
+        )
+        subprocess.run(
+            git + ["-C", str(self.main), "worktree", "add", "-q", str(self.linked)],
+            check=True,
+        )
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_main_checkout_resolves_to_itself(self):
+        self.assertEqual(lib.main_worktree_path(str(self.main)), str(self.main))
+
+    def test_linked_worktree_resolves_to_main_checkout(self):
+        self.assertEqual(lib.main_worktree_path(str(self.linked)), str(self.main))
+
+    def test_non_repo_path_is_returned_unchanged(self):
+        outside = str(self.root)
+        self.assertEqual(lib.main_worktree_path(outside), outside)
+
+    def test_linked_worktree_shares_main_repo_dir(self):
+        self.assertEqual(
+            lib.repo_dir_for_project(self.linked),
+            lib.repo_dir_for_project(self.main),
+        )
 
 
 class ClaudePwdTest(unittest.TestCase):

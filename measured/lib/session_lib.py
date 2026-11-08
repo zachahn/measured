@@ -162,15 +162,37 @@ def state_root() -> pathlib.Path:
     ) / "measured-claude-plugin"
 
 
+def main_worktree_path(path: str) -> str:
+    """Return the main worktree's root for a path inside a git repo.
+
+    Every linked worktree shares one `--git-common-dir`, so all worktrees of a
+    repo resolve to the same root. Returns `path` unchanged outside a git repo
+    or when git is unavailable.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", path, "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return path
+    common_dir = pathlib.Path(result.stdout.strip())
+    if common_dir.name == ".git":
+        return str(common_dir.parent)
+    return str(common_dir)
+
+
 def repo_dir_for_project(project_path: str | os.PathLike) -> pathlib.Path:
     """The repo dir for a project working directory (does not create it).
 
-    Encodes the project's *absolute* path the way Claude Code names its own
-    `projects/<encoded-cwd>/` dirs, so `repo_dir_for_project(".")` yields the
-    current project's root without walking the process tree.
+    Encodes the absolute path of the project's main worktree the way Claude
+    Code names its own `projects/<encoded-cwd>/` dirs. Sessions in any linked
+    worktree of a repo therefore share the main checkout's settings and plans.
     """
     abspath = os.path.abspath(os.path.expanduser(os.fspath(project_path)))
-    return state_root() / "projects" / encode_project_path(abspath)
+    return state_root() / "projects" / encode_project_path(main_worktree_path(abspath))
 
 
 def _repo_dir_for(claude_pid: int) -> pathlib.Path:

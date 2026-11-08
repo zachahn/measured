@@ -11,9 +11,10 @@ Both plugins share the repo file. `measured` writes its own keys through
 runs without the other present. The global file belongs to `measured-settings`
 alone; `measured` has no global scope.
 
-Both plugins derive the same repo path from the same rule: encode the project's
-absolute path the way Claude Code names its `projects/<encoded-cwd>/` dirs,
-then look under the measured state root. `measured/lib/session_lib.py` holds
+Both plugins derive the same repo path from the same rule: resolve the project
+to its main git worktree, encode that absolute path the way Claude Code names
+its `projects/<encoded-cwd>/` dirs, then look under the measured state root.
+Every linked worktree of a repo therefore shares one settings file. `measured/lib/session_lib.py` holds
 the writing side of that rule. The two derivations are duplicated on purpose,
 because neither plugin may import the other, and
 `measured-settings/test/test_behavior_settings.py` asserts they agree.
@@ -27,6 +28,7 @@ Kept stdlib-only so it runs from a fresh checkout with no install step.
 import json
 import os
 import pathlib
+import subprocess
 
 STATE_DIR_NAME = "measured-claude-plugin"
 SETTINGS_FILENAME = "settings.json"
@@ -50,13 +52,33 @@ def encode_project_path(path: str) -> str:
     return path.replace("/", "-")
 
 
+def main_worktree_path(path: str) -> str:
+    """Return the main worktree's root for a path inside a git repo.
+
+    Mirrors `session_lib.main_worktree_path()`.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", path, "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return path
+    common_dir = pathlib.Path(result.stdout.strip())
+    if common_dir.name == ".git":
+        return str(common_dir.parent)
+    return str(common_dir)
+
+
 def repo_dir_for_project(project_path) -> pathlib.Path:
     """The state dir for a project working directory (does not create it).
 
     Mirrors `session_lib.repo_dir_for_project()`.
     """
     abspath = os.path.abspath(os.path.expanduser(os.fspath(project_path)))
-    return state_root() / "projects" / encode_project_path(abspath)
+    return state_root() / "projects" / encode_project_path(main_worktree_path(abspath))
 
 
 def global_settings_path() -> pathlib.Path:
