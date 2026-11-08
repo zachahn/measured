@@ -123,6 +123,16 @@ class MainWorktreePathTest(unittest.TestCase):
     def test_linked_worktree_resolves_to_main_checkout(self):
         self.assertEqual(lib.main_worktree_path(str(self.linked)), str(self.main))
 
+    def test_main_checkout_subdirectory_resolves_to_main_checkout(self):
+        subdirectory = self.main / "a" / "b"
+        subdirectory.mkdir(parents=True)
+        self.assertEqual(lib.main_worktree_path(str(subdirectory)), str(self.main))
+
+    def test_linked_worktree_subdirectory_resolves_to_main_checkout(self):
+        subdirectory = self.linked / "c"
+        subdirectory.mkdir()
+        self.assertEqual(lib.main_worktree_path(str(subdirectory)), str(self.main))
+
     def test_non_repo_path_is_returned_unchanged(self):
         outside = str(self.root)
         self.assertEqual(lib.main_worktree_path(outside), outside)

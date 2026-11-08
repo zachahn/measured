@@ -77,6 +77,39 @@ class MatchesSessionLibTest(unittest.TestCase):
                     f"path derivation drifted for {project!r}",
                 )
 
+    def test_repo_dir_matches_for_linked_worktree_and_subdirectories(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(os.path.realpath(tmp))
+            main = root / "main"
+            linked = root / "linked"
+            git = ["git", "-c", "user.name=t", "-c", "user.email=t@t"]
+            subprocess.run(git + ["init", "-q", str(main)], check=True)
+            subprocess.run(
+                git + ["-C", str(main), "commit", "-q", "--allow-empty", "-m", "init"],
+                check=True,
+            )
+            subprocess.run(
+                git + ["-C", str(main), "worktree", "add", "-q", str(linked)],
+                check=True,
+            )
+            main_subdirectory = main / "a" / "b"
+            linked_subdirectory = linked / "c"
+            main_subdirectory.mkdir(parents=True)
+            linked_subdirectory.mkdir()
+            with _env(XDG_STATE_HOME="/tmp/xdg-state-test"):
+                main_repo_dir = self.session_lib.repo_dir_for_project(main)
+                for project in (linked, main_subdirectory, linked_subdirectory):
+                    self.assertEqual(
+                        settings_store.repo_dir_for_project(project),
+                        main_repo_dir,
+                        f"settings_store drifted for {project}",
+                    )
+                    self.assertEqual(
+                        self.session_lib.repo_dir_for_project(project),
+                        main_repo_dir,
+                        f"session_lib drifted for {project}",
+                    )
+
     def test_settings_filename_matches(self):
         self.assertEqual(
             settings_store.SETTINGS_FILENAME, self.session_lib.SETTINGS_FILENAME
