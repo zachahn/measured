@@ -14,13 +14,11 @@ A stored setting is the source of truth. Follow any value from `measured-config 
 
 | Key | Value |
 |-----|-------|
-| `worktree-setup` | Shell commands that prepare a new worktree, such as installing dependencies or building. The **implement** skill runs these after creating a worktree. |
-| `work-location` | Where the **implement** skill does its work: `ask` (ask every time), `worktree`, `new-branch`, `current-branch`, or `trunk-branch`. If unset, ask the user once and save the answer. |
 | `docs-location` | Where to store plan docs (ARCHITECTURE.md, TICKET.md): `XDG_STATE_HOME` for the default state directory, or `REPO: <path/to/docs>` for a directory inside the repo. |
 
 ## Behavior settings
 
-These settings control how Claude commits and writes code comments in this repo. The **measured-settings** plugin manages them, and its hook adds each set value to Claude's context. The settings apply to all work, not only to the implement skill. Unset settings leave Claude's default behavior unchanged.
+These settings control how Claude commits and writes code comments in this repo. The **measured-settings** plugin manages them, and its hook adds each set value to Claude's context. Unset settings leave Claude's default behavior unchanged.
 
 Set these with `measured-settings-config --set <key> <value>`, which rejects unknown keys. Both commands share one settings file.
 
@@ -38,7 +36,7 @@ Each setting also accepts free text when no listed value fits, such as `measured
 
 ## Steps
 
-1. **Find out what to set.** If the user gave no value, ask for one. For `worktree-setup`, ask for the exact command line a new checkout needs, such as `bundle install && rake` or `npm install`.
+1. **Find out what to set.** If the user gave no value, ask for one.
 
 2. **Save the setting.**
 

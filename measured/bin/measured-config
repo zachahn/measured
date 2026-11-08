@@ -13,11 +13,6 @@ committed to the repo.
 
 Known settings:
 
-  worktree-setup        shell commands to run after creating a worktree to get
-                        it ready to work in (install deps, build, etc.)
-  work-location         where the implement skill runs its work: "ask",
-                        "worktree", "new-branch", "current-branch", or
-                        "trunk-branch".
   docs-location         where measured stores plan docs (ARCHITECTURE.md,
                         TICKET.md, etc.). Required by measured-notes.
                         "XDG_STATE_HOME" stores them in the default state dir
@@ -66,11 +61,6 @@ between them. They are stored outside the repo and are not committed.
 
 Known settings:
 
-  worktree-setup        shell commands to run after creating a worktree to get
-                        it ready to work in (install deps, build, etc.)
-  work-location         where the implement skill runs its work: "ask",
-                        "worktree", "new-branch", "current-branch", or
-                        "trunk-branch".
   docs-location         where measured stores plan docs (ARCHITECTURE.md,
                         TICKET.md, etc.). Required by measured-notes.
                         "XDG_STATE_HOME" stores them in the default state dir
@@ -78,7 +68,7 @@ Known settings:
                         in a subdirectory of the project repo.
 
 Commit settings. The measured-settings plugin states these to Claude on every
-prompt, so they govern every commit in the repo, not just the implement skill.
+prompt, so they govern every commit in the repo.
 Each accepts a free-text value, passed through verbatim, when none of the
 listed values fit.
 

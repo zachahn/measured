@@ -197,23 +197,23 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(lib.load_settings(self.repo), {})
 
     def test_set_then_get_roundtrips(self):
-        lib.set_setting(self.repo, "worktree-setup", "npm install")
-        self.assertEqual(lib.get_setting(self.repo, "worktree-setup"), "npm install")
+        lib.set_setting(self.repo, "docs-location", "XDG_STATE_HOME")
+        self.assertEqual(lib.get_setting(self.repo, "docs-location"), "XDG_STATE_HOME")
 
     def test_set_writes_pretty_json_with_trailing_newline(self):
-        lib.set_setting(self.repo, "worktree-setup", "npm install")
+        lib.set_setting(self.repo, "docs-location", "XDG_STATE_HOME")
         text = lib.settings_path(self.repo).read_text()
-        self.assertEqual(text, '{\n  "worktree-setup": "npm install"\n}\n')
+        self.assertEqual(text, '{\n  "docs-location": "XDG_STATE_HOME"\n}\n')
 
     def test_set_updates_existing_key(self):
-        lib.set_setting(self.repo, "worktree-setup", "npm install")
-        lib.set_setting(self.repo, "worktree-setup", "make")
-        self.assertEqual(lib.load_settings(self.repo), {"worktree-setup": "make"})
+        lib.set_setting(self.repo, "docs-location", "XDG_STATE_HOME")
+        lib.set_setting(self.repo, "docs-location", "REPO: docs")
+        self.assertEqual(lib.load_settings(self.repo), {"docs-location": "REPO: docs"})
 
     def test_set_none_deletes_key(self):
-        lib.set_setting(self.repo, "worktree-setup", "npm install")
+        lib.set_setting(self.repo, "docs-location", "XDG_STATE_HOME")
         lib.set_setting(self.repo, "other", "keep")
-        lib.set_setting(self.repo, "worktree-setup", None)
+        lib.set_setting(self.repo, "docs-location", None)
         self.assertEqual(lib.load_settings(self.repo), {"other": "keep"})
 
     def test_get_returns_none_for_unset_key(self):

@@ -165,7 +165,7 @@ class RenderTest(unittest.TestCase):
 
     def test_ignores_unrelated_settings(self):
         self.assertEqual(
-            behavior_settings.render({"worktree-setup": "bundle install"}), ""
+            behavior_settings.render({"docs-location": "XDG_STATE_HOME"}), ""
         )
 
     def test_skips_blank_and_none_values(self):
@@ -288,7 +288,7 @@ class AnySetTest(unittest.TestCase):
     def test_false_for_unrelated_settings(self):
         self.assertFalse(
             behavior_settings.any_set(
-                {"worktree-setup": "bundle install", "work-location": "worktree"}
+                {"docs-location": "XDG_STATE_HOME"}
             )
         )
 
@@ -375,7 +375,7 @@ class SetupNoticeTest(unittest.TestCase):
     def test_ignores_unrelated_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
             with _env(XDG_STATE_HOME=tmp):
-                _write_settings("/some/project", {"worktree-setup": "bundle install"})
+                _write_settings("/some/project", {"docs-location": "XDG_STATE_HOME"})
 
             stdout, _ = _run_help_hook(tmp, {"cwd": "/some/project"})
             self.assertIn("no behavior settings", json.loads(stdout)["systemMessage"])
@@ -430,13 +430,13 @@ class ConfigScriptTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             cwd = self._repo(tmp)
             with _env(XDG_STATE_HOME=tmp):
-                _write_settings(cwd, {"worktree-setup": "bundle install"})
+                _write_settings(cwd, {"docs-location": "XDG_STATE_HOME"})
 
             self._run(tmp, "--set", "commit-style", "imperative", cwd=cwd)
 
             with _env(XDG_STATE_HOME=tmp):
                 stored = settings_store.load_settings(cwd)
-            self.assertEqual(stored["worktree-setup"], "bundle install")
+            self.assertEqual(stored["docs-location"], "XDG_STATE_HOME")
             self.assertEqual(stored["commit-style"], "imperative")
 
     def test_prints_only_commit_keys(self):
@@ -444,7 +444,7 @@ class ConfigScriptTest(unittest.TestCase):
             cwd = self._repo(tmp)
             with _env(XDG_STATE_HOME=tmp):
                 _write_settings(
-                    cwd, {"worktree-setup": "bundle install", "commit-body": "never"}
+                    cwd, {"docs-location": "XDG_STATE_HOME", "commit-body": "never"}
                 )
 
             printed = json.loads(self._run(tmp, cwd=cwd).stdout)
@@ -836,9 +836,9 @@ class EffectiveSettingsTest(unittest.TestCase):
             effective = self._effective(
                 tmp,
                 {"commit-style": "imperative"},
-                {"worktree-setup": "bundle install"},
+                {"docs-location": "XDG_STATE_HOME"},
             )
-            self.assertEqual(effective["worktree-setup"], "bundle install")
+            self.assertEqual(effective["docs-location"], "XDG_STATE_HOME")
 
     def test_changes_nothing_for_a_repo_scoped_read(self):
         """load_settings stays repo-only; the merge is a separate call."""
@@ -909,7 +909,7 @@ class GlobalDefaultsInHooksTest(unittest.TestCase):
     def test_setup_notice_still_shows_when_neither_scope_is_set(self):
         with tempfile.TemporaryDirectory() as tmp:
             with _env(XDG_STATE_HOME=tmp):
-                _write_global({"worktree-setup": "bundle install"})
+                _write_global({"docs-location": "XDG_STATE_HOME"})
 
             stdout, _ = _run_help_hook(tmp, {"cwd": "/unconfigured/project"})
             self.assertIn("no behavior settings", json.loads(stdout)["systemMessage"])
