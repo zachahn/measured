@@ -31,7 +31,7 @@ Example:
   - "carries" (ambiguous, anthropomorphizing verb)
   - "it" (ambiguous pronoun)
 - GOOD: The merge proposal will include a proposed primary account, which becomes the surviving account.
-- BEST: The user will specify the primary account when creating a merge proposal. Once accepted, all non-primary accounts become hidden in day-to-day user flows.
+- BEST: The user will specify the primary account when creating a merge proposal. Once accepted, all non-primary accounts will become hidden in day-to-day user flows.
 
 Example:
 - BAD: What decides it: ...
