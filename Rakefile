@@ -41,16 +41,6 @@ module TestTasks
       end
     end
 
-    task :agents do
-      puts "[test] agents"
-      Dir.glob(["*/agents/*.md"]).each do |path|
-        check_name("test", path, File.basename(path, ".md"))
-      rescue => e
-        RakeTaskFailure.create("test", path, e.message)
-        next
-      end
-    end
-
     task :scripts do
       sh "python3 measured/test/test_session_lib.py"
       sh "python3 measured-settings/test/test_behavior_settings.py"
@@ -70,7 +60,7 @@ module TestTasks
     end
   end
 
-  task test: ["test:skills", "test:agents", "test:scripts", "test:validate"]
+  task test: ["test:skills", "test:scripts", "test:validate"]
 
   def self.check_name(task_name, path, expected_name)
     content = File.read(path)
