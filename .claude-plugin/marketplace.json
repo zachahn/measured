@@ -7,19 +7,19 @@
   "plugins": [
     {
       "name": "measured",
-      "version": "1.5.1",
+      "version": "1.5.2",
       "source": "./measured",
       "homepage": "https://github.com/zachahn/measured"
     },
     {
       "name": "measured-behavior",
-      "version": "1.5.1",
+      "version": "1.5.2",
       "source": "./measured-behavior",
       "homepage": "https://github.com/zachahn/measured"
     },
     {
       "name": "measured-settings",
-      "version": "1.5.1",
+      "version": "1.5.2",
       "source": "./measured-settings",
       "homepage": "https://github.com/zachahn/measured"
     }
